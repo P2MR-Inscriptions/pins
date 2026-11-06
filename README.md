@@ -1,14 +1,29 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
+<p align="center">
+  <img src="docs/assets/pins-avatar.svg" alt="PINS" width="200">
+</p>
+
 # PINS
+
+<p align="center">
+  <a href="https://qbit.org"><img src="docs/assets/qbit-logo-full.svg" alt="Qbit" height="48"></a><br>
+  Built on <a href="https://qbit.org">Qbit</a>
+</p>
 
 P2MR Inscriptions (PINS) is an application protocol on Qbit. It writes content into a Qbit transaction and binds each inscription to one bit. The short name is PINS. The envelope marker is the 4 bytes `pins` (`70 69 6e 73`).
 
-PINS is not a consensus change and it is not a proposal of the Qbit project or of Qbit-Org. Qbit Core does not know about inscriptions. Indexers agree by applying these rules to the same chain.
+PINS is an independent community project. It is not a consensus change, and it is not affiliated with, endorsed by, or maintained by the Qbit team or Qbit-Org. Qbit Core does not know about inscriptions. Indexers agree by applying these rules to the same chain.
 
 The specification is [PINS-1 through PINS-6](docs/specs/README.md). Those documents are CC0-1.0. The code, tools, and the other documents are [Apache-2.0](LICENSE). See [NOTICE](NOTICE).
 
 This repository is the protocol and the reference indexer and inscriber. A collection's name, Merkle root, reserve groups, and zip are not defaults here. Pass them with `--collection` and `--zip`.
+
+## Network
+
+PINS is built on [Qbit](https://qbit.org). Qbit is a post-quantum peer-to-peer network. The asset is QBT. The supply is capped at 210 million and is issued only by mining. There is no premine. Addresses are P2MR, and a spend is signed with SLH-DSA in Qbit Wallet. The node and the wallet are the Qbit project's.
+
+PINS is an independent community project. It is not affiliated with, endorsed by, or maintained by the Qbit team or Qbit-Org.
 
 ## P2MR on Qbit
 

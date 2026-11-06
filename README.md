@@ -7,8 +7,8 @@
 # PINS
 
 <p align="center">
-  <a href="https://qbit.org"><img src="docs/assets/qbit-logo-full.svg" alt="Qbit" height="48"></a><br>
-  Built on <a href="https://qbit.org">Qbit</a>
+  <a href="https://qbit.org"><img src="docs/assets/qbit-logo-full.svg" alt="Qbit" height="30"></a><br>
+  <sub>Built on <a href="https://qbit.org">Qbit</a>. Independent community project, not affiliated with the Qbit team or Qbit-Org.</sub>
 </p>
 
 P2MR Inscriptions (PINS) is an application protocol on Qbit. It writes content into a Qbit transaction and binds each inscription to one bit. The short name is PINS. The envelope marker is the 4 bytes `pins` (`70 69 6e 73`).

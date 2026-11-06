@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build
+dist/
+build/
+.output/
+.vercel/
+.vinxi/
+.tanstack/
+*.tsbuildinfo
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.seed
+*.secret
+*.pqc-sk
+wallet.dat
+*.wallet
+secrets/
+keys/
+data/*
+data/generated/
+*.sqlite
+*.sqlite-journal
+
+# Local rehearsal. The marker and the seed never go in git.
+rehearsal.json
+rehearsal-out/
+rehearsal-*-out/
+
+# Qbit node data
+.qbit/
+qbit-data/
+/regtest/
+testnet4/
+
+# Local preview and generated files
+.grok/
+artifacts/
+screenshots/
+attachments/
+*.log
+
+# IDE & OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs & coverage
+logs/
+coverage/
+.nyc_output/
+
+# Vendor clones (optional)
+vendor/
+
+.node_modules.lock

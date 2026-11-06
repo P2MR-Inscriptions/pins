@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "allowJs": true,
+    "noEmit": true,
+    "types": ["node"],
+    "allowImportingTsExtensions": true
+  },
+  "include": [
+    "packages/indexer",
+    "packages/inscriber",
+    "packages/protocol",
+    "packages/sale",
+    "packages/collection/canonical.mjs",
+    "scripts/canonical-batch.ts",
+    "scripts/indexer-run.ts"
+  ]
+}

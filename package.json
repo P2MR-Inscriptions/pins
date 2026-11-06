@@ -1,0 +1,47 @@
+{
+  "name": "pins",
+  "private": true,
+  "type": "module",
+  "description": "P2MR Inscriptions (PINS) reference indexer and inscriber for Qbit. Marker pins. No collection is built in.",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --max-warnings 0",
+    "test": "node --test 'packages/**/*.test.mjs' && node --experimental-strip-types --test packages/indexer/address.test.ts packages/indexer/api.test.ts packages/indexer/page.test.ts packages/indexer/price.test.ts packages/indexer/follow.test.ts packages/indexer/pins.test.ts packages/inscriber/weight.test.ts packages/inscriber/broadcast.test.ts packages/inscriber/compact.test.ts packages/inscriber/pins.test.ts packages/sale/psbt.test.ts",
+    "indexer:serve": "node --experimental-strip-types scripts/indexer-run.ts",
+    "indexer:run": "node --experimental-strip-types scripts/indexer-run.ts",
+    "inscribe": "node --experimental-strip-types packages/inscriber/cli.ts",
+    "mainnet:preflight": "node --experimental-strip-types packages/inscriber/cli.ts preflight"
+  },
+  "dependencies": {
+    "@qbit-oss/pqc": "^0.1.1",
+    "@qbit-oss/protocol": "^0.1.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.20.0",
+    "@types/node": "^22.16.5",
+    "eslint": "^9.20.0",
+    "globals": "^15.15.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.56.1"
+  },
+  "version": "1.0.0",
+  "license": "Apache-2.0",
+  "keywords": [
+    "qbit",
+    "p2mr",
+    "pins",
+    "inscriptions"
+  ],
+  "engines": {
+    "node": ">=22 <23"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/P2MR-PINS-Protocol/pins.git"
+  },
+  "homepage": "https://github.com/P2MR-PINS-Protocol/pins#readme",
+  "bugs": {
+    "url": "https://github.com/P2MR-PINS-Protocol/pins/issues"
+  }
+}

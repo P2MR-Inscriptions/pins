@@ -7,11 +7,13 @@
  * Pass `--no-follow` to stop after that first catch-up. `--poll` is the gap in
  * seconds (default 15). Regtest is the default network. Testnet4 and mainnet
  * need --network and the same word typed as --confirm-network.
+ * Omitted --activation uses 161948 on mainnet and 0 on regtest and testnet4.
  * This process does not broadcast.
  */
 import { readFileSync } from "node:fs";
 import { startApi } from "../packages/indexer/api.ts";
 import type { CollectionProfile } from "../packages/indexer/collection.ts";
+import { ACTIVATION_HEIGHT } from "../packages/indexer/chains.ts";
 import { follow, httpRpc, pollChain } from "../packages/indexer/follow.ts";
 import { Store } from "../packages/indexer/store.ts";
 import { assertMarkerForNetwork, parseMarker } from "../packages/inscriber/marker.ts";
@@ -45,7 +47,7 @@ async function main(): Promise<void> {
   assertBroadcastNetwork(network, typeof flag["confirm-network"] === "string" ? flag["confirm-network"] : undefined);
   const port = flag.port === undefined ? 8787 : Number(flag.port);
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error("--port must be a number from 1 to 65535");
-  const activation = flag.activation === undefined ? 0 : Number(flag.activation);
+  const activation = flag.activation === undefined ? ACTIVATION_HEIGHT[network] : Number(flag.activation);
   if (!Number.isInteger(activation) || activation < 0) throw new Error("--activation must be a block height, or omitted");
   const marker = parseMarker(typeof flag.marker === "string" ? flag.marker : undefined);
   assertMarkerForNetwork(marker, network);

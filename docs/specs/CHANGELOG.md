@@ -3,6 +3,12 @@
 
 Dates are the day the change was recorded. The documents stay CC0-1.0.
 
+## 2026-11-06
+
+- PINS-2 §3. Mainnet `ACTIVATION_HEIGHT` is 161948, the block containing the first `pins` envelope
+  on mainnet. Regtest stays height 0. No testnet4 height is set. TV2-2, TV2-3, and TV2-4 remain
+  open.
+
 ## 2026-11-05
 
 - Status lines. They no longer point at one mainnet mint. No field, hash, or byte layout changed.

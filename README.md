@@ -78,11 +78,13 @@ npm run typecheck
 npm test
 ```
 
+Clone this repository and run it from that checkout. PINS runs TypeScript through Node's type stripping, which does not work from `node_modules`, so it is not published to npm.
+
 `npm run build` and `npm run typecheck` both run `tsc --noEmit`. The tools run under Node's type stripper. There is no emit step. The package is `private` so `npm publish` is refused. The npm name `pins` belongs to an unrelated package.
 
 ## Indexer
 
-`npm run indexer:serve` and `npm run indexer:run` are the same process: `scripts/indexer-run.ts`. It follows a local node and serves a read-only API on `127.0.0.1`. Regtest is the default. Testnet4 and mainnet need `--network` and the same word as `--confirm-network`. After the first catch-up it keeps polling. `--no-follow` stops after that catch-up. `--collection` is optional. With it, reserve checks use that profile. Without it, the indexer does not invent a collection.
+`npm run indexer:serve` and `npm run indexer:run` are the same process: `scripts/indexer-run.ts`. It follows a local node and serves a read-only API on `127.0.0.1`. Regtest is the default. Testnet4 and mainnet need `--network` and the same word as `--confirm-network`. On mainnet, `--activation` defaults to 161948. Regtest and testnet4 default to 0. Pass `--activation` to use another height. After the first catch-up it keeps polling. `--no-follow` stops after that catch-up. `--collection` is optional. With it, reserve checks use that profile. Without it, the indexer does not invent a collection.
 
 The RPC URL is your local node. The port below is an example. Put your own RPC user and password on the command line. Do not commit them.
 

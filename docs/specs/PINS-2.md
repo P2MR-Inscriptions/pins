@@ -5,7 +5,7 @@
 |---|---|
 | Standard | PINS-2 |
 | Title | Indexing |
-| Status | Draft. Regtest measurements are recorded. Vectors still marked TODO-regtest are open. |
+| Status | Mainnet `ACTIVATION_HEIGHT` is 161948. TV2-2, TV2-3, and TV2-4 are open. |
 | Type | Protocol, normative |
 | License | CC0-1.0 |
 | Requires | PINS-1, PINS-3 |
@@ -36,14 +36,17 @@ overlay derived exactly from Qbit's subsidy schedule.
 ## 3. Activation height
 
 - `ACTIVATION_HEIGHT` (mainnet) is the height of the block that contains inscription number 0. It is
-  fixed in this document when that block is mined, and never changes afterwards.
-  Value: **TODO-mainnet** (set at launch).
+  fixed in this document and does not change afterwards.
+  Value: **161948**, the block containing the first `pins` envelope on mainnet.
 - Envelopes in blocks below `ACTIVATION_HEIGHT` are not inscriptions (PINS-1 §7.1). This prevents
   anyone from claiming low numbers before the protocol is published.
+- When every block from an earlier start up to but not including this height contains no `pins`
+  envelope, that earlier start and a start at 161948 produce the same inscriptions, numbers, and
+  owners. The constant remains 161948, because that is the block that contains inscription number 0.
 - Test networks: testnet4 and regtest activation heights are separate constants. Regtest indexers
-  SHOULD use height 0.
-- The chain scan done on 2026-11-04 found no `pins` envelope on mainnet or testnet4 (see
-  `collision-check.md`).
+  SHOULD use height 0. This document does not set a testnet4 height.
+- The chain scan done on 2026-11-04 found no `pins` envelope on mainnet through height 160,950, or
+  on testnet4 through height 201,912 (see `collision-check.md`).
 
 ## 4. Part A: inscription numbering
 
@@ -154,6 +157,8 @@ the bitpoint location of PINS-3: the bitpoint `(outpoint, offset)` maps to exact
 | TV2-2 | Numbering across a reorg of depth 2 with inscriptions in both branches | TODO-regtest |
 | TV2-3 | Synthetic chain covering fees to coinbase, lost bits, `OP_RETURN`, unbound, opaque, duplicates, bad pointer | TODO-regtest |
 | TV2-4 | Indexer with a `-prunewitnesses` node stops and reports the gap | TODO-regtest |
+
+TV2-1 is computed. TV2-2, TV2-3, and TV2-4 are open. They stay TODO-regtest until they are produced on a private regtest node.
 
 ## 7. Copyright
 

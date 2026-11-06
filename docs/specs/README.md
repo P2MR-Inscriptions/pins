@@ -93,7 +93,7 @@ does not have its vector copied into this index. The raw regtest log is not part
 
 1. The concrete `unsold_address`. The field is specified. The address itself is chosen by the issuer and
    committed before close.
-2. `ACTIVATION_HEIGHT` is not a constant of this tree. The height of a mint does not by itself assign inscription number 0.
+2. A testnet4 `ACTIVATION_HEIGHT`. PINS-2 does not set one. Mainnet is 161948. Regtest indexers should use height 0.
 3. Qbit Wallet cannot sign `0x83` listings yet (PINS-6 §7); secondary sales need the interactive
    fallback until it can.
 

@@ -5,7 +5,7 @@
 // https://qbit.org/wallet
 // PINS sentences are from the pinned spec at commit 3e014f4ff156a35eea4b8613e37116fd124aa719:
 // docs/specs/PINS-1.md and docs/specs/PINS-3.md
-// Explorer package 1.0.0. This file does not change Qbit or PINS.
+// Explorer package 1.0.1. This file does not change Qbit or PINS.
 
 export const qbitLinks = [
   { href: "https://qbit.org", label: "qbit.org" },

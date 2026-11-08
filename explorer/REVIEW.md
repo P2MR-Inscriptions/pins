@@ -1,6 +1,6 @@
-# Explorer 1.0.0 validation notes
+# Explorer 1.0.1 validation notes
 
-Checked on 8 Nov 2026 with Node 22.23.4. The pages were also opened in Chrome 156 against the mock indexer. This package does not change the PINS protocol. The indexer pin remains `3e014f4ff156a35eea4b8613e37116fd124aa719`. Explorer 1.0.0 is not a production release.
+Checked on 8 Nov 2026 with Node 22.23.4. The pages were also opened in Chrome 156 against the mock indexer. This package does not change the PINS protocol. The indexer pin remains `3e014f4ff156a35eea4b8613e37116fd124aa719`. Explorer 1.0.1 is not a production release. The page checks below are from 1.0.0. Version 1.0.1 changes development startup only.
 
 The footer sentence is `PINS is an independent protocol.`
 

@@ -1,5 +1,5 @@
 // Local setup guide. Text only. No remote calls and no credentials.
-// Explorer package 1.0.0. The pinned indexer commit is unchanged.
+// Explorer package 1.0.1. The pinned indexer commit is unchanged.
 
 export const pinsSource = {
   href: "https://github.com/P2MR-PINS-Protocol/pins",
@@ -11,7 +11,7 @@ export const guideSections = [
     id: "prerequisites",
     title: "Prerequisites",
     blocks: [
-      { kind: "p", text: "This guide is for explorer 1.0.0.\nThat number is this package.\nIt is not a PINS protocol version." },
+      { kind: "p", text: "This guide is for explorer 1.0.1.\nThat number is this package.\nIt is not a PINS protocol version." },
       { kind: "p", text: "Open a terminal in the directory that contains package.json.\nRun every command below from that directory.\nDo not install this explorer as a global npm package." },
       { kind: "p", text: "Use Node.js 22.12 or newer, and older than 23.\nCheck with node -v.\ngit and curl must be on the command path.\nnpm run setup uses git to fetch the pinned indexer.\nThe indexer process uses curl for node RPC." },
       { kind: "p", text: "A real index needs a local Qbit node that has finished sync.\nThe pinned indexer reads the block, including its witness scripts.\nIf those scripts are missing, it stops with “witness pruned” and refuses that transaction.\nStart the node the way you already run Qbit Core.\nThis explorer does not start the node." },

@@ -64,7 +64,11 @@ async function main(): Promise<void> {
     profile = loaded.parseCollectionProfile(parsed);
   }
   const store = new Store(text(flag, "db"), { network, marker, schema, profile });
-  const rpc = httpRpc(text(flag, "rpc"), text(flag, "rpc-user"), text(flag, "rpc-password"));
+  const rpcUser = typeof flag["rpc-user"] === "string" && flag["rpc-user"].length > 0 ? flag["rpc-user"] : process.env.QBIT_RPC_USER;
+  const rpcPassword = typeof flag["rpc-password"] === "string" && flag["rpc-password"].length > 0 ? flag["rpc-password"] : process.env.QBIT_RPC_PASSWORD;
+  if (!rpcUser) throw new Error("missing --rpc-user (or QBIT_RPC_USER)");
+  if (!rpcPassword) throw new Error("missing --rpc-password (or QBIT_RPC_PASSWORD)");
+  const rpc = httpRpc(text(flag, "rpc"), rpcUser, rpcPassword);
   const synced = await follow(store, rpc, activation, network);
   const api = await startApi(store, port, network);
   // Follow is the default. `--no-follow` keeps today's one-shot catch-up and still serves the API.

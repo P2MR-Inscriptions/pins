@@ -7,7 +7,7 @@
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0",
-    "test": "node --test 'packages/**/*.test.mjs' && node --experimental-strip-types --test packages/indexer/address.test.ts packages/indexer/api.test.ts packages/indexer/page.test.ts packages/indexer/price.test.ts packages/indexer/follow.test.ts packages/indexer/pins.test.ts packages/inscriber/weight.test.ts packages/inscriber/broadcast.test.ts packages/inscriber/compact.test.ts packages/inscriber/pins.test.ts packages/sale/psbt.test.ts",
+    "test": "node --test 'packages/**/*.test.mjs' && node --experimental-strip-types --test 'packages/**/*.test.ts'",
     "indexer:serve": "node --experimental-strip-types scripts/indexer-run.ts",
     "indexer:run": "node --experimental-strip-types scripts/indexer-run.ts",
     "inscribe": "node --experimental-strip-types packages/inscriber/cli.ts",

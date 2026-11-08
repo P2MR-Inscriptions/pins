@@ -118,7 +118,10 @@ Resident memory moved from 82 MB to 201 MB.
 ## Sync
 
 `follow` in `packages/indexer/follow.ts` reads `getblock` verbosity 3 and catches up to the
-current tip. It follows regtest unless the caller names `testnet4` or `mainnet`, and the node's
+current tip. A parent confirmed in an earlier block is loaded with `getrawtransaction`, which
+needs the node's transaction index. Qbit Core v1.0.0 documents that as `-txindex` (default off).
+Do not prune blocks or witnesses. An output created earlier in the same block is read from that
+block. Each of those calls is synchronous, so the API does not answer while one is in progress. It follows regtest unless the caller names `testnet4` or `mainnet`, and the node's
 `chain` must be `regtest`, `testnet4`, or `main`. `npm run indexer:serve` (the same process as
 `npm run indexer:run`) is that caller for an operator. After the first catch-up it keeps polling
 `getblockcount` and `getbestblockhash` (default every 15 seconds, `--poll` to change it). A new

@@ -24,7 +24,7 @@ export type RpcBlock = {
 };
 
 type Parsed = {
-  inputs: { coinbase: boolean; prevTxid?: string; prevVout?: number; witness: Uint8Array[] }[];
+  inputs: { coinbase: boolean; prevTxid?: string; prevVout?: number; sequence: number; witness: Uint8Array[] }[];
   outputs: { value: bigint; script: Uint8Array }[];
 };
 
@@ -51,12 +51,14 @@ export function parseTransaction(raw: Uint8Array): Parsed {
     if (script.next + script.value > raw.length) throw new Error("transaction is truncated");
     offset = script.next + script.value;
     if (offset + 4 > raw.length) throw new Error("transaction is truncated");
+    const sequence = new DataView(raw.buffer, raw.byteOffset + offset, 4).getUint32(0, true);
     offset += 4;
     const coinbase = vout === 0xffffffff;
     vins.push({
       coinbase,
       prevTxid: coinbase ? undefined : Buffer.from(prev).reverse().toString("hex"),
       prevVout: coinbase ? undefined : vout,
+      sequence,
       witness: [],
     });
   }

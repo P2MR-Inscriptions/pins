@@ -23,7 +23,9 @@ Four mint commands. Only `plan` and `broadcast` touch a network. `price` is also
 3. `sign` runs offline. It checks the Merkle root against
    the root in `--collection`, checks every reveal
    weight, checks postage, recomputes the reserve from the keyfile, refuses a reserve the indexer would not reproduce, and only then signs.
-   `sign` refuses an RPC URL.
+   It also requires `--creator`, `--sale`, `--change`, and `--utxo`. Those are the same
+   three addresses and the same funding file passed to `plan`. They are not read from
+   the plan. Copying them out of the plan does not check anything. `sign` refuses an RPC URL.
 4. `broadcast` runs online. It sends the fan-out and waits for one confirmation.
    With `--mine` (regtest only) it then sends all 17 reveals before mining any of them.
    They sit in the mempool together, and a block holds at most five. `prioritisetransaction`
@@ -57,10 +59,12 @@ node --experimental-strip-types packages/inscriber/cli.ts price --pub issuer.key
 
 `--creator`, `--sale`, and `--change` are Reserve, Sale, and Change. The funding address is the issuer address from `address`. Revenue is a fifth wallet. It receives buyer payments and is not a flag on `plan` or `preflight`. Do not pass it as `--sale` or as the funding address.
 
+`sign` checks each unsigned raw transaction against `--creator`, `--sale`, and `--change`, and checks the fan-out input against `--utxo`. The address strings inside the plan are not a second source. The reveal control block must be a valid P2MR path from the reveal leaf to the commit root. The fan-out control block must match the issuer recovery leaf. A plan whose addresses or funding outpoint were replaced is refused while those four inputs stay the ones you passed to `plan`. `sign` does not accept a plan that omits them. A library call to `signPlan` requires the same `SignExpectations` object. There is no default that reads the plan.
+
 `--dry-run` on `plan` or `sign` prints the summary and does not write the output file.
 
-The passphrase is read from the terminal. Tests may set `PINS_KEY_PASSPHRASE`. Do not set
-that variable for a real key. The tool does not print the passphrase or the secret bytes.
+The passphrase is read from the terminal with echo off. Tests may set `PINS_KEY_PASSPHRASE`. Do not set
+that variable for a real key: other processes of the same user can see it. The tool does not print the passphrase or the secret bytes. A new key file is created with mode 0600 and is not overwritten if that path already exists.
 
 `utxo.json` is one object: `txid`, `vout`, `value` (bits, as a decimal string), and
 `script` (hex). The output must be the issuer key's own P2MR address.

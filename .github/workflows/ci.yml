@@ -28,3 +28,20 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+
+  explorer:
+    name: Explorer typecheck and test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: explorer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.12"
+          cache: npm
+          cache-dependency-path: explorer/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test

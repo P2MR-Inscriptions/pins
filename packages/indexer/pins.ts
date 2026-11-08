@@ -89,7 +89,7 @@ function readPointer(value: Uint8Array): { ok: true; n: bigint } | { ok: false }
 export class Indexer {
   readonly network: "regtest" | "testnet4" | "mainnet";
   readonly marker: Uint8Array;
-  /** Field-5 schema that wins over the JSON body. Launch value is `pins-collection/1`. */
+  /** Field-5 schema. The JSON body is not a genesis parameter. Launch value is `pins-collection/1`. */
   readonly collectionSchema: string;
   /**
    * Price schema derived from the collection schema. Launch is `pins-price/1`.

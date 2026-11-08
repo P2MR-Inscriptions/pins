@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { applyPatchSeries, patchState } from "../scripts/setup-indexer.ts";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const patches = ["patches/0001-indexer-genesis-flag.patch", "patches/0002-rpc-credentials-off-argv.patch", "patches/0005-output-identity.patch"].map((patch) => join(root, patch));
+const patches = ["patches/0001-indexer-genesis-flag.patch", "patches/0002-rpc-credentials-off-argv.patch", "patches/0005-output-identity.patch", "patches/0006-parser-bounds.patch", "patches/0007-genesis-auth.patch"].map((patch) => join(root, patch));
 
 function freshTree(): string {
   const tmp = mkdtempSync(join(tmpdir(), "pins-patch-"));
@@ -44,6 +44,9 @@ test("patches apply in order, resume after the first, and do not reset a local e
     assert.match(store, /created twice in block/);
     assert.equal(store.includes("INSERT OR IGNORE INTO outputs"), false);
     assert.match(readFileSync(join(tmp, "packages/indexer/collection.ts"), "utf8"), /indexer\.genesisId && item\.id !== indexer\.genesisId/);
+    assert.match(readFileSync(join(tmp, "packages/indexer/collection.ts"), "utf8"), /merkleOfLeafList/);
+    assert.match(readFileSync(join(tmp, "packages/indexer/cbor.ts"), "utf8"), /CBOR length exceeds data/);
+    assert.match(readFileSync(join(tmp, "packages/inscriber/script.ts"), "utf8"), /scale \*= 256/);
     const run = spawnSync(process.execPath, ["--experimental-strip-types", "--test", "packages/indexer/rpc-auth.test.ts"], { cwd: tmp, encoding: "utf8" });
     assert.equal(run.status, 0, `${run.stdout}\n${run.stderr}`);
   } finally {

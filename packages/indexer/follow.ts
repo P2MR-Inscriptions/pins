@@ -6,12 +6,13 @@
  * The indexer disconnects back to the fork and applies the new blocks.
  */
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { hexToBytes } from "@qbit-oss/protocol";
 import { parseTransaction, toChainBlock, type RpcBlock } from "./chain.ts";
 import { rpcChainName, type FollowNetwork } from "./chains.ts";
+import { curlRpcInvocation, redactSecrets } from "./rpc-curl.ts";
 import { Store } from "./store.ts";
 
 export type Rpc = {
@@ -21,16 +22,29 @@ export type Rpc = {
 type ChainInfo = { chain: string; blocks: number; bestblockhash: string };
 
 export async function rpcCall(url: string, user: string, password: string, method: string, params: unknown[] = []): Promise<unknown> {
-  const file = join(mkdtempSync(join(tmpdir(), "pins-rpc-")), "body.json");
-  writeFileSync(file, JSON.stringify({ jsonrpc: "1.0", id: "indexer", method, params }));
-  const run = spawnSync("curl", ["-sS", "-m", "180", "-u", `${user}:${password}`, "-H", "content-type: application/json", "--data-binary", `@${file}`, url], {
-    encoding: "utf8",
-    maxBuffer: 64 * 1024 * 1024,
-  });
-  if (run.status !== 0 || !run.stdout) throw new Error(`${method} failed: ${run.stderr || run.stdout || "no response"}`);
-  const body = JSON.parse(run.stdout) as { result: unknown; error: { message: string } | null };
-  if (body.error) throw new Error(`${method} failed: ${body.error.message}`);
-  return body.result;
+  const dir = mkdtempSync(join(tmpdir(), "pins-rpc-"));
+  const file = join(dir, "body.json");
+  try {
+    writeFileSync(file, JSON.stringify({ jsonrpc: "1.0", id: "indexer", method, params }), { mode: 0o600 });
+    const invocation = curlRpcInvocation(url, user, password, file);
+    const run = spawnSync("curl", invocation.args, {
+      input: invocation.input,
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+    });
+    const failed = redactSecrets(run.stderr || run.error?.message || run.stdout || "no response", [user, password]);
+    if (run.error || run.status !== 0 || !run.stdout) throw new Error(`${method} failed: ${failed}`);
+    let body: { result: unknown; error: { message: string } | null };
+    try {
+      body = JSON.parse(run.stdout) as { result: unknown; error: { message: string } | null };
+    } catch {
+      throw new Error(`${method} failed: response was not JSON`);
+    }
+    if (body.error) throw new Error(`${method} failed: ${redactSecrets(body.error.message || "RPC error", [user, password])}`);
+    return body.result;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 }
 
 export function httpRpc(url: string, user: string, password: string): Rpc {
@@ -71,10 +85,15 @@ export async function follow(store: Store, rpc: Rpc, activationHeight = 0, netwo
     if (next > height) break;
     const hash = await rpc.call<string>("getblockhash", [next]);
     const block = await rpc.call<RpcBlock>("getblock", [hash, 3]);
+    // An output created earlier in this block is not a pre-activation output.
+    // Saving it here would collide with the commit of that same outpoint.
+    // toChainBlock reads it from the block as it walks the transactions.
+    const createdHere = new Set(block.tx.map((item) => item.txid));
     for (const tx of block.tx) {
       const parsed = parseTransaction(hexToBytes(tx.hex));
       for (const input of parsed.inputs) {
         if (input.coinbase || !input.prevTxid || input.prevVout === undefined) continue;
+        if (createdHere.has(input.prevTxid)) continue;
         if (store.outputValue(input.prevTxid, input.prevVout) !== undefined) continue;
         const prev = await rpc.call<{ hex: string }>("getrawtransaction", [input.prevTxid, true]);
         const parent = parseTransaction(hexToBytes(prev.hex));

@@ -1,12 +1,12 @@
-# Flatbits explorer
+# PINS Explorer
 
-A local, read-only explorer for the Flatbits collection on PINS. It listens on loopback. It does not sign, broadcast, or open a public port.
+A local, read-only explorer for PINS. It listens on loopback. It does not sign, broadcast, or open a public port. A manifest in `config/` can feature one collection. Flatbits is that configuration, not a separate protocol.
 
 PINS is an independent protocol.
 
 ## Requirements
 
-Node.js 22.12 or newer, and older than 23. `git` and `npm` are used only to fetch the pinned indexer. A synced Qbit node with RPC on loopback is required for a real index. The mock UI does not need one.
+Node.js 22.12 or newer, and older than 23. `git` fetches the pinned indexer during setup. `npm` installs this package's tools and, during setup, the indexer's tools. A synced Qbit node with RPC on loopback is required for a real index. The mock UI does not need one.
 
 ## Fresh install
 

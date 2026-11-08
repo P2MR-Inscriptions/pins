@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <p align="center">
-  <img src="docs/assets/pins-avatar.svg" alt="PINS" width="200">
+  <img src="docs/assets/pins-avatar.png" alt="PINS" width="100">
 </p>
 
 # PINS

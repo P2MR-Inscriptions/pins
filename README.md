@@ -19,6 +19,10 @@ The specification is [PINS-1 through PINS-6](docs/specs/README.md). Those docume
 
 This repository is the protocol and the reference indexer and inscriber. A collection's name, Merkle root, reserve groups, and zip are not defaults here. Pass them with `--collection` and `--zip`.
 
+## Explorer
+
+A local read-only explorer is in [`explorer/`](explorer/README.md). It is Explorer 1.0.0. It does not change this protocol. Run its commands from `explorer/`, not from the repository root. `npm run setup` there fetches commit `3e014f4ff156a35eea4b8613e37116fd124aa719` into `explorer/vendor/pins` and applies the patches in that directory. It does not use this checkout as the indexer. Root `npm run lint` ignores `explorer/` so the protocol check is unchanged. Check the explorer with its own `npm run typecheck` and `npm test` from that directory.
+
 ## Network
 
 PINS is built on [Qbit](https://qbit.org). Qbit is a post-quantum peer-to-peer network. The asset is QBT. The supply is capped at 210 million and is issued only by mining. There is no premine. Addresses are P2MR, and a spend is signed with SLH-DSA in Qbit Wallet. The node and the wallet are the Qbit project's.

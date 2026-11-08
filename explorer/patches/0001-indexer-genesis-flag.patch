@@ -1,0 +1,68 @@
+diff --git a/packages/indexer/collection.ts b/packages/indexer/collection.ts
+index f83eebe..1b05b2f 100644
+--- a/packages/indexer/collection.ts
++++ b/packages/indexer/collection.ts
+@@ -237,6 +237,7 @@ function genesisOf(indexer: Indexer): Genesis | null {
+     .filter((item) => item.contentType === "application/json")
+     .sort((left, right) => left.createdHeight - right.createdHeight || left.createdIndex - right.createdIndex || left.n - right.n);
+   for (const item of found) {
++    if (indexer.genesisId && item.id !== indexer.genesisId) continue;
+     let parsed: Record<string, unknown>;
+     try {
+       parsed = JSON.parse(new TextDecoder().decode(item.body)) as Record<string, unknown>;
+diff --git a/packages/indexer/pins.ts b/packages/indexer/pins.ts
+index bdd5f3a..b7317d0 100644
+--- a/packages/indexer/pins.ts
++++ b/packages/indexer/pins.ts
+@@ -96,14 +96,17 @@ export class Indexer {
+    * A rehearsal schema `c/1` derives `p/1`, the same stand-in `inscribe price --schema` writes.
+    */
+   readonly priceSchema: string;
++  /** When set, the collection view only accepts the inscription with this id as its genesis. */
++  readonly genesisId: string | null;
+   readonly inscriptions = new Map<string, Inscription>();
+   private readonly held = new Map<string, Held[]>();
+   private nextNumber = 0;
+   private height = 0;
+   private readonly undo: UndoEntry[] = [];
+ 
+-  constructor(network: "regtest" | "testnet4" | "mainnet" = "regtest", options: { marker?: Uint8Array; schema?: string } = {}) {
++  constructor(network: "regtest" | "testnet4" | "mainnet" = "regtest", options: { marker?: Uint8Array; schema?: string; genesisId?: string | null } = {}) {
+     this.network = network;
++    this.genesisId = options.genesisId ?? null;
+     this.marker = options.marker ?? MARKER;
+     this.collectionSchema = options.schema ?? LAUNCH_COLLECTION_SCHEMA;
+     this.priceSchema = priceSchemaFor(this.collectionSchema);
+diff --git a/packages/indexer/store.ts b/packages/indexer/store.ts
+index 99bee0e..f17ad52 100644
+--- a/packages/indexer/store.ts
++++ b/packages/indexer/store.ts
+@@ -107,8 +107,8 @@ export class Store {
+   readonly profile: CollectionProfile | null;
+   private readonly db: DatabaseSync;
+ 
+-  constructor(path: string, options: { undoDepth?: number; network?: "regtest" | "testnet4" | "mainnet"; marker?: Uint8Array; schema?: string; profile?: CollectionProfile | null } = {}) {
+-    this.indexer = new Indexer(options.network ?? "regtest", { marker: options.marker, schema: options.schema });
++  constructor(path: string, options: { undoDepth?: number; network?: "regtest" | "testnet4" | "mainnet"; marker?: Uint8Array; schema?: string; profile?: CollectionProfile | null; genesisId?: string | null } = {}) {
++    this.indexer = new Indexer(options.network ?? "regtest", { marker: options.marker, schema: options.schema, genesisId: options.genesisId });
+     this.profile = options.profile ?? null;
+     this.undoDepth = options.undoDepth ?? 100;
+     if (!Number.isInteger(this.undoDepth) || this.undoDepth < 1) throw new Error("undo depth must be a positive integer");
+diff --git a/scripts/indexer-run.ts b/scripts/indexer-run.ts
+index 51f4a83..819ee5e 100644
+--- a/scripts/indexer-run.ts
++++ b/scripts/indexer-run.ts
+@@ -63,7 +63,12 @@ async function main(): Promise<void> {
+     const loaded = await import(specifier) as { parseCollectionProfile: (value: unknown) => CollectionProfile };
+     profile = loaded.parseCollectionProfile(parsed);
+   }
+-  const store = new Store(text(flag, "db"), { network, marker, schema, profile });
++  let genesisId: string | null = null;
++  if (flag.genesis !== undefined) {
++    if (typeof flag.genesis !== "string" || !/^[0-9a-f]{64}i\d+$/.test(flag.genesis)) throw new Error("--genesis must be an inscription id: 64 hex characters, i, and the index");
++    genesisId = flag.genesis;
++  }
++  const store = new Store(text(flag, "db"), { network, marker, schema, profile, genesisId });
+   const rpc = httpRpc(text(flag, "rpc"), text(flag, "rpc-user"), text(flag, "rpc-password"));
+   const synced = await follow(store, rpc, activation, network);
+   const api = await startApi(store, port, network);

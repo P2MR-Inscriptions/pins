@@ -1,0 +1,250 @@
+--- a/packages/indexer/follow.ts
++++ b/packages/indexer/follow.ts
+@@ -77,10 +77,14 @@
+     if (next > height) break;
+     const hash = await rpc.call<string>("getblockhash", [next]);
+     const block = await rpc.call<RpcBlock>("getblock", [hash, 3]);
++    // A parent created earlier in this same block is not a pre-activation output.
++    // Recording it now would collide with the block commit, which stores that outpoint.
++    const createdHere = new Set(block.tx.map((item) => item.txid));
+     for (const tx of block.tx) {
+       const parsed = parseTransaction(hexToBytes(tx.hex));
+       for (const input of parsed.inputs) {
+         if (input.coinbase || !input.prevTxid || input.prevVout === undefined) continue;
++        if (createdHere.has(input.prevTxid)) continue;
+         if (store.outputValue(input.prevTxid, input.prevVout) !== undefined) continue;
+         const prev = await rpc.call<{ hex: string }>("getrawtransaction", [input.prevTxid, true]);
+         const parent = parseTransaction(hexToBytes(prev.hex));
+--- a/packages/indexer/store.ts
++++ b/packages/indexer/store.ts
+@@ -143,16 +143,28 @@
+     return row?.hash ?? null;
+   }
+ 
+-  /** Remember an output that was created before the activation height. */
++  /**
++   * Remember an output created before the activation height.
++   * The same value may be seen again. A different value is an error, not a skipped insert.
++   */
+   saveOutput(txid: string, vout: number, value: bigint): void {
+-    this.db.prepare("INSERT OR IGNORE INTO outputs (txid, vout, value, height) VALUES (?, ?, ?, -1)").run(txid, vout, value.toString());
++    const row = this.outputRow(txid, vout);
++    if (!row) {
++      this.db.prepare("INSERT INTO outputs (txid, vout, value, height) VALUES (?, ?, ?, -1)").run(txid, vout, value.toString());
++      return;
++    }
++    if (BigInt(row.value) !== value) throw new Error(`output ${txid}:${vout} is already stored at height ${row.height} with a different value`);
+   }
+ 
+   outputValue(txid: string, vout: number): bigint | undefined {
+-    const row = this.db.prepare("SELECT value FROM outputs WHERE txid = ? AND vout = ?").get(txid, vout) as { value: string } | undefined;
++    const row = this.outputRow(txid, vout);
+     return row ? BigInt(row.value) : undefined;
+   }
+ 
++  private outputRow(txid: string, vout: number): { value: string; height: number } | undefined {
++    return this.db.prepare("SELECT value, height FROM outputs WHERE txid = ? AND vout = ?").get(txid, vout) as { value: string; height: number } | undefined;
++  }
++
+   /** Apply one block that the caller already checked is the next height. */
+   commit(block: ChainBlock): string {
+     const tip = this.tip();
+@@ -170,9 +182,28 @@
+         digest,
+       );
+       this.db.prepare("INSERT INTO undo (height, payload) VALUES (?, ?)").run(block.height, JSON.stringify(freezeUndo(undo)));
+-      const output = this.db.prepare("INSERT INTO outputs (txid, vout, value, height) VALUES (?, ?, ?, ?)");
++      const insertOutput = this.db.prepare("INSERT INTO outputs (txid, vout, value, height) VALUES (?, ?, ?, ?)");
++      const promoteOutput = this.db.prepare("UPDATE outputs SET height = ? WHERE txid = ? AND vout = ? AND height = -1 AND value = ?");
+       for (const tx of block.txs) {
+-        tx.outputs.forEach((entry, vout) => output.run(tx.txid, vout, entry.value.toString(), block.height));
++        tx.outputs.forEach((entry, vout) => {
++          const value = entry.value.toString();
++          const row = this.outputRow(tx.txid, vout);
++          if (!row) {
++            insertOutput.run(tx.txid, vout, value, block.height);
++            return;
++          }
++          // A same-block spend can have stored this outpoint early, at height -1.
++          // It belongs to this block. A second creator, or a different value, does not.
++          const height = Number(row.height);
++          if (height === -1) {
++            if (row.value !== value) throw new Error(`output ${tx.txid}:${vout} is already stored at height -1 with a different value`);
++            const updated = promoteOutput.run(block.height, tx.txid, vout, value);
++            if (updated.changes !== 1) throw new Error(`output ${tx.txid}:${vout} could not be recorded at height ${block.height}`);
++            return;
++          }
++          if (height === block.height) throw new Error(`output ${tx.txid}:${vout} is created twice in block ${block.height}`);
++          throw new Error(`output ${tx.txid}:${vout} is already stored at height ${height}`);
++        });
+       }
+       const changed = new Set([...undo.created, ...undo.prior.map((row) => row.id)]);
+       this.writeInscriptions(changed);
+--- a/packages/indexer/output-identity.test.ts
++++ b/packages/indexer/output-identity.test.ts
+@@ -0,0 +1,165 @@
++// SPDX-License-Identifier: Apache-2.0
++import assert from "node:assert/strict";
++import { mkdtempSync } from "node:fs";
++import { tmpdir } from "node:os";
++import { join } from "node:path";
++import { test } from "node:test";
++import { follow, type Rpc } from "./follow.ts";
++import { Store } from "./store.ts";
++import type { ChainBlock, ChainTx } from "./pins.ts";
++
++const SCRIPT = Uint8Array.of(0x51);
++const txidA = "aa".repeat(32);
++const txidB = "bb".repeat(32);
++const txidParent = "cc".repeat(32);
++
++function tx(txid: string, outputs: bigint[], input?: { prevTxid: string; prevVout: number; value: bigint }): ChainTx {
++  return {
++    txid,
++    inputs: input
++      ? [{ prevTxid: input.prevTxid, prevVout: input.prevVout, value: input.value }]
++      : [{ coinbase: true, value: 0n }],
++    outputs: outputs.map((value) => ({ value, script: SCRIPT })),
++  };
++}
++
++function block(height: number, txs: ChainTx[]): ChainBlock {
++  return { hash: `h${height}`, height, subsidy: 0n, txs };
++}
++
++function open(name: string): { store: Store; path: string } {
++  const path = join(mkdtempSync(join(tmpdir(), "pins-out-")), name);
++  return { store: new Store(path, { network: "regtest" }), path };
++}
++
++function heightOf(store: Store, txid: string, vout: number): number {
++  const row = (store as unknown as { outputRow(txid: string, vout: number): { height: number } | undefined }).outputRow(txid, vout);
++  assert.ok(row);
++  return Number(row.height);
++}
++
++test("a same-block spend is stored once, at the creating block", () => {
++  const { store } = open("same.sqlite");
++  store.commit(block(0, [
++    tx("coin", [50n]),
++    tx(txidA, [5n]),
++    tx(txidB, [5n], { prevTxid: txidA, prevVout: 0, value: 5n }),
++  ]));
++  assert.equal(store.outputValue(txidA, 0), 5n);
++  assert.equal(heightOf(store, txidA, 0), 0);
++  assert.equal(store.tip()?.height, 0);
++  store.close();
++});
++
++test("a restarted commit promotes a height -1 placeholder instead of inserting again", () => {
++  const { store, path } = open("resume.sqlite");
++  store.saveOutput(txidA, 0, 5n);
++  assert.equal(heightOf(store, txidA, 0), -1);
++  store.commit(block(0, [tx("coin", [50n]), tx(txidA, [5n])]));
++  assert.equal(heightOf(store, txidA, 0), 0);
++  store.close();
++  const again = new Store(path, { network: "regtest" });
++  assert.equal(again.tip()?.height, 0);
++  assert.equal(again.outputValue(txidA, 0), 5n);
++  assert.throws(() => again.commit(block(0, [tx("coin", [50n]), tx(txidA, [5n])])), /refusing block 0/);
++  assert.equal(again.tip()?.height, 0);
++  again.close();
++});
++
++test("a different stored value is not overwritten and does not commit the block", () => {
++  const { store } = open("mismatch.sqlite");
++  store.saveOutput(txidA, 0, 7n);
++  assert.throws(() => store.commit(block(0, [tx("coin", [50n]), tx(txidA, [5n])])), /different value/);
++  assert.equal(store.tip(), null);
++  assert.equal(store.outputValue(txidA, 0), 7n);
++  assert.equal(heightOf(store, txidA, 0), -1);
++  store.close();
++});
++
++test("two creators of one outpoint roll the block back", () => {
++  const { store } = open("dup.sqlite");
++  assert.throws(() => store.commit(block(0, [tx("coin", [50n]), tx(txidA, [5n]), tx(txidA, [5n])])), /created twice in block 0/);
++  assert.equal(store.tip(), null);
++  assert.equal(store.outputValue(txidA, 0), undefined);
++  store.close();
++});
++
++test("disconnect removes the block output and keeps a pre-activation parent", () => {
++  const { store } = open("undo.sqlite");
++  store.saveOutput(txidParent, 0, 9n);
++  store.commit(block(0, [
++    tx("coin", [50n]),
++    tx(txidB, [4n], { prevTxid: txidParent, prevVout: 0, value: 9n }),
++  ]));
++  assert.equal(heightOf(store, txidParent, 0), -1);
++  assert.equal(heightOf(store, txidB, 0), 0);
++  store.disconnect();
++  assert.equal(store.tip(), null);
++  assert.equal(store.outputValue(txidB, 0), undefined);
++  assert.equal(heightOf(store, txidParent, 0), -1);
++  store.close();
++});
++
++function le(value: number, bytes: number): string {
++  let out = "";
++  let rest = value;
++  for (let i = 0; i < bytes; i += 1) {
++    out += (rest & 0xff).toString(16).padStart(2, "0");
++    rest = Math.floor(rest / 256);
++  }
++  return out;
++}
++
++/** Minimal legacy transaction. An all-aa txid is unchanged when reversed. */
++function rawTx(input: { coinbase: true } | { txid: string; vout: number }, value: number): string {
++  const prev = "coinbase" in input ? "00".repeat(32) : input.txid;
++  const vout = "coinbase" in input ? "ffffffff" : le(input.vout, 4);
++  return `0100000001${prev}${vout}00ffffffff01${le(value, 8)}0000000000`;
++}
++
++test("follow promotes a same-block placeholder and does not fetch that parent", async () => {
++  const asked: string[] = [];
++  const hash = "11".repeat(32);
++  const rpc: Rpc = {
++    async call(method: string) {
++      if (method === "getblockchaininfo") return { chain: "regtest", blocks: 0, bestblockhash: hash };
++      if (method === "getblockcount") return 0;
++      if (method === "getblockhash") return hash;
++      if (method === "getrawtransaction") {
++        asked.push(method);
++        throw new Error("same-block parent must not be fetched");
++      }
++      if (method === "getblock") {
++        return {
++          hash,
++          height: 0,
++          tx: [
++            { txid: "33".repeat(32), hex: rawTx({ coinbase: true }, 50), vin: [{ coinbase: "00" }], vout: [] },
++            { txid: txidA, hex: rawTx({ coinbase: true }, 5), vin: [{ coinbase: "00" }], vout: [] },
++            { txid: txidB, hex: rawTx({ txid: txidA, vout: 0 }, 5), vin: [{ txid: txidA, vout: 0 }], vout: [] },
++          ],
++        };
++      }
++      throw new Error(method);
++    },
++  };
++  const { store } = open("follow.sqlite");
++  store.saveOutput(txidA, 0, 5n);
++  const synced = await follow(store, rpc, 0, "regtest");
++  assert.deepEqual(asked, []);
++  assert.equal(synced.height, 0);
++  assert.equal(heightOf(store, txidA, 0), 0);
++  const second = await follow(store, rpc, 0, "regtest");
++  assert.equal(second.height, 0);
++  assert.equal(heightOf(store, txidA, 0), 0);
++  store.close();
++});
++
++test("an outpoint already committed at an earlier height is not written again", () => {
++  const { store } = open("prior.sqlite");
++  store.commit(block(0, [tx("coin", [50n]), tx(txidA, [5n])]));
++  assert.throws(() => store.commit(block(1, [tx("c2", [50n]), tx(txidA, [5n])])), /already stored at height 0/);
++  assert.equal(store.tip()?.height, 0);
++  assert.equal(heightOf(store, txidA, 0), 0);
++  store.close();
++});

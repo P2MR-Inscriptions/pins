@@ -1,0 +1,7 @@
+PINS Explorer
+Copyright 2026 The PINS Explorer authors. Licensed under Apache-2.0 (see LICENSE).
+
+server/cbor.ts is an unmodified copy of packages/indexer/cbor.ts from
+https://github.com/P2MR-PINS-Protocol/pins (Apache-2.0, Copyright 2026 The PINS authors).
+
+PINS is an independent community protocol, not affiliated with Qbit or Qbit-Org.

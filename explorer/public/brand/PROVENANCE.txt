@@ -1,0 +1,18 @@
+PINS mark
+Source: https://github.com/P2MR-PINS-Protocol/pins/blob/main/docs/assets/pins-avatar.svg
+Local copy of that file, unmodified: public/brand/pins-avatar-official.svg
+The protocol asset README says this is the README mark and that its plate is #0b120d.
+There is no second official PINS logo in that repository.
+
+Rendered file: public/pins-avatar.svg
+Transformation, and nothing else:
+  1. Delete the one full-canvas plate: <rect width="1024" height="1024" fill="#0b120d"/>
+  2. Add viewBox="0 0 1024 1024" so the official width and height scale without stretching.
+The arc path, every foreground rectangle, the fill #1ab552, and the stroke are copied unchanged.
+No screenshot, no crop, and no redraw.
+
+Qbit wordmark
+Source: https://qbit.org/logo-full.svg
+Rendered file: public/qbit-logo-full.svg
+Copied unmodified. SHA-256 28978ec61a6f72fc55d18cf180a80fe357eecc3d4d617686f8f09d13f86e2de7
+The file has no background rectangle. viewBox is 0 0 736 320.

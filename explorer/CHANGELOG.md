@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1
+
+- `npm run dev` follows `MOCK_PORT` and `PORT`. The explorer reads the mock this command started.
+- If either port is already in use, the command exits with an error and does not leave that mock or explorer running.
+- Explorer package 1.0.1. The PINS protocol and the pinned indexer commit are unchanged.
+
 ## 1.0.0
 
 - Explorer package 1.0.0. The pinned PINS indexer commit is unchanged. This is not a protocol release.

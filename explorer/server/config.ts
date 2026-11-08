@@ -101,7 +101,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ExplorerConfig
     ratePerMinute: int(env, "RATE_PER_MINUTE", 240, 1, 100_000),
     maxConcurrency: int(env, "MAX_CONCURRENCY", 8, 1, 1000),
     maxInscriptions: int(env, "MAX_INSCRIPTIONS", 200_000, 1, 5_000_000),
-    version: "1.0.0",
+    version: "1.0.1",
   };
 }
 

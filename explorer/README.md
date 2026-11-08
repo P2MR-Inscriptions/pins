@@ -1,12 +1,12 @@
-# Flatbits explorer
+# PINS Explorer
 
-A local, read-only explorer for the Flatbits collection on PINS. It listens on loopback. It does not sign, broadcast, or open a public port.
+A local, read-only explorer for PINS. It listens on loopback. It does not sign, broadcast, or open a public port. A manifest in `config/` can feature one collection. Flatbits is that configuration, not a separate protocol.
 
 PINS is an independent protocol.
 
 ## Requirements
 
-Node.js 22.12 or newer, and older than 23. `git` and `npm` are used only to fetch the pinned indexer. A synced Qbit node with RPC on loopback is required for a real index. The mock UI does not need one.
+Node.js 22.12 or newer, and older than 23. `git` fetches the pinned indexer during setup. `npm` installs this package's tools and, during setup, the indexer's tools. A synced Qbit node with RPC on loopback is required for a real index. The mock UI does not need one.
 
 ## Fresh install
 
@@ -43,7 +43,13 @@ npm test
 npm run dev
 ```
 
-`npm run dev` serves synthetic data at http://127.0.0.1:8080 and shows a mock banner. `npm test` uses loopback fixtures only.
+`npm run dev` serves synthetic data and shows a mock banner. By default the mock listens on 127.0.0.1:8787 and the explorer on 127.0.0.1:8080. `MOCK_PORT` and `PORT` choose other ports. The explorer in that run reads `http://127.0.0.1:$MOCK_PORT` and does not keep a different indexer URL. If either port is already in use, the command stops with a nonzero status and does not attach to the process that holds the port.
+
+```bash
+MOCK_PORT=8788 PORT=8081 npm run dev
+```
+
+Ctrl+C stops the mock and the explorer that this command started. `npm test` uses loopback fixtures only.
 
 `indexer` starts that process on 127.0.0.1:8787. The explorer listens on 127.0.0.1:8080. Do not run `setup` again on a checkout that already indexes.
 
@@ -53,7 +59,7 @@ The genesis id is read from `config/manifest.flatbits.json`. It is collection co
 
 ## Limits
 
-Explorer 1.0.0 is this package only. It does not change the pinned indexer and it is not a production release. The page was checked with the mock indexer. A separate mainnet run of an earlier build reached height 165925 and 10002 inscriptions; this build does not repeat that check, and it does not decide whether all 10,000 Flatbits are authentic. Restarting an indexer database that already contains height `-1` placeholders is covered by the output-identity tests, not by a second pass over a live database. While the indexer is catching up, each RPC call is a blocking `spawnSync`, so its own HTTP server does not answer during that call. This is not a production release.
+Explorer 1.0.1 is this package only. It does not change the pinned indexer and it is not a production release. The page was checked with the mock indexer. A separate mainnet run of an earlier build reached height 165925 and 10002 inscriptions; this build does not repeat that check, and it does not decide whether all 10,000 Flatbits are authentic. Restarting an indexer database that already contains height `-1` placeholders is covered by the output-identity tests, not by a second pass over a live database. While the indexer is catching up, each RPC call is a blocking `spawnSync`, so its own HTTP server does not answer during that call. This is not a production release.
 
 The indexer still returns every inscription in one response, and this process keeps that snapshot in memory. The browser asks for one page of images, not the whole collection. One indexer process follows one genesis id.
 

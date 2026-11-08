@@ -1,6 +1,6 @@
 {
   "name": "flatbits-explorer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "description": "Read-only loopback explorer for the Flatbits collection on PINS.",
@@ -10,7 +10,7 @@
   },
   "scripts": {
     "start": "node --env-file-if-exists=.env --experimental-strip-types server/index.ts",
-    "dev": "node scripts/dev.mjs",
+    "dev": "node --experimental-strip-types scripts/dev.ts",
     "mock": "node --experimental-strip-types dev/mock-indexer.ts",
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test test/*.test.ts",

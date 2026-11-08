@@ -21,7 +21,7 @@ This repository is the protocol and the reference indexer and inscriber. A colle
 
 ## Explorer
 
-A local read-only explorer is in [`explorer/`](explorer/README.md). It is Explorer 1.0.0. It does not change this protocol. Run its commands from `explorer/`, not from the repository root. `npm run setup` there fetches commit `3e014f4ff156a35eea4b8613e37116fd124aa719` into `explorer/vendor/pins` and applies the patches in that directory. It does not use this checkout as the indexer. Root `npm run lint` ignores `explorer/` so the protocol check is unchanged. Check the explorer with its own `npm run typecheck` and `npm test` from that directory.
+A local read-only explorer is in [`explorer/`](explorer/README.md). It is Explorer 1.0.1. It does not change this protocol. Run its commands from `explorer/`, not from the repository root. `npm run setup` there fetches commit `3e014f4ff156a35eea4b8613e37116fd124aa719` into `explorer/vendor/pins` and applies the patches in that directory. It does not use this checkout as the indexer. Root `npm run lint` ignores `explorer/` so the protocol check is unchanged. Check the explorer with its own `npm run typecheck` and `npm test` from that directory.
 
 ## Network
 

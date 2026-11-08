@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const PIN = "3e014f4ff156a35eea4b8613e37116fd124aa719";
 const REMOTE = "https://github.com/P2MR-PINS-Protocol/pins.git";
-const PATCHES = ["patches/0001-indexer-genesis-flag.patch", "patches/0002-rpc-credentials-off-argv.patch", "patches/0005-output-identity.patch"];
+const PATCHES = ["patches/0001-indexer-genesis-flag.patch", "patches/0002-rpc-credentials-off-argv.patch", "patches/0005-output-identity.patch", "patches/0006-parser-bounds.patch", "patches/0007-genesis-auth.patch"];
 
 export type PatchState = "needed" | "applied" | "conflict";
 

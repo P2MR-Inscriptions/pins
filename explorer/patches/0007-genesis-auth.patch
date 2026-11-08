@@ -1,0 +1,203 @@
+diff --git a/packages/indexer/collection.ts b/packages/indexer/collection.ts
+index 1b05b2f..09931b4 100644
+--- a/packages/indexer/collection.ts
++++ b/packages/indexer/collection.ts
+@@ -6,7 +6,7 @@
+  * An online sale key is not read and not required.
+  */
+ import { createHash } from "node:crypto";
+-import { LAUNCH_PRICE_SCHEMA, priceBody } from "../inscriber/price.ts";
++import { LAUNCH_COLLECTION_SCHEMA, LAUNCH_PRICE_SCHEMA, priceBody } from "../inscriber/price.ts";
+ import { parsePrice, type PriceRecord } from "../inscriber/preflight.ts";
+ import { decodeCbor } from "./cbor.ts";
+ 
+@@ -73,17 +73,6 @@ function carriesPrice(record: Record<string, unknown> | null | undefined): boole
+   return Boolean(record && PRICE_KEYS.some((key) => record[key] !== undefined));
+ }
+ 
+-function collectionField(item: Inscription, schema: string): Record<string, unknown> | null {
+-  if (!item.metadata) return null;
+-  try {
+-    const decoded = decodeCbor(item.metadata) as Record<string, unknown>;
+-    if (decoded.schema !== schema) return null;
+-    return decoded;
+-  } catch {
+-    return null;
+-  }
+-}
+-
+ function readReserve(value: unknown): ReserveDecl {
+   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("genesis reserve must be an object");
+   const record = value as { groups?: unknown; extra?: unknown };
+@@ -232,42 +221,132 @@ function sha256(bytes: Uint8Array): Buffer {
+   return createHash("sha256").update(bytes).digest();
+ }
+ 
++const HEX32 = /^[0-9a-f]{64}$/;
++const LAUNCH_KEYS = ["schema", "name", "supply", "first", "name_prefix", "root", "issuer", "item_type", "sale_commitment"];
++const OTHER_KEYS = ["schema", "name", "supply", "first", "name_prefix", "root", "issuer", "item_type"];
++
++function chainOrder(left: Inscription, right: Inscription): number {
++  return left.createdHeight - right.createdHeight || left.createdIndex - right.createdIndex || left.n - right.n;
++}
++
++/** Fold 32-byte leaves the way PINS-5 §5.1 folds them. The body is the leaf list, not the tree. */
++function merkleOfLeafList(body: Uint8Array): string | null {
++  if (body.length === 0 || body.length % 32 !== 0) return null;
++  let level: Uint8Array[] = [];
++  for (let offset = 0; offset < body.length; offset += 32) level.push(body.subarray(offset, offset + 32));
++  while (level.length > 1) {
++    if (level.length % 2 === 1) level.push(level[level.length - 1]);
++    const next: Uint8Array[] = [];
++    for (let index = 0; index < level.length; index += 2) {
++      next.push(createHash("sha256").update(level[index]).update(level[index + 1]).digest());
++    }
++    level = next;
++  }
++  return Buffer.from(level[0]).toString("hex");
++}
++
++/**
++ * Genesis parameters come only from field 5. A JSON body, earlier or not, is not a source.
++ * `pins-collection/1` requires `sale_commitment`. Another schema may omit it: the regtest
++ * encoder does. The issuer text must be the reveal key.
++ */
+ function genesisOf(indexer: Indexer): Genesis | null {
+   const found = [...indexer.inscriptions.values()]
+     .filter((item) => item.contentType === "application/json")
+-    .sort((left, right) => left.createdHeight - right.createdHeight || left.createdIndex - right.createdIndex || left.n - right.n);
++    .sort(chainOrder);
+   for (const item of found) {
+     if (indexer.genesisId && item.id !== indexer.genesisId) continue;
+-    let parsed: Record<string, unknown>;
++    if (item.flags.includes("reinscription") || item.flags.includes("opaque") || !item.metadata) continue;
++    let field: Record<string, unknown>;
+     try {
+-      parsed = JSON.parse(new TextDecoder().decode(item.body)) as Record<string, unknown>;
++      const decoded = decodeCbor(item.metadata);
++      if (!decoded || typeof decoded !== "object" || Array.isArray(decoded)) continue;
++      field = decoded as Record<string, unknown>;
+     } catch {
+       continue;
+     }
+-    const field = collectionField(item, indexer.collectionSchema);
+-    const name = typeof field?.name === "string" ? field.name : parsed.name;
+-    const supply = typeof field?.supply === "number" ? field.supply : parsed.supply;
+-    const root = typeof field?.root === "string" ? field.root : parsed.root;
+-    const issuer = typeof field?.issuer === "string" ? field.issuer : parsed.issuer;
+-    if (typeof name !== "string" || typeof supply !== "number" || typeof issuer !== "string" || typeof root !== "string") continue;
+-    if (carriesPrice(field) || carriesPrice(parsed)) continue;
+-    const reserveSource = field?.reserve ?? parsed.reserve;
++    if (field.schema !== indexer.collectionSchema || carriesPrice(field)) continue;
++    const launch = indexer.collectionSchema === LAUNCH_COLLECTION_SCHEMA;
++    const keys = Object.keys(field);
++    const base = launch ? LAUNCH_KEYS : OTHER_KEYS;
++    const withoutReserve = keys.filter((key) => key !== "reserve");
++    if (withoutReserve.join(",") !== base.join(",")) continue;
++    if (field.reserve !== undefined && keys[keys.length - 1] !== "reserve") continue;
++    const { name, supply, first, root, issuer } = field;
++    const namePrefix = field.name_prefix;
++    const itemType = field.item_type;
++    if (typeof name !== "string" || name.length === 0) continue;
++    if (typeof supply !== "number" || !Number.isSafeInteger(supply) || supply < 1 || !Number.isSafeInteger(supply * 32)) continue;
++    if (typeof first !== "number" || !Number.isSafeInteger(first) || first < 0) continue;
++    if (typeof namePrefix !== "string" || typeof itemType !== "string" || itemType.length === 0) continue;
++    if (typeof root !== "string" || !HEX32.test(root)) continue;
++    if (typeof issuer !== "string" || !HEX32.test(issuer) || issuer !== item.leafIssuer) continue;
++    let saleCommitment = "";
++    if (launch || field.sale_commitment !== undefined) {
++      if (typeof field.sale_commitment !== "string" || !HEX32.test(field.sale_commitment)) continue;
++      saleCommitment = field.sale_commitment;
++    }
++    let reserve: ReserveDecl | undefined;
++    if (field.reserve !== undefined) {
++      try {
++        reserve = readReserve(field.reserve);
++      } catch {
++        continue;
++      }
++    }
+     return {
+       inscription: item,
+       name,
+       supply,
+-      first: typeof (field?.first ?? parsed.first) === "number" ? Number(field?.first ?? parsed.first) : 1,
+-      namePrefix: typeof (field?.name_prefix ?? parsed.name_prefix) === "string" ? String(field?.name_prefix ?? parsed.name_prefix) : "",
++      first,
++      namePrefix,
+       root,
+       issuer,
+-      itemType: typeof (field?.item_type ?? parsed.item_type) === "string" ? String(field?.item_type ?? parsed.item_type) : "image/png",
+-      saleCommitment: typeof (field?.sale_commitment ?? parsed.sale_commitment) === "string" ? String(field?.sale_commitment ?? parsed.sale_commitment) : "",
+-      reserve: reserveSource === undefined ? undefined : readReserve(reserveSource),
++      itemType,
++      saleCommitment,
++      reserve,
+     };
+   }
+   return null;
+ }
+ 
++/**
++ * The v1.0.0 inscriber writes the leaf list with no field 5. A list is accepted when
++ * it shares the genesis transaction and issuer, has `supply * 32` bytes, and those
++ * leaves fold to `root`. Field 5, when present, must be `pins-leaflist/1` with that
++ * root as 32 bytes. A wrong field 5 drops that candidate.
++ */
++function leafListOf(indexer: Indexer, genesis: Genesis): Inscription | undefined {
++  const want = genesis.supply * 32;
++  const candidates = [...indexer.inscriptions.values()]
++    .filter((item) => item.txid === genesis.inscription.txid
++      && item !== genesis.inscription
++      && item.contentType === "application/octet-stream"
++      && item.body.length === want
++      && item.leafIssuer === genesis.issuer
++      && !item.flags.includes("reinscription")
++      && !item.flags.includes("opaque"))
++    .sort(chainOrder);
++  for (const item of candidates) {
++    if (item.metadata) {
++      let decoded: Record<string, unknown>;
++      try {
++        const value = decodeCbor(item.metadata);
++        if (!value || typeof value !== "object" || Array.isArray(value)) continue;
++        decoded = value as Record<string, unknown>;
++      } catch {
++        continue;
++      }
++      if (Object.keys(decoded).join(",") !== "schema,root" || decoded.schema !== "pins-leaflist/1") continue;
++      const root = decoded.root;
++      if (!(root instanceof Uint8Array) || root.length !== 32 || Buffer.from(root).toString("hex") !== genesis.root) continue;
++    }
++    if (merkleOfLeafList(item.body) !== genesis.root) continue;
++    return item;
++  }
++  return undefined;
++}
++
+ function after(genesis: Genesis, item: Inscription): boolean {
+   if (item.createdHeight !== genesis.inscription.createdHeight) return item.createdHeight > genesis.inscription.createdHeight;
+   if (item.createdIndex !== genesis.inscription.createdIndex) return item.createdIndex > genesis.inscription.createdIndex;
+@@ -296,8 +375,7 @@ export async function collectionView(indexer: Indexer, cursor: ChainCursor, prof
+   const base = { sale: "waiting_for_wallet" as const, saleNote: SALE_NOTE };
+   const genesis = genesisOf(indexer);
+   if (!genesis) return { status: "absent", ...base };
+-  const leafList = [...indexer.inscriptions.values()].find((item) =>
+-    item.txid === genesis.inscription.txid && item.contentType === "application/octet-stream" && item.body.length === genesis.supply * 32);
++  const leafList = leafListOf(indexer, genesis);
+   const seed = [...indexer.inscriptions.values()].find((item) =>
+     item.contentType === "application/octet-stream" && item.body.length === 32 && sha256(item.body).toString("hex") === genesis.saleCommitment);
+   const claimed = new Map<number, Inscription>();
+diff --git a/packages/indexer/pins.ts b/packages/indexer/pins.ts
+index b7317d0..64f68b8 100644
+--- a/packages/indexer/pins.ts
++++ b/packages/indexer/pins.ts
+@@ -89,7 +89,7 @@ function readPointer(value: Uint8Array): { ok: true; n: bigint } | { ok: false }
+ export class Indexer {
+   readonly network: "regtest" | "testnet4" | "mainnet";
+   readonly marker: Uint8Array;
+-  /** Field-5 schema that wins over the JSON body. Launch value is `pins-collection/1`. */
++  /** Field-5 schema. The JSON body is not a genesis parameter. Launch value is `pins-collection/1`. */
+   readonly collectionSchema: string;
+   /**
+    * Price schema derived from the collection schema. Launch is `pins-price/1`.

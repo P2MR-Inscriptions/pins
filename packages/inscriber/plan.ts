@@ -82,7 +82,7 @@ export function buildPlan(input: {
   batches: { name: string; items: (RevealItem & { number: number })[] }[];
   reserve: Set<number>;
 }): MintPlan {
-  if (input.feeRate <= 0) throw new Error("fee rate must be positive");
+  if (!Number.isFinite(input.feeRate) || input.feeRate <= 0) throw new Error("fee rate must be a positive finite number");
   assertSeparateChange(input.creator, input.sale, input.change);
   const marker = input.marker ?? PINS_MARKER;
   assertMarkerForNetwork(marker, input.network);

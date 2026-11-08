@@ -6,6 +6,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { encodeCbor } from "../collection/canonical.mjs";
 import { encodePriceField, PRICE_BODY } from "../inscriber/preflight.ts";
 import { priceBody, priceSchemaFor } from "../inscriber/price.ts";
 import { startApi } from "./api.ts";
@@ -49,8 +50,9 @@ function item(partial: {
   };
 }
 
-function genesisBody(extra: Record<string, unknown> = {}): Uint8Array {
-  return new TextEncoder().encode(JSON.stringify({
+function genesisField(extra: Record<string, unknown> = {}): Uint8Array {
+  return encodeCbor({
+    schema: "pins-collection/1",
     name: "Example",
     supply: 1,
     first: 1,
@@ -58,8 +60,9 @@ function genesisBody(extra: Record<string, unknown> = {}): Uint8Array {
     root: "ab".repeat(32),
     issuer: ISSUER,
     item_type: "image/png",
+    sale_commitment: "cd".repeat(32),
     ...extra,
-  }));
+  });
 }
 
 test("the first valid price inscription wins and a genesis needs no price", async () => {
@@ -87,23 +90,24 @@ test("a genesis without a price is valid and one that carries a price is not", a
   const clean = new Indexer();
   clean.inscriptions.set("g", item({
     id: "g",
-    metadata: null,
+    metadata: genesisField(),
     contentType: "application/json",
-    body: genesisBody(),
+    body: new TextEncoder().encode(JSON.stringify({ name: "Shadow", supply: 9, issuer: "ff".repeat(32), root: "00".repeat(32) })),
     createdHeight: 4,
     leafIssuer: ISSUER,
   }));
   const pending = await collectionView(clean, cursor);
   assert.equal(pending.status, "present");
+  assert.equal(pending.name, "Example");
   assert.equal(pending.priceStatus, "pending");
   assert.equal(pending.priceBits, undefined);
 
   const priced = new Indexer();
   priced.inscriptions.set("g", item({
     id: "g",
-    metadata: null,
+    metadata: genesisField({ price_bits: 1 }),
     contentType: "application/json",
-    body: genesisBody({ price_bits: 1 }),
+    body: new TextEncoder().encode("{}"),
     createdHeight: 4,
   }));
   assert.equal((await collectionView(priced, cursor)).status, "absent");
@@ -142,9 +146,8 @@ test("a quota shortfall stays on the collection view instead of failing the requ
   const indexer = new Indexer();
   indexer.inscriptions.set("g", item({
     id: "g",
-    metadata: null,
-    contentType: "application/json",
-    body: new TextEncoder().encode(JSON.stringify({
+    metadata: encodeCbor({
+      schema: "pins-collection/1",
       name: "Set",
       supply: 4,
       first: 1,
@@ -154,7 +157,9 @@ test("a quota shortfall stays on the collection view instead of failing the requ
       item_type: "image/png",
       sale_commitment: createHash("sha256").update(seed).digest("hex"),
       reserve: { groups: [{ trait_type: "a", value: "0", count: 4 }], extra: 4 },
-    })),
+    }),
+    contentType: "application/json",
+    body: new TextEncoder().encode("{\"name\":\"Shadow\"}"),
     createdHeight: 4,
   }));
   indexer.inscriptions.set("seed", item({

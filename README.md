@@ -21,7 +21,7 @@ This repository is the protocol and the reference indexer and inscriber. A colle
 
 ## Explorer
 
-A local read-only explorer is in [`explorer/`](explorer/README.md). It is Explorer 1.0.1. It does not change this protocol. Run its commands from `explorer/`, not from the repository root. `npm run setup` there fetches commit `3e014f4ff156a35eea4b8613e37116fd124aa719` into `explorer/vendor/pins` and applies the patches in that directory. It does not use this checkout as the indexer. Root `npm run lint` ignores `explorer/` so the protocol check is unchanged. Check the explorer with its own `npm run typecheck` and `npm test` from that directory.
+A local read-only explorer is in [`explorer/`](explorer/README.md). It is Explorer 1.0.1. It does not change this protocol. Run its commands from `explorer/`, not from the repository root. `npm run setup` there fetches commit `3e014f4ff156a35eea4b8613e37116fd124aa719` into `explorer/vendor/pins` and applies the patches in that directory. It does not use this checkout as the indexer. Root `npm run lint` ignores `explorer/` so the protocol check is unchanged. Check the explorer with its own `npm run typecheck` and `npm test` from that directory. Continuous integration runs those two commands in a separate job on Node 22.12. The explorer package has no lint or build script. Its default manifest features the FlatBits collection. `MANIFEST` can name another file. That default is not a default of the protocol tools.
 
 ## Network
 
@@ -105,7 +105,7 @@ Clone this repository and run it from that checkout. PINS runs TypeScript throug
 
 `npm run indexer:serve` and `npm run indexer:run` are the same process: `scripts/indexer-run.ts`. It follows a local node and serves a read-only API on `127.0.0.1`. Regtest is the default. Testnet4 and mainnet need `--network` and the same word as `--confirm-network`. On mainnet, `--activation` defaults to 161948. Regtest and testnet4 default to 0. Pass `--activation` to use another height. After the first catch-up it keeps polling. `--no-follow` stops after that catch-up. `--collection` is optional. With it, reserve checks use that profile. Without it, the indexer does not invent a collection.
 
-The RPC URL is your local node. The port below is an example. Put your own RPC user and password on the command line. Do not commit them.
+The RPC URL is your local node. The port below is an example. `--rpc-user` and `--rpc-password` still work. Those words stay on this process's own command line, so they can show in the process list and in shell history. Curl does not receive them as arguments; it reads them from its stdin config. If both flags are omitted, `QBIT_RPC_USER` and `QBIT_RPC_PASSWORD` are used instead. Do not commit them. Do not put them in the URL. A confirmed parent that was not created in the block being indexed is loaded with `getrawtransaction`. Qbit Core v1.0.0 documents `-txindex` as the index that call uses, and the default is off. Run the node with `-txindex` and do not prune blocks or witnesses. An output created earlier in the same block is read from that block.
 
 ```text
 npm run indexer:serve -- \

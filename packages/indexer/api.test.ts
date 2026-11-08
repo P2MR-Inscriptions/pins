@@ -10,6 +10,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { encodeGenesisField } from "../inscriber/preflight.ts";
 import { itemsLeaf } from "../inscriber/reveal.ts";
 import { startApi } from "./api.ts";
 import { addressOf } from "./address.ts";
@@ -49,15 +50,18 @@ test("/pieces/1 returns a hex location script and the address of that script", a
   const leaf = leafOf(1, body, metadata);
   // One leaf: the Merkle root is that leaf, not a hash of it.
   const root = Buffer.from(leaf).toString("hex");
-  const genesis = new TextEncoder().encode(JSON.stringify({
+  const genesis = new TextEncoder().encode("{\"name\":\"Shadow\"}");
+  const field5 = await encodeGenesisField({
+    schema: "pins-collection/1",
     name: "Set",
     supply: 1,
     first: 1,
-    name_prefix: "#",
+    namePrefix: "#",
+    itemType: "application/octet-stream",
     root,
     issuer: Buffer.from(PUBKEY).toString("hex"),
-    item_type: "application/octet-stream",
-  }));
+    saleCommitment: "11".repeat(32),
+  });
   const dir = mkdtempSync(join(tmpdir(), "piece-hex-"));
   const store = new Store(join(dir, "a.sqlite"), { network: "regtest" });
   store.commit(block({
@@ -70,7 +74,7 @@ test("/pieces/1 returns a hex location script and the address of that script", a
         prevVout: 0,
         value: 20_000n,
         leafScript: itemsLeaf(PUBKEY, [
-          { body: genesis, contentType: "application/json" },
+          { body: genesis, contentType: "application/json", metadata: field5 },
           { body: new Uint8Array(leaf), contentType: "application/octet-stream" },
         ]),
       }],

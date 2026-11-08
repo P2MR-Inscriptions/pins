@@ -40,7 +40,7 @@ export const guideSections = [
       { kind: "steps", items: [
         { label: "Install the local tools", code: "npm ci --ignore-scripts", text: "Expected: the command finishes and node_modules is present.\nThe indexer is not running yet." },
         { label: "Create the local settings", code: "cp .env.example .env", text: "Edit .env with one of the RPC settings in Configuration.\nExpected: .env exists on this computer only.\nDo not paste it into a ticket." },
-        { label: "Fetch the pinned indexer", code: "npm run setup", text: "Expected: vendor/pins is PINS commit 3e014f4ff156a35eea4b8613e37116fd124aa719.\nnpm run setup then applies patches 0001, 0002, and 0005 in that order.\nIt does not read or replace .env or data/.\nIt does not reset a dirty tree.\nA patch that is already present is skipped.\nIf apply stops partway, run npm run setup again.\nIt continues from the patches already present.\nIf vendor/pins exists and is not a git checkout, setup refuses to delete it." },
+        { label: "Fetch the pinned indexer", code: "npm run setup", text: "Expected: vendor/pins is PINS commit 3e014f4ff156a35eea4b8613e37116fd124aa719.\nnpm run setup then applies patches 0001, 0002, 0005, 0006, and 0007 in that order.\nIt does not read or replace .env or data/.\nIt does not reset a dirty tree.\nA patch that is already present is skipped.\nIf apply stops partway, run npm run setup again.\nIt continues from the patches already present.\nIf vendor/pins exists and is not a git checkout, setup refuses to delete it." },
       ] },
     ],
   },

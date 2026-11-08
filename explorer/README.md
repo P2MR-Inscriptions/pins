@@ -55,7 +55,7 @@ Ctrl+C stops the mock and the explorer that this command started. `npm test` use
 
 The RPC password is placed in the indexer process environment. It is not an npm, node, or curl argument. `npm --silent` only suppresses npm's log line. Curl reads the user from stdin. See `patches/README.md`.
 
-The genesis id is read from `config/manifest.flatbits.json`. It is collection configuration, not a hard-coded protocol rule.
+The genesis id is read from `config/manifest.flatbits.json` unless `MANIFEST` names another file. FlatBits is the manifest shipped with this package. It is collection configuration, not a hard-coded protocol rule.
 
 ## Limits
 

@@ -257,7 +257,15 @@ async function main(): Promise<void> {
         }
       }
       if (secrets.issuerPublic !== plan.issuerPublic) throw new Error("keyfile does not match the plan");
-      const signed = signPlan(plan, secrets.issuerSecret, new Set(reserveIds), profile?.root, profile?.reserveCount);
+      const utxo = JSON.parse(readFileSync(text(flag, "utxo"), "utf8")) as { txid?: unknown; vout?: unknown };
+      if (typeof utxo.txid !== "string" || typeof utxo.vout !== "number") throw new Error("--utxo must be the funding file, with txid and vout");
+      const signed = signPlan(plan, secrets.issuerSecret, new Set(reserveIds), {
+        fundingTxid: utxo.txid,
+        fundingVout: utxo.vout,
+        creator: text(flag, "creator"),
+        sale: text(flag, "sale"),
+        change: text(flag, "change"),
+      }, profile?.root, profile?.reserveCount);
       process.stdout.write(`${summary(signed, flag["show-marker"] === true)}\n`);
       if (flag["dry-run"]) return;
       writeFileSync(text(flag, "out"), `${JSON.stringify(signed)}\n`);

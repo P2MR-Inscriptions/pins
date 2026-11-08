@@ -140,10 +140,16 @@ export function decodeScript(script: Uint8Array): ScriptInstruction[] | null {
       const width = opcode === OP_PUSHDATA1 ? 1 : opcode === OP_PUSHDATA2 ? 2 : 4;
       if (i + 1 + width > script.length) return null;
       let length = 0;
-      for (let b = 0; b < width; b += 1) length |= script[i + 1 + b] << (8 * b);
-      if (i + 1 + width + length > script.length) return null;
+      let scale = 1;
+      for (let b = 0; b < width; b += 1) {
+        length += script[i + 1 + b] * scale;
+        scale *= 256;
+      }
+      if (!Number.isSafeInteger(length) || length < 0 || i + 1 + width + length > script.length) return null;
       out.push({ opcode, data: script.slice(i + 1 + width, i + 1 + width + length) });
-      i += 1 + width + length;
+      const next = i + 1 + width + length;
+      if (next <= i) return null;
+      i = next;
       continue;
     }
     if (opcode === 0x4f) {

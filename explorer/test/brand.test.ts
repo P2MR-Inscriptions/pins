@@ -1,22 +1,40 @@
+
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const plate = '<rect width="1024" height="1024" fill="#0b120d"/>';
+const sha = (file: string) =>
+  createHash("sha256").update(readFileSync(file)).digest("hex");
 
-test("the rendered PINS mark is the official foreground with the plate removed", () => {
+test("the rendered PINS mark is the transparent official foreground", () => {
   const official = readFileSync("public/brand/pins-avatar-official.svg", "utf8");
   const mark = readFileSync("public/pins-avatar.svg", "utf8");
   const html = readFileSync("public/index.html", "utf8");
-  assert.equal(official.includes(plate), true);
-  assert.equal(mark.includes(plate), false);
-  assert.equal(mark.includes("#0b120d"), false);
-  const expected = official.replace(plate, "").replace(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024">',
-    '<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">',
+
+  const officialPng = official.match(/data:image\/png;base64,([^"]+)/);
+  const markPng = mark.match(/data:image\/png;base64,([^"]+)/);
+
+  assert.ok(officialPng);
+  assert.ok(markPng);
+
+  const officialBytes = Buffer.from(officialPng[1], "base64");
+  const markBytes = Buffer.from(markPng[1], "base64");
+
+  assert.equal(officialBytes[25], 2);
+  assert.equal(markBytes[25], 6);
+
+  assert.notEqual(official, mark);
+
+  assert.equal(
+    sha("public/brand/pins-avatar-official.svg"),
+    "5be13e5eedc7debf60454e0f9b04d2caae92520b2961013eedd928015b2c8310",
   );
-  assert.equal(mark, expected);
+  assert.equal(
+    sha("public/pins-avatar.svg"),
+    "9fd884f2b3889aac94081c90c2062597c59a0d567995a0c59c694fcff0f9f4a9",
+  );
+
   assert.equal(html.includes("pins-avatar-official.svg"), false);
   assert.match(html, /src="\/pins-avatar\.svg"/);
 });

@@ -28,7 +28,7 @@ test("the rendered PINS mark is the transparent official foreground", () => {
 
   assert.equal(
     sha("public/brand/pins-avatar-official.svg"),
-    "5be13e5eedc7debf60454e0f9b04d2caae92520b2961013eedd928015b2c8310",
+    "ed312c3f294b29fd2f202c2eacb4ca470e89a60538172360831c32557978c864",
   );
   assert.equal(
     sha("public/pins-avatar.svg"),

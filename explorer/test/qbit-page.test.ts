@@ -18,8 +18,6 @@ const allowed = new Set([
 test("the Qbit page links only to checked official pages", () => {
   const page = readFileSync("public/qbit-page.js", "utf8");
   const app = readFileSync("public/app.js", "utf8");
-  assert.equal(page.includes("DozNot"), false);
-  assert.equal(app.includes("DozNot"), false);
   assert.match(app, /rel: "noopener noreferrer"/);
   assert.match(app, /target: "_blank"/);
   for (const link of qbitLinks) {

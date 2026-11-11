@@ -416,7 +416,7 @@ export async function collectionView(indexer: Indexer, cursor: ChainCursor, prof
   // PINS-5 §8.2: H_seed is the height of the genesis block plus 6. Finality is separate.
   const orderBlockHeight = genesis.inscription.createdHeight + 6;
   const orderBlockHash = cursor.blockHash(orderBlockHeight) ?? undefined;
-  let saleIds: number[] | null = null;
+  let saleIds: number[] | null;
   if (!genesis.saleCommitment) {
     saleIds = null;
   } else if (!seed) {

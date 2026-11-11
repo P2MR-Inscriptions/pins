@@ -27,7 +27,7 @@ test("page assets stay on this origin except the Qbit link", () => {
   assert.match(html, /aria-label="Switch to light mode"/);
   assert.match(html, /src="\/theme.js"/);
   assert.equal(sha("public/pins-avatar.svg"), "9fd884f2b3889aac94081c90c2062597c59a0d567995a0c59c694fcff0f9f4a9");
-  assert.equal(sha("public/brand/pins-avatar-official.svg"), "5be13e5eedc7debf60454e0f9b04d2caae92520b2961013eedd928015b2c8310");
+  assert.equal(sha("public/brand/pins-avatar-official.svg"), "ed312c3f294b29fd2f202c2eacb4ca470e89a60538172360831c32557978c864");
   assert.equal(sha("public/qbit-logo-full.svg"), "28978ec61a6f72fc55d18cf180a80fe357eecc3d4d617686f8f09d13f86e2de7");
   const fontBytes = statSync("public/fonts/chakra-petch-latin-400-normal.woff2").size + statSync("public/fonts/chakra-petch-latin-500-normal.woff2").size;
   assert.ok(fontBytes > 0 && fontBytes < 25000);

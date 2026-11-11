@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
- * Start the patched PINS indexer. Credentials are read from .env or qbit.conf
+ * Start the PINS indexer of the repository that contains this directory
+ * (scripts/indexer-run.ts). Credentials are read from .env or qbit.conf
  * and placed in the child environment. They are not shell-evaluated and not
  * passed as process arguments. npm is invoked with --silent; that only hides
  * npm's own log line. The password is omitted from the argument list entirely.
  */
 import { spawn } from "node:child_process";
-import { mkdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { profile } from "../server/profile.ts";
@@ -14,6 +15,7 @@ import { parseEnvFile, parseQbitConf } from "./credentials.ts";
 import { buildIndexerLaunch } from "./indexer-launch.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const REPO = resolve(ROOT, "..");
 
 function fileEnv(): Record<string, string> {
   try {
@@ -46,6 +48,9 @@ try {
   if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
 }
 
+if (!existsSync(resolve(REPO, "scripts/indexer-run.ts"))) throw new Error("the indexer is in the PINS repository that contains explorer/; run the explorer from that checkout");
+if (!existsSync(resolve(REPO, "node_modules"))) throw new Error("run npm ci in the repository root first; the indexer uses its packages");
+
 mkdirSync(resolve(ROOT, "data"), { recursive: true });
 
 const launch = buildIndexerLaunch({
@@ -59,5 +64,5 @@ const launch = buildIndexerLaunch({
   env: process.env,
 });
 
-const child = spawn(launch.command, launch.args, { cwd: resolve(ROOT, "vendor/pins"), env: launch.env, stdio: "inherit" });
+const child = spawn(launch.command, launch.args, { cwd: REPO, env: launch.env, stdio: "inherit" });
 child.on("exit", (code) => process.exit(code ?? 1));

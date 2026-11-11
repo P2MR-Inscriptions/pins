@@ -17,8 +17,5 @@
     "dev",
     "test",
     "scripts"
-  ],
-  "exclude": [
-    "test/fixtures"
   ]
 }

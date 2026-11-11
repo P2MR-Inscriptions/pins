@@ -107,8 +107,8 @@ export class Store {
   readonly profile: CollectionProfile | null;
   private readonly db: DatabaseSync;
 
-  constructor(path: string, options: { undoDepth?: number; network?: "regtest" | "testnet4" | "mainnet"; marker?: Uint8Array; schema?: string; profile?: CollectionProfile | null } = {}) {
-    this.indexer = new Indexer(options.network ?? "regtest", { marker: options.marker, schema: options.schema });
+  constructor(path: string, options: { undoDepth?: number; network?: "regtest" | "testnet4" | "mainnet"; marker?: Uint8Array; schema?: string; profile?: CollectionProfile | null; genesisId?: string | null } = {}) {
+    this.indexer = new Indexer(options.network ?? "regtest", { marker: options.marker, schema: options.schema, genesisId: options.genesisId });
     this.profile = options.profile ?? null;
     this.undoDepth = options.undoDepth ?? 100;
     if (!Number.isInteger(this.undoDepth) || this.undoDepth < 1) throw new Error("undo depth must be a positive integer");

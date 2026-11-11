@@ -34,7 +34,6 @@ test("How it works is a menu route with a section for each topic", () => {
 test("the guide matches the local scripts and does not leak a setup shortcut", () => {
   assert.match(text, /22\.12/);
   assert.match(text, /older than 23/);
-  assert.match(text, /git/);
   assert.match(text, /curl/);
   assert.match(text, /witness scripts/);
   assert.equal(text.includes("not pruned"), false);
@@ -42,8 +41,9 @@ test("the guide matches the local scripts and does not leak a setup shortcut", (
   assert.match(text, /witness pruned/);
   assert.match(text, /QBIT_CONF/);
   assert.match(text, /Do not change qbit\.conf/);
-  assert.match(text, /npm run setup/);
-  assert.match(text, /Do not run npm run setup on a patched install/);
+  assert.equal(text.includes("npm run setup"), false);
+  assert.equal(/patch|3e014f4/.test(text), false);
+  assert.match(text, /npm --prefix \.\. ci --ignore-scripts/);
   assert.match(text, /npm run indexer/);
   assert.match(text, /npm start/);
   assert.match(text, /127\.0\.0\.1:8787/);

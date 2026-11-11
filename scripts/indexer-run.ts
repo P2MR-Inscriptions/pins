@@ -8,6 +8,8 @@
  * seconds (default 15). Regtest is the default network. Testnet4 and mainnet
  * need --network and the same word typed as --confirm-network.
  * Omitted --activation uses 161948 on mainnet and 0 on regtest and testnet4.
+ * `--genesis` takes an inscription id; the collection view then accepts only that
+ * inscription as its genesis. Without it, the first valid genesis is used.
  * This process does not broadcast.
  */
 import { readFileSync } from "node:fs";
@@ -63,7 +65,12 @@ async function main(): Promise<void> {
     const loaded = await import(specifier) as { parseCollectionProfile: (value: unknown) => CollectionProfile };
     profile = loaded.parseCollectionProfile(parsed);
   }
-  const store = new Store(text(flag, "db"), { network, marker, schema, profile });
+  let genesisId: string | null = null;
+  if (flag.genesis !== undefined) {
+    if (typeof flag.genesis !== "string" || !/^[0-9a-f]{64}i\d+$/.test(flag.genesis)) throw new Error("--genesis must be an inscription id: 64 hex characters, i, and the index");
+    genesisId = flag.genesis;
+  }
+  const store = new Store(text(flag, "db"), { network, marker, schema, profile, genesisId });
   const rpcUser = typeof flag["rpc-user"] === "string" && flag["rpc-user"].length > 0 ? flag["rpc-user"] : process.env.QBIT_RPC_USER;
   const rpcPassword = typeof flag["rpc-password"] === "string" && flag["rpc-password"].length > 0 ? flag["rpc-password"] : process.env.QBIT_RPC_PASSWORD;
   if (!rpcUser) throw new Error("missing --rpc-user (or QBIT_RPC_USER)");

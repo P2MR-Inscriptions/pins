@@ -13,7 +13,7 @@ export type Launch = {
 /**
  * The npm command is silent so it does not echo its arguments.
  * Silence is not what hides the password: the password is absent from `args`
- * and is passed only in the child environment. The patched indexer then feeds
+ * and is passed only in the child environment. The indexer then feeds
  * it to curl on stdin, not on curl's command line.
  */
 export function buildIndexerLaunch(options: {

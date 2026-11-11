@@ -255,6 +255,7 @@ function genesisOf(indexer: Indexer): Genesis | null {
     .filter((item) => item.contentType === "application/json")
     .sort(chainOrder);
   for (const item of found) {
+    if (indexer.genesisId && item.id !== indexer.genesisId) continue;
     if (item.flags.includes("reinscription") || item.flags.includes("opaque") || !item.metadata) continue;
     let field: Record<string, unknown>;
     try {

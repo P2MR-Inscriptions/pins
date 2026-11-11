@@ -40,7 +40,7 @@ PINS-3 is marked Draft. Its transfer test vectors are still TODO-regtest. The ex
 | --- | --- |
 | Listens only on loopback. Default port 8080. | `server/config.ts`, `server/profile.ts` |
 | Indexer default is `http://127.0.0.1:8787`. `PINS_NETWORK` defaults to mainnet and may be `regtest` or `testnet4`. | `scripts/run-indexer.ts` |
-| Setup fetches the pin into `vendor/pins` and applies `patches/0001`, `0002`, and `0005`. It does not reset a dirty tree and does not read `.env` or `data/`. | `scripts/setup-indexer.ts` |
+| Setup fetches the pin into `vendor/pins` and applies `patches/0001`, `0002`, `0005`, `0006`, and `0007`, in that order. It does not reset a dirty tree and does not read `.env` or `data/`. | `scripts/setup-indexer.ts` |
 | The explorer process calls only `getblockcount`, `getblockhash`, `getblockheader`, and `getrawtransaction`. | `server/rpc.ts` |
 | With `QBIT_CONF` and no `QBIT_RPC_URL`, the indexer calls `127.0.0.1`. The explorer uses `rpcbind` only when that value is loopback. The port is `rpcport`, or 8352. | `scripts/credentials.ts`, `scripts/run-indexer.ts`, `server/config.ts` |
 | Latest order is block height, transaction position in the block, then envelope index. | `server/index-cache.ts` `latestFirst`; PINS-1 §6 defines `n` |

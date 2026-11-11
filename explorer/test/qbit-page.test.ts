@@ -28,7 +28,7 @@ test("the Qbit page links only to checked official pages", () => {
   }
   assert.equal(app.includes("https://"), false);
   const guide = readFileSync("public/guide.js", "utf8");
-  assert.match(guide, /href: "https:\/\/github\.com\/P2MR-PINS-Protocol\/pins"/);
+  assert.match(guide, /href: "https:\/\/github\.com\/P2MR-Inscriptions\/pins"/);
   assert.match(guide, /label: "PINS on GitHub"/);
   assert.match(app, /pinsSource\.href/);
   assert.match(app, /github-mark\.svg/);

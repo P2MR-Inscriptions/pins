@@ -6,7 +6,7 @@ PINS inscriptions are chain data. This repository is the specification and the r
 
 ## Reporting
 
-Report a vulnerability through [GitHub security advisories](https://github.com/P2MR-PINS-Protocol/pins/security/advisories/new).
+Report a vulnerability through [GitHub security advisories](https://github.com/P2MR-Inscriptions/pins/security/advisories/new).
 
 Do not open a public issue for a secret, a key, a seed, or an RPC password. Do not paste those into a report.
 

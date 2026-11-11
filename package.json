@@ -38,10 +38,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/P2MR-PINS-Protocol/pins.git"
+    "url": "git+https://github.com/P2MR-Inscriptions/pins.git"
   },
-  "homepage": "https://github.com/P2MR-PINS-Protocol/pins#readme",
+  "homepage": "https://github.com/P2MR-Inscriptions/pins#readme",
   "bugs": {
-    "url": "https://github.com/P2MR-PINS-Protocol/pins/issues"
+    "url": "https://github.com/P2MR-Inscriptions/pins/issues"
   }
 }

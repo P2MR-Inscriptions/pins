@@ -86,7 +86,7 @@ does not have its vector copied into this index. The raw regtest log is not part
 3. Sale length is 30 days (PINS-5 §8.5). Unsold items go to an address committed before close.
 4. Price: 1 USD per item, in QBT, from the median rule in PINS-6 §5.1. The price is a separate `pins-price/1` inscription, not the genesis. The first valid one wins. No re-pricing.
 5. `CONFIRMATIONS_FINAL` = 6 for the marketplace.
-6. The protocol repository is https://github.com/P2MR-PINS-Protocol/pins. That URL is not a consensus constant.
+6. The protocol repository is https://github.com/P2MR-Inscriptions/pins. That URL is not a consensus constant.
 7. A collection's Merkle root is fixed in its genesis. This specification does not publish one.
 
 ## Still open

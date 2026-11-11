@@ -36,7 +36,7 @@ export const CREATOR_REVENUE_USD = 1;
 export const CONFIRMATIONS_FINAL = 6;
 
 /**
- * The protocol repository is https://github.com/P2MR-PINS-Protocol/pins.
+ * The protocol repository is https://github.com/P2MR-Inscriptions/pins.
  * That URL is not a constant here, and it is not a collection account.
  */
 

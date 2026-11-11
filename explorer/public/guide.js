@@ -2,7 +2,7 @@
 // Explorer package 1.0.1. The pinned indexer commit is unchanged.
 
 export const pinsSource = {
-  href: "https://github.com/P2MR-PINS-Protocol/pins",
+  href: "https://github.com/P2MR-Inscriptions/pins",
   label: "PINS on GitHub",
 };
 

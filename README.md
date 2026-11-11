@@ -162,7 +162,7 @@ Postage on every item output is 10,000 bits. A reveal heavier than 400,000 weigh
 - Qbit Wallet `v1.0.7` can pay the funding address. It cannot sign a reveal leaf, and it cannot yet create a `0x83` listing (PINS-6 §7). The reference indexer leaves the sale at `waiting_for_wallet` and does not keep a sale key online.
 - Marketplaces must not ask for private keys or seed phrases (PINS-6).
 
-Report a vulnerability through [GitHub security advisories](https://github.com/P2MR-PINS-Protocol/pins/security/advisories/new). See [SECURITY.md](SECURITY.md).
+Report a vulnerability through [GitHub security advisories](https://github.com/P2MR-Inscriptions/pins/security/advisories/new). See [SECURITY.md](SECURITY.md).
 
 ## License
 

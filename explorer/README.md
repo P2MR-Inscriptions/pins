@@ -25,13 +25,13 @@ npm run indexer
 npm start
 ```
 
-`setup` fetches only PINS commit `3e014f4ff156a35eea4b8613e37116fd124aa719` into `vendor/pins` and applies `0001`, then `0002`, then `0005`. It does not reset a dirty tree, and it does not read or replace `.env` or `data/`. A patch that is already present is skipped. Run it again after a failed apply; it continues from the patches already present.
+`setup` fetches only PINS commit `3e014f4ff156a35eea4b8613e37116fd124aa719` into `vendor/pins` and applies `0001`, `0002`, `0005`, `0006`, and `0007`, in that order. It does not reset a dirty tree, and it does not read or replace `.env` or `data/`. A patch that is already present is skipped. Run it again after a failed apply; it continues from the patches already present.
 
 ## In the PINS repository
 
 This directory is `explorer/` inside the PINS repository. Run the commands below from `explorer/`, not from the repository root.
 
-`npm run setup` fetches only commit `3e014f4ff156a35eea4b8613e37116fd124aa719` into `explorer/vendor/pins`, then applies `patches/0001`, `0002`, and `0005`. That checkout is separate from the repository you are reading. Setup does not use the parent tree as the indexer, and it does not modify protocol files outside `vendor/pins`. `vendor/` is ignored by the parent `.gitignore`.
+`npm run setup` fetches only commit `3e014f4ff156a35eea4b8613e37116fd124aa719` into `explorer/vendor/pins`, then applies `patches/0001`, `0002`, `0005`, `0006`, and `0007`, in that order. That checkout is separate from the repository you are reading. Setup does not use the parent tree as the indexer, and it does not modify protocol files outside `vendor/pins`. `vendor/` is ignored by the parent `.gitignore`.
 
 An existing explorer that already indexes is updated by copying these source files over the same relative paths. Leave `.env`, `vendor/`, `data/`, and `config/` in place, including `data/index.sqlite` and its `-wal` and `-shm` files. Do not run `npm ci` or `npm run setup` again for that update. Restart only the explorer, and leave the indexer running.
 

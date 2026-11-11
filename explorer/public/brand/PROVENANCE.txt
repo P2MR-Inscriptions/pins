@@ -1,5 +1,5 @@
 PINS mark
-Source: https://github.com/P2MR-PINS-Protocol/pins/blob/main/docs/assets/pins-avatar.svg
+Source: https://github.com/P2MR-Inscriptions/pins/blob/main/docs/assets/pins-avatar.svg
 Local copy of that file, unmodified: public/brand/pins-avatar-official.svg
 The protocol asset README says this is the README mark and that its plate is #0b120d.
 There is no second official PINS logo in that repository.

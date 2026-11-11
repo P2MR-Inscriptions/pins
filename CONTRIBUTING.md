@@ -34,4 +34,4 @@ Code and the other documents are [Apache-2.0](LICENSE). Copyright 2026 The PINS 
 
 ## Reports
 
-Bugs and features: [GitHub issues](https://github.com/P2MR-PINS-Protocol/pins/issues). Vulnerabilities: [SECURITY.md](SECURITY.md). Do not attach keyfiles, seeds, or RPC passwords.
+Bugs and features: [GitHub issues](https://github.com/P2MR-Inscriptions/pins/issues). Vulnerabilities: [SECURITY.md](SECURITY.md). Do not attach keyfiles, seeds, or RPC passwords.

@@ -19,4 +19,4 @@ This project is the PINS specification and its reference tools. Discussion stays
 
 ## Reports
 
-Report conduct that breaks this document through a [GitHub security advisory](https://github.com/P2MR-PINS-Protocol/pins/security/advisories/new) if it involves a secret, and through a maintainer on [the issue tracker](https://github.com/P2MR-PINS-Protocol/pins/issues) otherwise. Maintainers may edit or hide a comment, and may block further participation, when this document is broken.
+Report conduct that breaks this document through a [GitHub security advisory](https://github.com/P2MR-Inscriptions/pins/security/advisories/new) if it involves a secret, and through a maintainer on [the issue tracker](https://github.com/P2MR-Inscriptions/pins/issues) otherwise. Maintainers may edit or hide a comment, and may block further participation, when this document is broken.

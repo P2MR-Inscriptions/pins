@@ -96,14 +96,17 @@ export class Indexer {
    * A rehearsal schema `c/1` derives `p/1`, the same stand-in `inscribe price --schema` writes.
    */
   readonly priceSchema: string;
+  /** When set, the collection view only accepts the inscription with this id as its genesis. */
+  readonly genesisId: string | null;
   readonly inscriptions = new Map<string, Inscription>();
   private readonly held = new Map<string, Held[]>();
   private nextNumber = 0;
   private height = 0;
   private readonly undo: UndoEntry[] = [];
 
-  constructor(network: "regtest" | "testnet4" | "mainnet" = "regtest", options: { marker?: Uint8Array; schema?: string } = {}) {
+  constructor(network: "regtest" | "testnet4" | "mainnet" = "regtest", options: { marker?: Uint8Array; schema?: string; genesisId?: string | null } = {}) {
     this.network = network;
+    this.genesisId = options.genesisId ?? null;
     this.marker = options.marker ?? MARKER;
     this.collectionSchema = options.schema ?? LAUNCH_COLLECTION_SCHEMA;
     this.priceSchema = priceSchemaFor(this.collectionSchema);
@@ -385,7 +388,7 @@ function leafIssuer(script: Uint8Array | undefined): string {
 }
 
 export function cloneIndexer(source: Indexer): Indexer {
-  const copy = new Indexer(source.network, { marker: source.marker, schema: source.collectionSchema });
+  const copy = new Indexer(source.network, { marker: source.marker, schema: source.collectionSchema, genesisId: source.genesisId });
   for (const item of source.inscriptions.values()) {
     copy.inscriptions.set(item.id, {
       ...item,

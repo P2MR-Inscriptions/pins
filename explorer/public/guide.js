@@ -1,5 +1,5 @@
 // Local setup guide. Text only. No remote calls and no credentials.
-// Explorer package 1.0.1. The pinned indexer commit is unchanged.
+// Explorer package 1.0.1.
 
 export const pinsSource = {
   href: "https://github.com/P2MR-Inscriptions/pins",
@@ -12,11 +12,11 @@ export const guideSections = [
     title: "Prerequisites",
     blocks: [
       { kind: "p", text: "This guide is for explorer 1.0.1.\nThat number is this package.\nIt is not a PINS protocol version." },
-      { kind: "p", text: "Open a terminal in the directory that contains package.json.\nRun every command below from that directory.\nDo not install this explorer as a global npm package." },
-      { kind: "p", text: "Use Node.js 22.12 or newer, and older than 23.\nCheck with node -v.\ngit and curl must be on the command path.\nnpm run setup uses git to fetch the pinned indexer.\nThe indexer process uses curl for node RPC." },
-      { kind: "p", text: "A real index needs a local Qbit node that has finished sync.\nThe pinned indexer reads the block, including its witness scripts.\nIf those scripts are missing, it stops with “witness pruned” and refuses that transaction.\nStart the node the way you already run Qbit Core.\nThis explorer does not start the node." },
+      { kind: "p", text: "Open a terminal in the directory that contains package.json.\nRun every command below from that directory.\nThat directory is explorer/ inside the PINS repository.\nDo not install this explorer as a global npm package." },
+      { kind: "p", text: "Use Node.js 22.12 or newer, and older than 23.\nCheck with node -v.\ncurl must be on the command path.\nThe indexer process uses curl for node RPC." },
+      { kind: "p", text: "A real index needs a local Qbit node that has finished sync.\nThe indexer reads the block, including its witness scripts.\nIf those scripts are missing, it stops with “witness pruned” and refuses that transaction.\nStart the node the way you already run Qbit Core.\nThis explorer does not start the node." },
       { kind: "p", text: "This build listens only on loopback.\nThe default explorer address is http://127.0.0.1:8080.\nThe default indexer address is http://127.0.0.1:8787.\nNode RPC stays on loopback." },
-      { kind: "p", text: "From this directory, npm ci --ignore-scripts installs this explorer's tools.\nIt does not fetch the indexer.\nnpm run dev serves synthetic data at http://127.0.0.1:8080 and shows a mock banner.\nIt does not use your node." },
+      { kind: "p", text: "From this directory, npm ci --ignore-scripts installs this explorer's tools.\nThe indexer is the one in the parent directory, the PINS repository.\nnpm run dev serves synthetic data at http://127.0.0.1:8080 and shows a mock banner.\nIt does not use your node." },
     ],
   },
   {
@@ -29,18 +29,18 @@ export const guideSections = [
         "Or set QBIT_RPC_URL, QBIT_RPC_USER, and QBIT_RPC_PASSWORD together.\nThe URL must be loopback HTTP.",
       ] },
       { kind: "p", text: "If QBIT_CONF is set and QBIT_RPC_URL is empty, the port is rpcport, or 8352 when rpcport is absent.\nThe indexer calls 127.0.0.1.\nThe explorer uses rpcbind only when that value is a loopback address.\nOtherwise the explorer also uses 127.0.0.1." },
-      { kind: "p", text: "Leave the user and password out of commands, tickets, and screenshots.\nSetup and a file update do not replace .env." },
+      { kind: "p", text: "Leave the user and password out of commands, tickets, and screenshots.\nA file update does not replace .env." },
     ],
   },
   {
     id: "fresh-setup",
     title: "Fresh setup",
     blocks: [
-      { kind: "p", text: "Use this only when vendor/pins is not already a working checkout.\nIf that directory already indexes, skip this section." },
+      { kind: "p", text: "Use this for a first install.\nIf the explorer already indexes, use the next section." },
       { kind: "steps", items: [
+        { label: "Install the indexer's tools", code: "npm --prefix .. ci --ignore-scripts", text: "Expected: the command finishes and node_modules is present in the parent directory.\nThe indexer is the one in that PINS repository.\nNothing is downloaded." },
         { label: "Install the local tools", code: "npm ci --ignore-scripts", text: "Expected: the command finishes and node_modules is present.\nThe indexer is not running yet." },
         { label: "Create the local settings", code: "cp .env.example .env", text: "Edit .env with one of the RPC settings in Configuration.\nExpected: .env exists on this computer only.\nDo not paste it into a ticket." },
-        { label: "Fetch the pinned indexer", code: "npm run setup", text: "Expected: vendor/pins is PINS commit 3e014f4ff156a35eea4b8613e37116fd124aa719.\nnpm run setup then applies patches 0001, 0002, 0005, 0006, and 0007 in that order.\nIt does not read or replace .env or data/.\nIt does not reset a dirty tree.\nA patch that is already present is skipped.\nIf apply stops partway, run npm run setup again.\nIt continues from the patches already present.\nIf vendor/pins exists and is not a git checkout, setup refuses to delete it." },
       ] },
     ],
   },
@@ -48,11 +48,11 @@ export const guideSections = [
     id: "update",
     title: "An install that already works",
     blocks: [
-      { kind: "p", text: "Use this when the explorer already runs, including 0.2.18, 0.2.19, and the first 1.0.0 package.\nDo not run npm ci.\nDo not run npm run setup." },
+      { kind: "p", text: "Use this when the explorer already runs, including 0.2.18, 0.2.19, and the first 1.0.0 package.\nEarlier versions kept a separate copy of the indexer in vendor/pins.\nThat copy is no longer used." },
       { kind: "steps", items: [
-        { label: "Do not run setup again", text: "Do not run npm run setup on a patched install that already indexes.\nSetup fetches the pin again.\nIf that checkout is not the pin and has local changes, setup refuses to reset it.\nDo not delete vendor/pins or data/ to force a reset." },
-        { label: "Copy the named files", text: "A file update does not need a new vendor, a new database, or a new .env.\nLeave vendor/, .env, and data/ alone, including data/index.sqlite and its -wal and -shm files.\nCopy only the files named in the update manifest." },
-        { label: "Restart the explorer", code: "npm start", text: "Press Ctrl+C in the explorer terminal, then run npm start again.\nLeave the indexer terminal running.\nReload http://127.0.0.1:8080.\nDo not delete the database to refresh the page." },
+        { label: "Copy the named files", text: "A file update does not need a new database or a new .env.\nLeave .env and data/ alone, including data/index.sqlite and its -wal and -shm files.\nCopy only the files named in the update manifest." },
+        { label: "Install the indexer's tools", code: "npm --prefix .. ci --ignore-scripts", text: "Expected: the command finishes and node_modules is present in the parent directory.\nThe explorer directory must sit inside a checkout of the PINS repository." },
+        { label: "Restart the indexer and the explorer", code: "npm run indexer", text: "Press Ctrl+C in the indexer terminal, then run npm run indexer again.\nThe database is kept, so the indexer continues from where it stopped.\nPress Ctrl+C in the explorer terminal, then run npm start again.\nReload http://127.0.0.1:8080.\nDo not delete the database to refresh the page." },
       ] },
     ],
   },
@@ -114,12 +114,12 @@ export const guideSections = [
     title: "Troubleshooting",
     blocks: [
       { kind: "p", text: "Run these from the directory that contains package.json.\nThey take no passwords and no extra arguments." },
-      { kind: "code", text: "node -v\ngit --version\ncurl --version\nnpm test" },
+      { kind: "code", text: "node -v\ncurl --version\nnpm test" },
       { kind: "p", text: "Expected: node -v prints a version from 22.12 up to, but not including, 23.\nnpm test uses loopback fixtures.\nIt does not contact your node and does not print RPC values." },
       { kind: "ul", items: [
         "If the explorer says the indexer is unreachable, confirm npm run indexer is still running and that catch-up has finished.\nPort 8787 is silent until then.\nThen reload the browser.",
         "If the indexer prints witness pruned, the node did not return the witness scripts.\nUse a synced node that still has those scripts.\nDo not change qbit.conf from these steps.",
-        "If setup says it is refusing to reset, stop.\nDo not delete vendor/pins or data/ to force it.\nOn a working install, skip setup and apply the file update instead.",
+        "If npm run indexer says to run npm ci in the repository root, run npm --prefix .. ci --ignore-scripts and start it again.",
         "If the page is open but looks old after an update, reload it.\nRestart the explorer only after the new files are in place.\nDo not restart the indexer for a page-only change.",
       ] },
       { kind: "p", text: "Do not put the RPC user or password in a command, a URL, or a bug report." },

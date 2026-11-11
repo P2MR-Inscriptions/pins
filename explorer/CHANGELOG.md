@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- The explorer uses the indexer in `packages/` of this repository. `npm run indexer` starts it from the repository root, and the indexer is started with the genesis id of the manifest as `--genesis`.
+- The separate copy of an older indexer commit, its patches, and `npm run setup` are removed. An existing install no longer uses `vendor/pins`. Run `npm --prefix .. ci --ignore-scripts` once, then restart the indexer. `.env` and `data/` are not touched.
+- `npm test` includes a run against the indexer in `packages/`. That run needs `npm ci` in the repository root.
+
 ## 1.0.1
 
 - `npm run dev` follows `MOCK_PORT` and `PORT`. The explorer reads the mock this command started.

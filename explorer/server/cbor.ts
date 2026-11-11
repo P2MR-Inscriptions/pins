@@ -4,8 +4,7 @@
  * Definite-length CBOR reader for the maps PINS-4 puts in field 5.
  * Lengths are checked before any allocation. Indefinite lengths, tags, floats,
  * and non-canonical integer widths are rejected.
- * This copy must stay aligned with packages/indexer/cbor.ts. The vendored
- * indexer is a separate pin and is not changed here.
+ * This copy must stay aligned with packages/indexer/cbor.ts.
  */
 
 const MAX_DEPTH = 32;

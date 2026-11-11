@@ -6,13 +6,14 @@ PINS is an independent protocol.
 
 ## Requirements
 
-Node.js 22.12 or newer, and older than 23. `git` fetches the pinned indexer during setup. `npm` installs this package's tools and, during setup, the indexer's tools. A synced Qbit node with RPC on loopback is required for a real index. The mock UI does not need one.
+Node.js 22.12 or newer, and older than 23. `npm` installs the tools of this package and of the repository root, which holds the indexer. A synced Qbit node with RPC on loopback is required for a real index. The mock UI does not need one.
 
 ## Fresh install
 
-Use this only when `vendor/pins` is not already a working checkout.
+This directory is `explorer/` inside the PINS repository. The explorer uses the indexer of that repository, so install the tools of the repository root once, then the tools of this package. Run the commands below from `explorer/`.
 
 ```bash
+npm --prefix .. ci --ignore-scripts
 npm ci --ignore-scripts
 cp .env.example .env
 ```
@@ -20,24 +21,20 @@ cp .env.example .env
 Fill `QBIT_RPC_URL`, `QBIT_RPC_USER`, and `QBIT_RPC_PASSWORD`, or set `QBIT_CONF` to a `qbit.conf` that contains `rpcuser` and `rpcpassword`. The files are read as text. Values are not passed to a shell.
 
 ```bash
-npm run setup
 npm run indexer
 npm start
 ```
 
-`setup` fetches only PINS commit `3e014f4ff156a35eea4b8613e37116fd124aa719` into `vendor/pins` and applies `0001`, `0002`, `0005`, `0006`, and `0007`, in that order. It does not reset a dirty tree, and it does not read or replace `.env` or `data/`. A patch that is already present is skipped. Run it again after a failed apply; it continues from the patches already present.
+`npm run indexer` starts `scripts/indexer-run.ts` of this repository from the repository root, the same process as `npm run indexer:serve` there. It stores the index in `data/index.sqlite` in this directory and passes the genesis id of the manifest as `--genesis`. The explorer has no copy of the indexer.
 
-## In the PINS repository
+## An existing install
 
-This directory is `explorer/` inside the PINS repository. Run the commands below from `explorer/`, not from the repository root.
-
-`npm run setup` fetches only commit `3e014f4ff156a35eea4b8613e37116fd124aa719` into `explorer/vendor/pins`, then applies `patches/0001`, `0002`, `0005`, `0006`, and `0007`, in that order. That checkout is separate from the repository you are reading. Setup does not use the parent tree as the indexer, and it does not modify protocol files outside `vendor/pins`. `vendor/` is ignored by the parent `.gitignore`.
-
-An existing explorer that already indexes is updated by copying these source files over the same relative paths. Leave `.env`, `vendor/`, `data/`, and `config/` in place, including `data/index.sqlite` and its `-wal` and `-shm` files. Do not run `npm ci` or `npm run setup` again for that update. Restart only the explorer, and leave the indexer running.
+An install made with an earlier version kept a separate copy of the indexer in `vendor/pins`. That copy is no longer used. Keep `.env`, `data/`, and `config/`, including `data/index.sqlite` and its `-wal` and `-shm` files. After copying the new source files over the same relative paths, run `npm --prefix .. ci --ignore-scripts` once, stop the old indexer, and start `npm run indexer`. The explorer directory must sit inside a checkout of the PINS repository. Restart the explorer afterwards.
 
 ## Try the interface
 
 ```bash
+npm --prefix .. ci --ignore-scripts
 npm ci --ignore-scripts
 npm test
 npm run dev
@@ -49,17 +46,17 @@ npm run dev
 MOCK_PORT=8788 PORT=8081 npm run dev
 ```
 
-Ctrl+C stops the mock and the explorer that this command started. `npm test` uses loopback fixtures only.
+Ctrl+C stops the mock and the explorer that this command started. `npm test` uses loopback fixtures only. One test starts the indexer from `packages/` on loopback with a small synthetic database, which is why the repository root needs `npm ci` first. `npm run dev` does not need it.
 
-`indexer` starts that process on 127.0.0.1:8787. The explorer listens on 127.0.0.1:8080. Do not run `setup` again on a checkout that already indexes.
+`indexer` starts that process on 127.0.0.1:8787. The explorer listens on 127.0.0.1:8080.
 
-The RPC password is placed in the indexer process environment. It is not an npm, node, or curl argument. `npm --silent` only suppresses npm's log line. Curl reads the user from stdin. See `patches/README.md`.
+The RPC password is placed in the indexer process environment. It is not an npm, node, or curl argument. `npm --silent` only suppresses npm's log line. Curl reads the user from stdin.
 
-The genesis id is read from `config/manifest.flatbits.json` unless `MANIFEST` names another file. FlatBits is the manifest shipped with this package. It is collection configuration, not a hard-coded protocol rule.
+The genesis id is read from `config/manifest.flatbits.json` unless `MANIFEST` names another file. The indexer is started with that id as `--genesis`. FlatBits is the manifest shipped with this package. It is collection configuration, not a hard-coded protocol rule.
 
 ## Limits
 
-Explorer 1.0.1 is this package only. It does not change the pinned indexer and it is not a production release. The page was checked with the mock indexer. A separate mainnet run of an earlier build reached height 165925 and 10002 inscriptions; this build does not repeat that check, and it does not decide whether all 10,000 Flatbits are authentic. Restarting an indexer database that already contains height `-1` placeholders is covered by the output-identity tests, not by a second pass over a live database. While the indexer is catching up, each RPC call is a blocking `spawnSync`, so its own HTTP server does not answer during that call. This is not a production release.
+Explorer 1.0.1 is this package only. It does not change the indexer and it is not a production release. The page was checked with the mock indexer. A separate mainnet run of an earlier build reached height 165925 and 10002 inscriptions; this build does not repeat that check, and it does not decide whether all 10,000 Flatbits are authentic. While the indexer is catching up, each RPC call is a blocking `spawnSync`, so its own HTTP server does not answer during that call. This is not a production release.
 
 The indexer still returns every inscription in one response, and this process keeps that snapshot in memory. The browser asks for one page of images, not the whole collection. One indexer process follows one genesis id.
 

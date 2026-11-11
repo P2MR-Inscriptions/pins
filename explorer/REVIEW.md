@@ -1,6 +1,6 @@
 # Explorer 1.0.1 validation notes
 
-Checked on 8 Nov 2026 with Node 22.23.4. The pages were also opened in Chrome 156 against the mock indexer. This package does not change the PINS protocol. The indexer pin remains `3e014f4ff156a35eea4b8613e37116fd124aa719`. Explorer 1.0.1 is not a production release. The page checks below are from 1.0.0. Version 1.0.1 changes development startup only.
+Checked on 8 Nov 2026 with Node 22.23.4. The pages were also opened in Chrome 156 against the mock indexer. This package does not change the PINS protocol. It runs the indexer in `packages/` of this repository. Explorer 1.0.1 is not a production release. The page checks below are from 1.0.0. Version 1.0.1 changes development startup only.
 
 The footer sentence is `PINS is an independent protocol.`
 
@@ -23,9 +23,7 @@ The page does not say “no outside token allocation.” That phrase appears on 
 
 The consensus document still says some named launch parameters are not normative until a launch-parameter freeze. The numbers above are the ones §4.3 and the architecture page publish.
 
-## PINS, read from the pinned commit
-
-Commit `3e014f4ff156a35eea4b8613e37116fd124aa719`.
+## PINS, read from the specifications
 
 | Statement | Spec |
 | --- | --- |
@@ -40,7 +38,7 @@ PINS-3 is marked Draft. Its transfer test vectors are still TODO-regtest. The ex
 | --- | --- |
 | Listens only on loopback. Default port 8080. | `server/config.ts`, `server/profile.ts` |
 | Indexer default is `http://127.0.0.1:8787`. `PINS_NETWORK` defaults to mainnet and may be `regtest` or `testnet4`. | `scripts/run-indexer.ts` |
-| Setup fetches the pin into `vendor/pins` and applies `patches/0001`, `0002`, `0005`, `0006`, and `0007`, in that order. It does not reset a dirty tree and does not read `.env` or `data/`. | `scripts/setup-indexer.ts` |
+| The indexer is started from the repository root with `npm run indexer:serve`, with the genesis id of the manifest as `--genesis`. The explorer has no copy of it. | `scripts/run-indexer.ts` |
 | The explorer process calls only `getblockcount`, `getblockhash`, `getblockheader`, and `getrawtransaction`. | `server/rpc.ts` |
 | With `QBIT_CONF` and no `QBIT_RPC_URL`, the indexer calls `127.0.0.1`. The explorer uses `rpcbind` only when that value is loopback. The port is `rpcport`, or 8352. | `scripts/credentials.ts`, `scripts/run-indexer.ts`, `server/config.ts` |
 | Latest order is block height, transaction position in the block, then envelope index. | `server/index-cache.ts` `latestFirst`; PINS-1 §6 defines `n` |
@@ -50,7 +48,7 @@ PINS-3 is marked Draft. Its transfer test vectors are still TODO-regtest. The ex
 | Authentic is shown only when the indexer boolean is true and the snapshot is not stale. | `public/app.js` |
 | Green in the footer means the snapshot height equals the indexer tip. It is not a collection result. | `public/status-tone.js` |
 
-The indexer HTTP API in the pinned `scripts/indexer-run.ts` starts after the first catch-up. A missing witness stops that process with `witness pruned`.
+The indexer HTTP API in `scripts/indexer-run.ts` starts after the first catch-up. A missing witness stops that process with `witness pruned`.
 
 ## Not checked
 

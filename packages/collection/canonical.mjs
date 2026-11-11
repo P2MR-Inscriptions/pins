@@ -140,7 +140,6 @@ export function decodePng(buf) {
     else if (type === "tRNS") transparency = Buffer.from(data);
     else if (type === "IEND") {
       ended = true;
-      offset = end;
       break;
     }
     offset = end;

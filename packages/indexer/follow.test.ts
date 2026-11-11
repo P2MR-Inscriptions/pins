@@ -154,8 +154,8 @@ test("mainnet activation defaults to the first envelope block", () => {
 });
 
 /**
- * Same shape as mainnet blocks 161946 through 161948: two blocks with no envelope,
- * a plain fan-out, then the first envelope spending that fan-out. The bytes are synthetic.
+ * Same shape as mainnet blocks 161947 and 161948: a plain fan-out, then the first
+ * envelope spending it. The bytes are synthetic.
  * stateHash covers the tip block and the inscription set, so an earlier start matches a
  * start at the envelope when the skipped blocks have none.
  */

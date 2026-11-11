@@ -352,14 +352,33 @@ function after(genesis: Genesis, item: Inscription): boolean {
   return item.n > genesis.inscription.n;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function isTrait(value: unknown): value is { trait_type: string; value: string } {
+  return isRecord(value) && typeof value.trait_type === "string" && typeof value.value === "string";
+}
+
+/**
+ * Field 5 can come from any inscription, so each value is checked before it is used.
+ * PINS-5 §9 rule 4 needs a text `meta.name`, and PINS-4 §3 gives attributes as text pairs.
+ * An inscription without them is not an item of the collection and affects no other one.
+ */
 function metaOf(item: Inscription): { name?: string; attributes?: { trait_type: string; value: string }[] } | null {
   if (!item.metadata) return null;
+  let decoded: unknown;
   try {
-    const decoded = decodeCbor(item.metadata) as { meta?: { name?: string; attributes?: { trait_type: string; value: string }[] } };
-    return decoded.meta ?? null;
+    decoded = decodeCbor(item.metadata);
   } catch {
     return null;
   }
+  const meta = isRecord(decoded) ? decoded.meta : undefined;
+  if (!isRecord(meta)) return null;
+  return {
+    name: typeof meta.name === "string" ? meta.name : undefined,
+    attributes: Array.isArray(meta.attributes) && meta.attributes.every(isTrait) ? meta.attributes : undefined,
+  };
 }
 
 function leafOf(number: number, body: Uint8Array, metadata: Uint8Array): Buffer {
@@ -379,7 +398,7 @@ export async function collectionView(indexer: Indexer, cursor: ChainCursor, prof
     item.contentType === "application/octet-stream" && item.body.length === 32 && sha256(item.body).toString("hex") === genesis.saleCommitment);
   const claimed = new Map<number, Inscription>();
   const candidates = [...indexer.inscriptions.values()]
-    .filter((item) => item !== genesis.inscription && item !== leafList && after(genesis, item))
+    .filter((item) => item !== genesis.inscription && item !== leafList && item.leafIssuer === genesis.issuer && after(genesis, item))
     .sort((left, right) => left.createdHeight - right.createdHeight || left.createdIndex - right.createdIndex || left.n - right.n);
   for (const item of candidates) {
     const meta = metaOf(item);

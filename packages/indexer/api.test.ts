@@ -11,6 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { encodeGenesisField } from "../inscriber/preflight.ts";
+import { encodeCbor } from "../collection/canonical.mjs";
 import { itemsLeaf } from "../inscriber/reveal.ts";
 import { startApi } from "./api.ts";
 import { addressOf } from "./address.ts";
@@ -122,6 +123,86 @@ test("/pieces/1 returns a hex location script and the address of that script", a
     assert.equal(row.location.script, scriptHex);
     assert.equal(row.ownerScript, scriptHex);
     assert.equal(row.ownerAddress, piece.ownerAddress);
+  } finally {
+    await api.close();
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("/collection and /pieces ignore inscriptions whose metadata has unexpected types", async () => {
+  const body = Uint8Array.of(9, 8, 7);
+  const metadata = Buffer.from("a1646d657461a2646e616d656223316a6174747269627574657380", "hex");
+  const leaf = leafOf(1, body, metadata);
+  const root = Buffer.from(leaf).toString("hex");
+  const field5 = await encodeGenesisField({
+    schema: "pins-collection/1",
+    name: "Set",
+    supply: 1,
+    first: 1,
+    namePrefix: "#",
+    itemType: "application/octet-stream",
+    root,
+    issuer: Buffer.from(PUBKEY).toString("hex"),
+    saleCommitment: "11".repeat(32),
+  });
+  const stranger = new Uint8Array(32).fill(7);
+  const dir = mkdtempSync(join(tmpdir(), "piece-types-"));
+  const store = new Store(join(dir, "a.sqlite"), { network: "regtest" });
+  const reveal = (txid: string, prevTxid: string, key: Uint8Array, itemBody: Uint8Array, itemMetadata: Uint8Array | undefined): ChainTx => ({
+    txid,
+    inputs: [{
+      prevTxid,
+      prevVout: 0,
+      value: 10_000n,
+      leafScript: itemsLeaf(key, [{ body: itemBody, contentType: "application/octet-stream", metadata: itemMetadata }]),
+    }],
+    outputs: [{ value: 10_000n, script: SCRIPT }],
+  });
+  store.commit(block({
+    hash: "g",
+    height: 1,
+    txs: [coinbase("c1"), {
+      txid: "genesis",
+      inputs: [{
+        prevTxid: "00",
+        prevVout: 0,
+        value: 20_000n,
+        leafScript: itemsLeaf(PUBKEY, [
+          { body: new TextEncoder().encode("{\"name\":\"Shadow\"}"), contentType: "application/json", metadata: field5 },
+          { body: new Uint8Array(leaf), contentType: "application/octet-stream" },
+        ]),
+      }],
+      outputs: [{ value: 10_000n, script: SCRIPT }, { value: 10_000n, script: SCRIPT }],
+    }],
+  }));
+  // CBOR { meta: { name: 5 } } and { meta: { name: { name: "#1" } } }, one by the issuer and one by another key.
+  const numberName = encodeCbor({ meta: { name: 5 } });
+  const mapName = encodeCbor({ meta: { name: { name: "#1" } } });
+  store.commit(block({
+    hash: "b",
+    height: 2,
+    txs: [coinbase("c2"), reveal("bad-issuer", "02", PUBKEY, body, numberName), reveal("bad-stranger", "03", stranger, body, mapName)],
+  }));
+  store.commit(block({
+    hash: "p",
+    height: 3,
+    txs: [coinbase("c3"), reveal("piece", "01", PUBKEY, body, metadata)],
+  }));
+  const api = await startApi(store, 0, "regtest");
+  try {
+    const collection = await fetch(`${api.url}/collection`);
+    assert.equal(collection.status, 200);
+    const view = await collection.json() as { status: string; authentic: number; supply: number };
+    assert.equal(view.status, "present");
+    assert.equal(view.authentic, 1);
+    assert.equal(view.supply, 1);
+    const pieces = await fetch(`${api.url}/pieces?authentic=1`);
+    assert.equal(pieces.status, 200);
+    const page = await pieces.json() as { total: number; pieces: { number: number; authentic: boolean }[] };
+    assert.equal(page.total, 1);
+    assert.deepEqual(page.pieces.map((piece) => [piece.number, piece.authentic]), [[1, true]]);
+    assert.equal((await fetch(`${api.url}/pieces/1`)).status, 200);
   } finally {
     await api.close();
     store.close();

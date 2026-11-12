@@ -78,7 +78,7 @@ test("a field 5 whose issuer is not the reveal key is skipped", async () => {
   assert.equal((await collectionView(indexer, cursor)).status, "absent");
 });
 
-test("the launch schema rejects a missing sale commitment and a rehearsal schema does not", async () => {
+test("a genesis without a sale commitment is valid under the launch schema and a rehearsal schema", async () => {
   const indexer = new Indexer();
   const rest = {
     schema: "pins-collection/1",
@@ -91,7 +91,10 @@ test("the launch schema rejects a missing sale commitment and a rehearsal schema
     item_type: "image/png",
   };
   indexer.inscriptions.set("short", item({ id: "short", metadata: encodeCbor(rest) }));
-  assert.equal((await collectionView(indexer, cursor)).status, "absent");
+  const launch = await collectionView(indexer, cursor);
+  assert.equal(launch.status, "present");
+  assert.equal(launch.genesisId, "short");
+  assert.equal(launch.orderStatus, "none");
   const rehearsal = new Indexer("regtest", { schema: "c/1" });
   rehearsal.inscriptions.set("ok", item({
     id: "ok",

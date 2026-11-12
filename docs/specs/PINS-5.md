@@ -18,7 +18,8 @@ PINS-5 lets anyone verify, from chain data alone, that an inscription is an auth
 fixed-supply collection. It does not use parent/child inscriptions. Authenticity rests on on-chain
 commitments made by one **issuer key**: a genesis inscription with a Merkle root over all items, a
 leaf-list inscription and a closing inscription. An optional committed random sale order (section 8)
-proves that buyers received items in an order fixed before the sale. Everything is final and immutable.
+proves that buyers received items in an order fixed before the sale. A collection that has no sale
+declares none, and is as authentic as one that does. Everything is final and immutable.
 
 ## 2. Keys
 
@@ -48,16 +49,18 @@ separate consensus limit, and it stays far under the 2^30 limit of SLH-DSA bound
 | `root` | text | 64 lowercase hex characters. The Merkle root (section 5). Not raw bytes | computed, not fixed here |
 | `issuer` | text | 64 lowercase hex characters. The `K_iss` public key. Not raw bytes | |
 | `item_type` | text | required `content_type` of items | `image/png` |
-| `sale_commitment` | text | 64 lowercase hex characters. `SHA256(sale_secret)` (section 8). Not raw bytes | |
+| `sale_commitment` | text | OPTIONAL. 64 lowercase hex characters. `SHA256(sale_secret)` (section 8). Not raw bytes. When present it comes right after `item_type`. Without it the genesis declares no sale | |
 | `reserve` | map | OPTIONAL. The creator reserve groups (section 8.1). When present it MUST be the last key | |
 
 `root`, `issuer`, and `sale_commitment` are text. Each is 64 lowercase hexadecimal characters (the 32-byte value written in hex). The reference encoder does not wrap them as CBOR byte strings. Readers compare the text.
 
 - The genesis reveal leaf MUST start with `<K_iss> OP_CHECKSIGPQC` (PINS-1 §9.1).
 - Its inscription ID `G` identifies the collection.
-- A reader accepts the map only when its keys are exactly the nine keys above, in that order,
-  optionally followed by `reserve`. A different key set, another order, or `reserve` in any other
-  position makes the inscription not a genesis. `issuer` MUST equal the key at the start of the
+- A reader accepts the map only when its keys are the eight keys from `schema` to `item_type`, in
+  that order, then `sale_commitment` if the genesis declares a sale, then `reserve` if it declares
+  one. A different key set, another order, or `reserve` in any other position makes the inscription
+  not a genesis. `sale_commitment`, when present, MUST be 64 lowercase hexadecimal characters of text,
+  or the inscription is not a genesis. `issuer` MUST equal the key at the start of the
   reveal leaf. `name` MUST be non-empty, `supply` a positive integer, `first` a non-negative integer,
   and `item_type` non-empty.
 - `reserve`, when present, is `{ "groups": [ { "trait_type": text, "value": text, "count": uint }, ... ],
@@ -226,6 +229,12 @@ and `count` is an unsigned integer equal to `supply`. It sets no condition on th
 body. An inscription that comes after the closing in chain order is not an item of `G`.
 
 ## 8. Creator reserve and sale order
+
+This section applies to a genesis that carries `sale_commitment`. A genesis without it declares no
+sale. For it there is no sale secret, no sale reveal, no sale order and no price (PINS-6 §5.1). An
+inscription that looks like a sale reveal or a price inscription for such a genesis is not read, and
+no check of this section runs. A `reserve` key on such a genesis is accepted, and no selection is run
+for it. Authenticity (section 9) does not depend on any of it.
 
 ### 8.1 Reserve
 

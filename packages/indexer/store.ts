@@ -5,6 +5,10 @@
  * (default 1,000, the minimum PINS-2 §4.3 recommends). A deeper reorg throws
  * and the caller resyncs from the activation height.
  *
+ * Outputs are kept while they are unspent, and for as long after they are spent as
+ * the undo of the spending block is kept. After that the row is deleted: it can no
+ * longer be needed, because only a reorg of the spending block would need it.
+ *
  * The `meta` table also records what the chain data was built with: network,
  * envelope marker, collection schema, activation height and the pinned genesis.
  * A database that is opened with other values is refused, because its rows
@@ -37,8 +41,10 @@ CREATE TABLE outputs (
   value TEXT NOT NULL,
   height INTEGER NOT NULL,
   p2mr INTEGER,
+  spent_height INTEGER,
   PRIMARY KEY (txid, vout)
 );
+CREATE INDEX outputs_spent ON outputs (spent_height);
 CREATE TABLE inscriptions (
   id TEXT PRIMARY KEY,
   number INTEGER NOT NULL,
@@ -135,6 +141,9 @@ export class Store {
       // Databases written before the output type was kept have no such column. Those rows stay NULL: unknown.
       const columns = this.db.prepare("PRAGMA table_info(outputs)").all() as { name: string }[];
       if (!columns.some((column) => column.name === "p2mr")) this.db.exec("ALTER TABLE outputs ADD COLUMN p2mr INTEGER");
+      // Databases written before spends were recorded have no such column. Their older outputs stay NULL: unspent, as far as is known, and never pruned.
+      if (!columns.some((column) => column.name === "spent_height")) this.db.exec("ALTER TABLE outputs ADD COLUMN spent_height INTEGER");
+      this.db.exec("CREATE INDEX IF NOT EXISTS outputs_spent ON outputs (spent_height)");
       this.bindConfig(options.genesisId ?? null);
       this.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
       this.indexer.adopt(this.readInscriptions());
@@ -221,7 +230,7 @@ export class Store {
     return row?.hash ?? null;
   }
 
-  /** Remember an output that was created before the activation height. */
+  /** Remember an output that was created before the activation height. Its spend is recorded when the block that spends it is committed. */
   saveOutput(txid: string, vout: number, value: bigint, p2mr?: boolean): void {
     this.db.prepare("INSERT OR IGNORE INTO outputs (txid, vout, value, height, p2mr) VALUES (?, ?, ?, -1, ?)").run(txid, vout, value.toString(), p2mr === undefined ? null : Number(p2mr));
   }
@@ -259,10 +268,20 @@ export class Store {
       for (const tx of block.txs) {
         tx.outputs.forEach((entry, vout) => output.run(tx.txid, vout, entry.value.toString(), block.height, Number(isP2mr(entry.script))));
       }
+      // A spent output is needed again only if this block is disconnected. It is kept as long as the undo of this block is.
+      const spend = this.db.prepare("UPDATE outputs SET spent_height = ? WHERE txid = ? AND vout = ?");
+      for (const tx of block.txs) {
+        for (const input of tx.inputs) {
+          if (!input.coinbase && input.prevTxid !== undefined && input.prevVout !== undefined) spend.run(block.height, input.prevTxid, input.prevVout);
+        }
+      }
       const changed = new Set([...undo.created, ...undo.prior.map((row) => row.id)]);
       this.writeInscriptions(changed);
       const oldest = block.height - this.undoDepth;
-      if (oldest >= 0) this.db.prepare("DELETE FROM undo WHERE height <= ?").run(oldest);
+      if (oldest >= 0) {
+        this.db.prepare("DELETE FROM undo WHERE height <= ?").run(oldest);
+        this.db.prepare("DELETE FROM outputs WHERE spent_height IS NOT NULL AND spent_height <= ?").run(oldest);
+      }
       this.db.exec("COMMIT");
       this.indexer.trimUndo(this.undoDepth);
     } catch (error) {
@@ -294,6 +313,7 @@ export class Store {
       this.db.prepare("DELETE FROM blocks WHERE height = ?").run(tip.height);
       this.db.prepare("DELETE FROM undo WHERE height = ?").run(tip.height);
       this.db.prepare("DELETE FROM outputs WHERE height = ?").run(tip.height);
+      this.db.prepare("UPDATE outputs SET spent_height = NULL WHERE spent_height = ?").run(tip.height);
       const remove = this.db.prepare("DELETE FROM inscriptions WHERE id = ?");
       for (const id of undo.created) remove.run(id);
       this.writeInscriptions(new Set(undo.prior.map((row) => row.id)));

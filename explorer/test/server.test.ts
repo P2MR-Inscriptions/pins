@@ -90,6 +90,11 @@ test("search classifies queries", async () => {
   assert.equal((await api("/api/search?q=42")).body.path, "/number/42");
   assert.equal((await api("/api/search?q=" + "ab".repeat(32))).body.type, "transaction");
   assert.equal((await api("/api/search?q=hello")).status, 404);
+  const notFound = (await api("/api/search?q=hello")).body;
+  const longQuery = await api("/api/search?q=" + "1".repeat(129));
+  assert.equal(longQuery.status, 404);
+  assert.deepEqual(longQuery.body, notFound);
+  assert.equal((await api("/api/search?q=block" + "%20".repeat(5000) + "x")).status, 404);
 });
 
 test("content is served safely", async () => {
@@ -113,8 +118,13 @@ test("the page sets a content security policy", async () => {
   const page = await fetch(base + "/");
   assert.equal(page.status, 200);
   assert.equal(page.headers.get("content-security-policy"), "default-src 'self'; img-src 'self'; style-src 'self'; font-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
-  assert.equal((page.headers.get("content-security-policy") ?? "").includes("qbit.org"), false);
-  assert.equal((page.headers.get("content-security-policy") ?? "").includes("unsafe-inline"), false);
+  // Every source of every directive is the keyword 'self' or 'none': no host, no URL, no scheme, no unsafe keyword.
+  const directives = (page.headers.get("content-security-policy") ?? "").split(";").map((part) => part.trim().split(/\s+/));
+  assert.deepEqual(directives.map(([name]) => name), ["default-src", "img-src", "style-src", "font-src", "script-src", "connect-src", "frame-ancestors", "base-uri", "form-action"]);
+  for (const [name, ...sources] of directives) {
+    assert.equal(sources.length, 1, name);
+    assert.ok(sources[0] === "'self'" || sources[0] === "'none'", `${name} has the source ${sources[0]}`);
+  }
   assert.equal(page.headers.get("x-content-type-options"), "nosniff");
   assert.equal(page.headers.get("referrer-policy"), "no-referrer");
   const font = await fetch(base + "/fonts/chakra-petch-latin-400-normal.woff2");

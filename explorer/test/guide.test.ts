@@ -23,10 +23,8 @@ test("How it works is a menu route with a section for each topic", () => {
   ]);
   assert.equal(new Set(ids).size, ids.length);
   assert.equal(ids.length, 10);
-  for (const id of ids) {
-    assert.match(app, new RegExp(`guide-\\$\\{section\\.id\\}|guide-\\$\\{slug\\}`));
-    assert.match(app, new RegExp(`#/how-it-works/\\$\\{section\\.id\\}`));
-  }
+  assert.match(app, new RegExp(`guide-\\$\\{section\\.id\\}|guide-\\$\\{slug\\}`));
+  assert.match(app, new RegExp(`#/how-it-works/\\$\\{section\\.id\\}`));
   assert.match(app, /function scrollGuideHeading/);
   assert.match(app, /headerOffset\(\)/);
   assert.equal(app.includes("scrollIntoView"), false);

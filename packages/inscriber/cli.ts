@@ -40,7 +40,7 @@ import { assertBroadcastNetwork, parseNetwork } from "./network.ts";
 import { buildPlan, type MintPlan } from "./plan.ts";
 import { signPlan } from "./sign.ts";
 import { assertReserveSize, assertRoot, holderFlag, merkleRoot, leafPreimage } from "./verify.ts";
-import { loadCanonical } from "../../scripts/canonical-batch.ts";
+import { groupsOf, loadCanonical, type MintShape } from "../../scripts/canonical-batch.ts";
 
 function flags(argv: string[]): Record<string, string | boolean> {
   const out: Record<string, string | boolean> = {};
@@ -97,7 +97,21 @@ type CollectionProfile = {
   reserveGroups: { trait_type: string; value: string; count: number }[];
   reserveExtra: number;
   reserveCount: number;
+  /** Items per reveal. An operator setting with no default; `plan` asks for it. */
+  batchSize?: number;
 };
+
+/** What the loader needs from the profile: how many items the zip holds. The inscriber numbers items from 1. */
+function shapeOf(profile: CollectionProfile | null): MintShape {
+  if (!profile) throw new Error("missing --collection");
+  if (profile.first !== 1) throw new Error(`the reference inscriber numbers the items from 1, but the collection profile says first ${profile.first}`);
+  return { supply: profile.supply };
+}
+
+function batchSizeOf(profile: CollectionProfile): number {
+  if (profile.batchSize === undefined) throw new Error("the collection profile needs batchSize, the number of items in each reveal");
+  return profile.batchSize;
+}
 
 async function readProfile(flag: Record<string, string | boolean>, required: true): Promise<CollectionProfile>;
 async function readProfile(flag: Record<string, string | boolean>, required: false): Promise<CollectionProfile | null>;
@@ -160,13 +174,15 @@ async function main(): Promise<void> {
   }
   if (command === "assign" || command === "plan" || command === "sign") {
     const profile = command === "sign" ? await readProfile(flag, false) : await readProfile(flag, true);
+    // `plan` splits the items into reveals of the declared size. Ask for it before the zip is read.
+    const batchSize = command === "plan" ? batchSizeOf(profile as CollectionProfile) : 0;
     // A rehearsal sign passes --assignment and no collection profile. It must
     // not need the collection zip. Every other path recomputes the root.
     // A plan that inscribes only a price has no item and no reserve. It is signed without the zip.
     const earlyPlan = command === "sign" && typeof flag.plan === "string" ? JSON.parse(readFileSync(flag.plan, "utf8")) as MintPlan : null;
     const priceField = profile && earlyPlan ? pricePlanField(earlyPlan) : null;
     const signWithoutZip = command === "sign" && (priceField !== null || (!profile && typeof flag.assignment === "string"));
-    const canonical = signWithoutZip ? null : await loadCanonical(text(flag, "zip"));
+    const canonical = signWithoutZip ? null : await loadCanonical(text(flag, "zip"), shapeOf(profile));
     const root = canonical
       ? merkleRoot(canonical.items.map((item, index) => leafPreimage(index + 1, item.body, item.metadata ?? new Uint8Array())))
       : "";
@@ -231,7 +247,7 @@ async function main(): Promise<void> {
         root,
         utxo: { txid: utxo.txid, vout: utxo.vout, value: BigInt(utxo.value), script: Buffer.from(utxo.script, "hex") },
         genesis: { body: canonical.collectionJson, leafList: canonical.leafList, field5: await mainnetOrCollectionField(network, flag, pubs.issuerPublic, root, assignment.saleCommitment, profile) },
-        batches: canonical.groupsOf625.map((group, index) => ({
+        batches: groupsOf(canonical.items, batchSize).map((group, index) => ({
           name: `batch-${index}`,
           items: canonical.items.slice(group.start, group.start + group.count).map((item, offset) => ({
             ...item,
@@ -357,7 +373,7 @@ async function main(): Promise<void> {
     const utxo = JSON.parse(readFileSync(text(flag, "utxo"), "utf8")) as { txid: string; vout: number; value: string; script: string };
     const pubs = JSON.parse(readFileSync(text(flag, "pub"), "utf8")) as { issuerPublic: string };
     const profile = await readProfile(flag, true);
-    const canonical = await loadCanonical(text(flag, "zip"));
+    const canonical = await loadCanonical(text(flag, "zip"), shapeOf(profile));
     const leaves = canonical.items.map((item, index) => leafPreimage(index + 1, item.body, item.metadata ?? new Uint8Array()));
     const root = merkleRoot(leaves);
     const pieces = [];

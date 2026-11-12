@@ -41,6 +41,7 @@ test("status reports the indexer snapshot", async () => {
   assert.equal(body.snapshot.stale, false);
   assert.equal(body.indexer.mock, true);
   assert.equal(body.rpc.enabled, false);
+  assert.deepEqual(body.artSize, { width: 24, height: 24 });
 });
 
 test("collection matches the manifest and lists pieces", async () => {

@@ -354,7 +354,7 @@ Averages per item from the canonical manifest: PNG body 249.5 bytes, CBOR metada
 | Result | Value |
 |---|---|
 | Items per reveal at the 400,000 limit | a greedy in-order pack is 15 reveals (up to 723 of the lighter items) |
-| Recommended | 16 reveals of 625 items. Measured weight 345,083 to 372,817 bytes |
+| Recommended for the 10,000-item image example | 16 reveals of 625 items. Measured weight 345,083 to 372,817 bytes |
 | Item reveals in total | 5,844,107 bytes |
 | Genesis + leaf list (one reveal, 320,000-byte list) | 326,064 bytes in the regtest run, mined. 326,392 bytes on mainnet (PINS-5 §6.2) |
 | Fan-out that funds those 17 commit outputs | 4,548 bytes in the regtest run (17 outputs plus change), and on mainnet |

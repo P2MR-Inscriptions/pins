@@ -29,7 +29,7 @@ before(async () => {
       inscriptionsAt = Date.now() - started;
       return send({ inscriptions: Array.from({ length: TOTAL }, (_, n) => item(n)) });
     }
-    if (url.pathname === "/collection") return send({ status: "present", name: "Flatbits", supply: TOTAL, first: 1, genesisId: item(0).id, root: "00", issuer: "ab", itemType: "image/png" });
+    if (url.pathname === "/collection") return send({ status: "present", name: "Example", supply: TOTAL, first: 1, genesisId: item(0).id, root: "00", issuer: "ab", itemType: "image/png" });
     if (url.pathname === "/pieces") {
       piecesStarted = piecesStarted || Date.now() - started;
       const offset = Number(url.searchParams.get("offset") ?? 0);

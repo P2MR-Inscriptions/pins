@@ -15,10 +15,10 @@ test("back returns to the explorer list and falls back for a direct detail link"
   assert.equal(backHash(null, detail), "#/inscriptions");
   assert.equal(backHash(detail, detail), "#/inscriptions");
   assert.equal(isTransientHash("#/number/12"), true);
-  assert.equal(isTransientHash("#/flatbit/12"), true);
+  assert.equal(isTransientHash("#/item/12"), true);
   assert.equal(isTransientHash("#/inscriptions?offset=104"), false);
   assert.equal(backHash("#/number/12", detail), "#/inscriptions");
-  assert.equal(backHash("#/flatbit/3", detail), "#/inscriptions");
+  assert.equal(backHash("#/item/3", detail), "#/inscriptions");
   assert.equal(backHash("#/inscriptions?offset=104", detail), "#/inscriptions?offset=104");
   assert.equal(backLabel("#/collection?offset=100"), "Back to collection");
   assert.equal(backLabel("#/inscriptions"), "Back to Latest P2MR Inscriptions");

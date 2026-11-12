@@ -159,16 +159,16 @@ test("a leaf list field 5 that is not pins-leaflist/1 is ignored", async () => {
   assert.equal((await collectionView(indexer, cursor)).leafListId, "plain");
 });
 
-test("encodeGenesisField output is recognized for the public FlatBits shape", async () => {
+test("encodeGenesisField output is recognized for a 10,000-item collection", async () => {
   const issuer = "12".repeat(32);
   const field = await encodeGenesisField({
     schema: "pins-collection/1",
-    name: "Flatbits",
+    name: "Example",
     supply: 10000,
     first: 1,
-    namePrefix: "Flatbit#",
+    namePrefix: "Item#",
     itemType: "image/png",
-    root: "70768608a21dec18f611a643ed1f519a19df4a0eca35c65a62588d383dcaf7b2",
+    root: "9a".repeat(32),
     issuer,
     saleCommitment: "34".repeat(32),
   });
@@ -177,6 +177,6 @@ test("encodeGenesisField output is recognized for the public FlatBits shape", as
   const view = await collectionView(indexer, cursor);
   assert.equal(view.status, "present");
   assert.equal(view.supply, 10000);
-  assert.equal(view.namePrefix, "Flatbit#");
-  assert.equal(view.root, "70768608a21dec18f611a643ed1f519a19df4a0eca35c65a62588d383dcaf7b2");
+  assert.equal(view.namePrefix, "Item#");
+  assert.equal(view.root, "9a".repeat(32));
 });

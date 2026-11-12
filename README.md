@@ -21,7 +21,11 @@ This repository is the protocol and the reference indexer and inscriber. A colle
 
 ## Explorer
 
-A local read-only explorer is in [`explorer/`](explorer/README.md). It is Explorer 1.0.1. It does not change this protocol. Run its commands from `explorer/`, not from the repository root. It indexes with the indexer of this repository: `npm run indexer` there starts `scripts/indexer-run.ts` from the repository root, so run `npm ci` in the repository root first. Root `npm run lint` ignores `explorer/` so the protocol check is unchanged. Check the explorer with its own `npm run typecheck` and `npm test` from that directory. Continuous integration runs those two commands in a separate job on Node 22. The explorer package has no lint or build script. Its default manifest features the FlatBits collection. `MANIFEST` can name another file. That default is not a default of the protocol tools.
+A local read-only explorer is in [`explorer/`](explorer/README.md). It is Explorer 1.0.1. It does not change this protocol. Run its commands from `explorer/`, not from the repository root. It indexes with the indexer of this repository: `npm run indexer` there starts `scripts/indexer-run.ts` from the repository root, so run `npm ci` in the repository root first. Root `npm run lint` ignores `explorer/` so the protocol check is unchanged. Check the explorer with its own `npm run typecheck` and `npm test` from that directory. Continuous integration runs those two commands in a separate job on Node 22. The explorer package has no lint or build script. It features one collection only when a manifest names it (`MANIFEST`). `explorer/config/examples/flatbits.json` is the manifest of a real public collection, shipped as an example. No collection is a default of the explorer or of the protocol tools.
+
+## Worked example
+
+FlatBits is the first collection inscribed on Qbit mainnet. [docs/examples/flatbits.md](docs/examples/flatbits.md) records it as a public example: its genesis id, Merkle root, heights, and the indexer result for it. It is an example, not a default of any tool here.
 
 ## Network
 

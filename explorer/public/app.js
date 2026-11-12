@@ -1,4 +1,4 @@
-// Flatbits explorer front end. Plain ES module, no dependencies and no remote scripts.
+// PINS explorer front end. Plain ES module, no dependencies and no remote scripts.
 // API text is untrusted: it is inserted only with textContent / createTextNode.
 import { brand } from "./brand.js";
 import { mediaKind, normalizeType, PREVIEW_BYTES } from "./content-view.js";
@@ -429,7 +429,7 @@ async function home() {
       side.length ? h("div", { class: "home-side" }, side.map((item, index) => cell(item, index + 1))) : null),
     h("div", { class: "home-links" },
       link("#/inscriptions", "Browse all P2MR Inscriptions →"),
-      link("#/collection", `Open the ${brand.collectionNav} collection →`))) : null;
+      link("#/collection", "Open the collection →"))) : null;
   page.show(
     h("div", { class: "home-gap home-gap-top", "aria-hidden": "true" }),
     intro,
@@ -1208,12 +1208,12 @@ function applyTheme(t) {
   themeButton.setAttribute("title", action);
 }
 let savedTheme = null;
-try { savedTheme = localStorage.getItem("flatbits-theme") || localStorage.getItem("pins-theme"); } catch { /* storage unavailable */ }
+try { savedTheme = localStorage.getItem("pins-theme"); } catch { /* storage unavailable */ }
 applyTheme(savedTheme === "light" ? "light" : "dark");
 themeButton.addEventListener("click", () => {
   const next = document.documentElement.classList.contains("dark") ? "light" : "dark";
   applyTheme(next);
-  try { localStorage.setItem("flatbits-theme", next); } catch { /* ignore */ }
+  try { localStorage.setItem("pins-theme", next); } catch { /* ignore */ }
 });
 
 document.getElementById("q").placeholder = brand.searchPlaceholder;

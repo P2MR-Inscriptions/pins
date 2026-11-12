@@ -31,7 +31,7 @@ declares none, and is as authentic as one that does. Everything is final and imm
 | Creator wallet | receives the creator's fixed items (section 8.1) | creator's own P2MR wallet, separate from `K_iss` and `K_sale` |
 
 `K_iss` signs the reveal transactions of the mint, then the closing and the sale reveal. In the
-plan of §6.1 that is 17 reveals. The count follows the batching. It is not a
+plan of §6.1 a mint of `supply` items with `batch` items per reveal is `1 + ceil(supply / batch)` reveals, which is 17 for the 10,000-item example. The count follows the batching. It is not a
 separate consensus limit, and it stays far under the 2^30 limit of SLH-DSA bounded30.
 
 ## 3. Genesis inscription
@@ -158,8 +158,10 @@ A wrong field 5 excludes that candidate, and an absent one does not.
 
 ### 6.1 Funding the mint
 
-One 10,000-item mint inscribes the genesis and the items as 17 reveals: the genesis reveal (collection
-document plus the leaf list) and 16 reveals of 625 items. Each reveal spends its own commit output.
+A mint inscribes the genesis reveal (collection document plus the leaf list) and then the items, `batch`
+items per reveal, so `1 + ceil(supply / batch)` reveals. Each reveal spends its own commit output. The
+steps and measurements below are for one example, 10,000 items with 625 per reveal: the genesis reveal
+and 16 reveals of 625 items, 17 reveals in all. `batch` is an inscriber setting. It is not on chain.
 
 1. Build the 17 commit roots.
 2. Broadcast one fan-out transaction that pays those 17 commit outputs. Its change output is last,
@@ -198,7 +200,7 @@ recorded `too-long-mempool-chain, exceeds descendant size limit for tx 459f4ebaf
 
 ### 6.2 Mainnet record
 
-The first 10,000-item mint on mainnet used the plan of section 6.1. These figures were read from the
+The first mint on mainnet is the public example collection FlatBits (genesis `15d6f9c48865b579f7d1144e4d2d71d905c6fe04458bebc814052a3e39a07784i0`, [example](../examples/flatbits.md)). It used the plan of section 6.1 with 10,000 items and 625 per reveal. These figures were read from the
 chain on 2026-11-12 (`mempool.qbit.org`). Fees are 1 bit per byte for every reveal.
 
 | Transaction | Block | Bytes | Fee in bits |

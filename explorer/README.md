@@ -1,6 +1,6 @@
 # PINS Explorer
 
-A local, read-only explorer for PINS. It listens on loopback. It does not sign, broadcast, or open a public port. A manifest in `config/` can feature one collection. Flatbits is that configuration, not a separate protocol.
+A local, read-only explorer for PINS. It listens on loopback. It does not sign, broadcast, or open a public port. A manifest can feature one collection. `config/examples/flatbits.json` is a real public example of one, not a separate protocol and not a default.
 
 PINS is an independent protocol.
 
@@ -52,11 +52,11 @@ Ctrl+C stops the mock and the explorer that this command started. `npm test` use
 
 The RPC password is placed in the indexer process environment. It is not an npm, node, or curl argument. `npm --silent` only suppresses npm's log line. Curl reads the user from stdin.
 
-The genesis id is read from `config/manifest.flatbits.json` unless `MANIFEST` names another file. The indexer is started with that id as `--genesis`. FlatBits is the manifest shipped with this package. It is collection configuration, not a hard-coded protocol rule.
+The genesis id is read from the file that `MANIFEST` names. Without `MANIFEST` the explorer looks for `config/manifest.json`. If that file is absent, no collection is featured and the indexer is started without `--genesis`. When a manifest is read, the indexer is started with its genesis id as `--genesis`. `.env.example` sets `MANIFEST=config/examples/flatbits.json`, the FlatBits manifest, as a worked example of a real mainnet collection. Replace that line with your own manifest. The manifest is collection configuration, not a protocol rule, and the page names its items "item" (`#/item/12`) for every collection.
 
 ## Limits
 
-Explorer 1.0.1 is this package only. It does not change the indexer and it is not a production release. The page was checked with the mock indexer. A separate mainnet run of an earlier build reached height 165925 and 10002 inscriptions; this build does not repeat that check, and it does not decide whether all 10,000 Flatbits are authentic. While the indexer is catching up, each RPC call is a blocking `spawnSync`, so its own HTTP server does not answer during that call. This is not a production release.
+Explorer 1.0.1 is this package only. It does not change the indexer and it is not a production release. The page was checked with the mock indexer. A separate mainnet run of an earlier build reached height 165925 and 10002 inscriptions; this build does not repeat that check, and it does not decide whether every item of a collection is authentic. While the indexer is catching up, each RPC call is a blocking `spawnSync`, so its own HTTP server does not answer during that call. This is not a production release.
 
 The indexer still returns every inscription in one response, and this process keeps that snapshot in memory. The browser asks for one page of images, not the whole collection. One indexer process follows one genesis id.
 

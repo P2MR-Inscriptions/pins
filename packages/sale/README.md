@@ -4,7 +4,7 @@
 
 Code for the trade of PINS-6 (Draft): a buyer pays and receives a P2MR Inscription in one Qbit transaction, or nothing happens. The seller signs one input with `0x83` (`SIGHASH_SINGLE | SIGHASH_ANYONECANPAY`), the buyer completes and signs the rest.
 
-This is a **library**. There is no command line, no HTTP route and no wallet in this repository for a trade. You call these functions from your own program (a marketplace, a sale server, a wallet). It never signs, never broadcasts, and never talks to a node or an indexer by itself. It changes no rule of the indexer: ownership is decided by the indexer's FIFO rule (PINS-3 §3) whatever these checks say. The checks only keep a builder from making a bad trade and let a buyer refuse to sign one.
+This is a **library**. There is no HTTP route, no wallet and no sale server in this repository. You call these functions from your own program (a marketplace, a sale server, a wallet). The library itself never signs, never broadcasts, and never talks to a node or an indexer. One runnable example, `regtest-trade.ts` (below), does all of that on a regtest node, so you can see one trade from start to end. It changes no rule of the indexer: ownership is decided by the indexer's FIFO rule (PINS-3 §3) whatever these checks say. The checks only keep a builder from making a bad trade and let a buyer refuse to sign one.
 
 ## Where it fits
 
@@ -91,6 +91,28 @@ if (!report.ok || report.notChecked.length > 0) throw new Error(JSON.stringify(r
 ```
 
 `txid` in `heldAt`, in `outpointsOf` and in the indexer API is the usual display-order hex. A PSBT stores outpoints in internal byte order, which these functions reverse for you.
+
+## Run a trade on regtest
+
+`regtest-trade.ts` sells one P2MR Inscription between two wallets of a regtest node. Qbit Core's wallet signs on both sides, with `0x83` for the seller. It is an example of how the pieces fit, for regtest only (it refuses to run against another chain), and not a marketplace.
+
+```text
+node --experimental-strip-types packages/sale/regtest-trade.ts --rpc http://127.0.0.1:18452/ --rpc-user USER --rpc-password PASSWORD --indexer http://127.0.0.1:8787 --id <P2MR Inscription id> --seller-wallet holder --buyer-wallet buyer --price 50000 --mine
+```
+
+| Flag | Meaning |
+|---|---|
+| `--rpc`, `--rpc-user`, `--rpc-password` | The regtest node. The two wallets are named by `--seller-wallet` and `--buyer-wallet` |
+| `--indexer` | The indexer API (default `http://127.0.0.1:8787`) |
+| `--id` | The P2MR Inscription to sell. It must be at offset 0 of an output the seller wallet owns |
+| `--price` | The seller's payment, in bits |
+| `--fee` | The transaction fee in bits (default 20,000) |
+| `--mine` | Mine 6 blocks to the buyer so the indexer shows the new owner. Without it the transaction stays in the mempool |
+| `--dry-run` | Build, sign the seller input and run the buyer's check, then stop before the buyer signs and sends |
+
+What it does, in order: reads the P2MR Inscription and its output from the indexer and the node; picks three coins of the buyer wallet (the two smallest are the paddings, the largest funds the price and the fee), leaving out any coin that holds a P2MR Inscription; builds the template with `primarySalePsbt`; runs `checkPurchasePsbt` in strict mode with the indexer's `/output` answers; has the seller wallet sign input 2 with `SINGLE|ANYONECANPAY`; checks that signing changed no output; has the buyer wallet sign and finalize; checks that the seller input's witness ends with `83`; sends; and waits until the indexer lists the buyer's address as the owner.
+
+Wallet support: Qbit Core's wallet signs `0x83` (this example). Qbit Wallet, the browser extension, signed only `SIGHASH_DEFAULT` as of v1.0.7, so it cannot make a seller listing (PINS-6 §7). The buyer's side with the default hash type is fine in both. [Sell and trade](../../docs/guides/SALE-AND-TRADE.md) covers the sale secret and how a primary sale is served, and [the regtest guide](../../docs/guides/REGTEST.md#9-trade-a-p2mr-inscription) runs this from a fresh node.
 
 ## Tests
 

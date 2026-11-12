@@ -12,7 +12,8 @@
     "indexer:run": "node --experimental-strip-types scripts/indexer-run.ts",
     "inscribe": "node --experimental-strip-types packages/inscriber/cli.ts",
     "mainnet:preflight": "node --experimental-strip-types packages/inscriber/cli.ts preflight",
-    "check:terminology": "node scripts/check-terminology.mjs"
+    "check:terminology": "node scripts/check-terminology.mjs",
+    "example:collection": "node --experimental-strip-types scripts/example-collection.ts"
   },
   "dependencies": {
     "@qbit-oss/pqc": "^0.1.1",

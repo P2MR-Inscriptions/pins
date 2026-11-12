@@ -130,7 +130,7 @@ npm run indexer:serve -- \
   --port 8787
 ```
 
-The HTTP routes are in [docs/indexer/API.md](docs/indexer/API.md). `/status` includes `stateHash`. Two indexers that follow the same chain to the same tip produce the same digest.
+The HTTP routes are in [docs/indexer/API.md](docs/indexer/API.md). The list endpoints take optional `offset` and `limit`, and `/status` lists the standards and record schemas the indexer implements. `/status` includes `stateHash`. Two indexers that follow the same chain to the same tip produce the same digest.
 
 ## Inscriber
 

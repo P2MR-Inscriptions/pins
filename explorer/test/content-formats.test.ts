@@ -67,7 +67,7 @@ before(async () => {
       res.end(JSON.stringify({ network: "regtest", chain: "regtest", height: 3, hash: "aa".repeat(32), stateHash: "bb".repeat(32), inscriptions: 14 }));
       return;
     }
-    if (path === "/inscriptions") {
+    if (path.split("?")[0] === "/inscriptions") {
       res.setHeader("content-type", "application/json");
       res.end(JSON.stringify({ inscriptions: [
         row(textId, 1, "text/plain"),

@@ -11,7 +11,13 @@ import { parsePrice, type PriceRecord } from "../inscriber/preflight.ts";
 import { CONFIRMATIONS_FINAL } from "../protocol/index.mjs";
 import { leafHash, leafListRoot } from "../protocol/merkle.mjs";
 import { decodeCbor } from "./cbor.ts";
+import { MAX_PAGE_LIMIT } from "./paging.ts";
 import type { Indexer, Inscription } from "./pins.ts";
+
+/** Field 5 schema texts of the records the indexer reads, defined once (PINS-5 §6, §8.5 and §7). The collection and price schemas are settings of the indexer. */
+export const LEAFLIST_SCHEMA = "pins-leaflist/1";
+export const SALE_REVEAL_SCHEMA = "pins-sale-reveal/1";
+export const CLOSE_SCHEMA = "pins-close/1";
 
 type ReserveModule = {
   selectReserve: (
@@ -328,7 +334,7 @@ function leafListOf(indexer: Indexer, genesis: Genesis): Inscription | undefined
       } catch {
         continue;
       }
-      if (Object.keys(decoded).join(",") !== "schema,root" || decoded.schema !== "pins-leaflist/1") continue;
+      if (Object.keys(decoded).join(",") !== "schema,root" || decoded.schema !== LEAFLIST_SCHEMA) continue;
       const root = decoded.root;
       if (!(root instanceof Uint8Array) || root.length !== 32 || Buffer.from(root).toString("hex") !== genesis.root) continue;
     }
@@ -369,7 +375,7 @@ function saleRevealOf(indexer: Indexer, genesis: Genesis): { inscription: Inscri
   if (!genesis.saleCommitment) return null;
   for (const item of recordCandidates(indexer, genesis)) {
     const record = recordOf(item);
-    if (!record || Object.keys(record).join(",") !== "schema,root,sale_secret" || record.schema !== "pins-sale-reveal/1") continue;
+    if (!record || Object.keys(record).join(",") !== "schema,root,sale_secret" || record.schema !== SALE_REVEAL_SCHEMA) continue;
     const root = bytes32(record.root);
     const secret = bytes32(record.sale_secret);
     if (!root || root.toString("hex") !== genesis.root || !secret || sha256(secret).toString("hex") !== genesis.saleCommitment) continue;
@@ -386,7 +392,7 @@ function saleRevealOf(indexer: Indexer, genesis: Genesis): { inscription: Inscri
 function closingOf(indexer: Indexer, genesis: Genesis): Inscription | null {
   for (const item of recordCandidates(indexer, genesis)) {
     const record = recordOf(item);
-    if (!record || Object.keys(record).join(",") !== "schema,root,count" || record.schema !== "pins-close/1") continue;
+    if (!record || Object.keys(record).join(",") !== "schema,root,count" || record.schema !== CLOSE_SCHEMA) continue;
     const root = bytes32(record.root);
     if (!root || root.toString("hex") !== genesis.root || record.count !== genesis.supply) continue;
     return item;
@@ -589,9 +595,9 @@ export function pieceByNumber(view: CollectionView, number: number): PieceView |
   return view.pieces?.find((piece) => piece.number === number) ?? null;
 }
 
-/** One page of pieces for a gallery. `limit` is capped so a client cannot ask for the whole supply at once. */
+/** One page of pieces for a gallery. `limit` is capped (`MAX_PAGE_LIMIT`) so a client cannot ask for the whole supply at once. */
 export function piecePage(pieces: PieceView[], offset: number, limit: number, authenticOnly = false): { total: number; offset: number; limit: number; pieces: PieceView[] } | null {
-  if (!Number.isInteger(offset) || offset < 0 || !Number.isInteger(limit) || limit < 1 || limit > 100) return null;
+  if (!Number.isInteger(offset) || offset < 0 || !Number.isInteger(limit) || limit < 1 || limit > MAX_PAGE_LIMIT) return null;
   const source = authenticOnly ? pieces.filter((piece) => piece.authentic) : pieces;
   return { total: source.length, offset, limit, pieces: source.slice(offset, offset + limit) };
 }

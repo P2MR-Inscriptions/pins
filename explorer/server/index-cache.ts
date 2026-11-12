@@ -27,7 +27,14 @@ export type Piece = {
   attributes: { trait_type: string; value: string }[];
 };
 
-type IndexerStatus = { network: string; chain: string; height: number; hash: string | null; stateHash: string | null; inscriptions: number; mock?: boolean };
+type IndexerStatus = {
+  network: string; chain: string; height: number; hash: string | null; stateHash: string | null; inscriptions: number; mock?: boolean;
+  /** The standards and record schemas the indexer reports. Absent from an indexer that predates them. */
+  standards?: { id: string; status: string }[]; schemas?: Record<string, string>;
+};
+
+/** Rows per request when the P2MR Inscription list is read. The indexer accepts up to 1000. */
+const INSCRIPTION_PAGE = 1000;
 
 async function get<T>(path: string, signal: AbortSignal): Promise<T> {
   const response = await fetch(`${config.indexerUrl}${path}`, { signal, redirect: "error" });
@@ -120,6 +127,32 @@ export class IndexCache {
     return pieces;
   }
 
+  /**
+   * Read the whole P2MR Inscription list in pages. An indexer from before paging ignores `offset` and `limit`
+   * and sends every row without a `total`: that answer is taken as the whole list. `total` is null then.
+   */
+  private async loadInscriptions(signal: AbortSignal): Promise<{ inscriptions: Inscription[]; total: number | null }> {
+    const first = await get<{ total?: unknown; inscriptions: Inscription[] }>(`/inscriptions?offset=0&limit=${INSCRIPTION_PAGE}`, signal);
+    const total = first.total;
+    if (total === undefined) return { inscriptions: first.inscriptions, total: null };
+    if (typeof total !== "number" || !Number.isInteger(total) || total < 0) throw new Error("indexer inscriptions total is invalid");
+    if (total > config.maxInscriptions) throw new Error("indexer snapshot exceeds the inscription limit");
+    const pages = Math.max(1, Math.ceil(total / INSCRIPTION_PAGE));
+    const chunks: Inscription[][] = new Array(pages);
+    chunks[0] = first.inscriptions;
+    let cursor = 1;
+    const worker = async () => {
+      while (cursor < pages) {
+        const index = cursor;
+        cursor += 1;
+        const page = await get<{ inscriptions: Inscription[] }>(`/inscriptions?offset=${index * INSCRIPTION_PAGE}&limit=${INSCRIPTION_PAGE}`, signal);
+        chunks[index] = page.inscriptions;
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(4, pages - 1) }, () => worker()));
+    return { inscriptions: chunks.flat(), total };
+  }
+
   private async refresh(): Promise<void> {
     const signal = AbortSignal.timeout(config.snapshotTimeoutMs);
     try {
@@ -132,7 +165,7 @@ export class IndexCache {
         return;
       }
       this.loading = true;
-      const { inscriptions } = await get<{ inscriptions: Inscription[] }>("/inscriptions", signal);
+      const { inscriptions, total } = await this.loadInscriptions(signal);
       if (inscriptions.length > config.maxInscriptions) throw new Error("indexer snapshot exceeds the inscription limit");
       // The latest inscriptions can be shown before every collection piece page returns.
       if (!this.ready) this.publishPreview(inscriptions, status.height);
@@ -147,6 +180,8 @@ export class IndexCache {
         this.error = null;
         return;
       }
+      // The tip did not move, so the pages are one list. A count that differs from the total is an indexer fault.
+      if (total !== null && inscriptions.length !== total) throw new Error("indexer inscription pages do not add up to the total");
       this.apply(inscriptions, collection, pieces, status.height);
       this.piecesComplete = true;
       this.previewReady = true;

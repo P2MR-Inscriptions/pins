@@ -9,6 +9,8 @@ Every response sets:
 - `Content-Security-Policy: default-src 'none'; sandbox`
 - `Cache-Control: no-store`
 
+A response to a request the API handles also carries `X-Indexed-Tip: <height>:<hash>`, the tip the answer was computed for. It is absent while the index is empty. See [Reading a whole list](#reading-a-whole-list).
+
 `/content/:id` uses the inscription's recorded content type instead of JSON. Those bytes are not executed.
 A recorded content type that is not a plain header value (empty, or with a control or non-ASCII character) is served as `application/octet-stream`. `/inscription/{id}` still shows the recorded value.
 
@@ -26,7 +28,7 @@ info:
 paths:
   /status:
     get:
-      summary: Tip height and hash, state hash, inscription count, undo rows, and the activation height the database started from
+      summary: Tip height and hash, state hash, P2MR Inscription count, undo rows, the activation height the database started from, the standards the indexer implements, and the schema texts it reads
       responses:
         "200":
           description: Indexer status
@@ -44,34 +46,50 @@ paths:
         "404": { description: Missing }
   /inscriptions:
     get:
-      summary: Inscriptions, optionally filtered by owner address
+      summary: P2MR Inscriptions by number, optionally filtered by owner address. Every row unless limit is given.
       parameters:
         - in: query
           name: owner
           schema: { type: string }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 1000 }
       responses:
-        "200": { description: List }
+        "200": { description: "List with total, offset and limit" }
+        "400": { description: Bad offset or limit }
   /output/{outpoint}:
     get:
-      summary: Inscriptions at txid:vout
+      summary: P2MR Inscriptions at txid:vout, by number. Every row unless limit is given.
       parameters:
         - in: path
           name: outpoint
           required: true
           schema: { type: string, example: "abc:0" }
+        - in: query
+          name: offset
+          schema: { type: integer, minimum: 0, default: 0 }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 1000 }
       responses:
-        "200": { description: Inscriptions at that output }
-        "400": { description: Bad percent escape in the path }
+        "200": { description: "P2MR Inscriptions at that output, with total, offset and limit" }
+        "400": { description: Bad percent escape in the path, or bad offset or limit }
   /pieces:
     get:
-      summary: One page of collection pieces. offset is the first index, limit is 1 to 100. authentic=1 returns only pieces the indexer marks authentic.
+      summary: One page of collection pieces. offset is the first index, limit is 1 to 1000 (default 100). authentic=1 returns only pieces the indexer marks authentic.
       parameters:
         - in: query
           name: offset
-          schema: { type: integer }
+          schema: { type: integer, minimum: 0, default: 0 }
         - in: query
           name: limit
-          schema: { type: integer, maximum: 100 }
+          schema: { type: integer, minimum: 1, maximum: 1000, default: 100 }
+        - in: query
+          name: authentic
+          schema: { type: string, enum: ["1"] }
       responses:
         "200": { description: Page }
         "400": { description: Bad offset or limit }
@@ -108,6 +126,89 @@ paths:
             application/octet-stream:
               schema: { type: string, format: binary }
 ```
+
+## Reading lists
+
+Three endpoints return lists: `/inscriptions` (the path is fixed; it lists P2MR Inscriptions), `/output/{outpoint}` and `/pieces`. They share one rule, so a client written for one works on the others.
+
+| Query parameter | Meaning |
+|---|---|
+| `offset` | Index of the first row. A whole number from 0. Default 0. |
+| `limit` | Number of rows. A whole number from 1 to 1000. |
+
+- **Digits only.** `1e1`, `0x10`, `-1`, `1.5`, ` 5` and an empty value are refused with `400` and `{ "error": "offset must be a whole number from 0 and limit a whole number from 1 to 1000" }`. A `limit` of 1001 or more is refused too: it is never cut down to 1000 without saying so.
+- **The answer says what it holds.** Every list answer has `total` (the rows of the whole list, after the `owner` or `authentic` filter), `offset`, and `limit` (the limit that applied, or `null` when the request set none). The rows are under `inscriptions` (`/inscriptions`, `/output/{outpoint}`) or `pieces` (`/pieces`). An `offset` at or past `total` gives an empty list and the same `total`.
+- **Order.** `/inscriptions` and `/output/{outpoint}` list by P2MR Inscription number, `/pieces` by piece number. The order does not change between two pages read at the same tip.
+- **With no `limit`.** `/pieces` gives 100 rows, as it always did. `/inscriptions` and `/output/{outpoint}` give every row, as they did before paging existed. That keeps a client written for that behaviour from receiving a list cut short without knowing it. The whole list is not bounded: for the public example (10,002 P2MR Inscriptions) it is 14.7 MB, and it grows with the chain. New code should always send `limit`. `limit=1000` is a good page.
+- **Keys.** The existing keys are unchanged. `total`, `offset` and `limit` were added to `/inscriptions` and `/output/{outpoint}`; `/pieces` had them.
+
+```
+GET /inscriptions?owner=<address>&offset=0&limit=2
+{ "total": 5, "offset": 0, "limit": 2, "inscriptions": [ { "id": "…i0", "number": 0, … }, { "id": "…i1", "number": 1, … } ] }
+```
+
+### Reading a whole list
+
+A block can arrive between two pages, and then the list may have changed. Every answer carries `X-Indexed-Tip` (`<height>:<hash>`), so a client can tell without another request: if the value differs from the first page, start again. A complete read:
+
+```js
+// Reads every row of a list endpoint at one tip. `key` is "inscriptions" or "pieces".
+async function readAll(base, path, key) {
+  for (;;) {
+    const rows = [];
+    let tip = null;
+    let total = 0;
+    let moved = false;
+    do {
+      const response = await fetch(`${base}${path}?offset=${rows.length}&limit=1000`);
+      const body = await response.json();
+      const seen = response.headers.get("x-indexed-tip");
+      if (tip !== null && seen !== tip) { moved = true; break; }
+      if (body[key].length === 0 && rows.length < body.total) throw new Error("the list did not add up");
+      tip = seen;
+      total = body.total;
+      rows.push(...body[key]);
+    } while (rows.length < total);
+    if (!moved) return rows;
+  }
+}
+```
+
+The explorer reads `/inscriptions` this way, 1000 rows at a time, and drops a snapshot whose tip moved. An indexer from before paging ignores `offset` and `limit` and sends every row with no `total`; the explorer takes that as the whole list.
+
+## Status
+
+`/status` answers:
+
+| Key | Meaning |
+|---|---|
+| `network`, `chain` | The network the indexer follows and the chain name of its node. |
+| `height`, `hash` | The tip. `-1` and `null` while the index is empty. |
+| `stateHash` | The digest of the state at the tip. See [State hash](#state-hash). |
+| `inscriptions` | The number of P2MR Inscriptions indexed. |
+| `undoBlocks` | The blocks the undo log can still roll back. |
+| `activationHeight` | The height the database started from, or `null`. |
+| `standards` | The standards of [docs/specs](../specs/README.md) this indexer implements. |
+| `schemas` | The `schema` texts of the records it reads from field 5. |
+
+```
+"standards": [ { "id": "PINS-1", "status": "draft" }, { "id": "PINS-2", "status": "draft" }, { "id": "PINS-3", "status": "draft" }, { "id": "PINS-4", "status": "draft" }, { "id": "PINS-5", "status": "draft" } ],
+"schemas": { "collection": "pins-collection/1", "price": "pins-price/1", "leafList": "pins-leaflist/1", "saleReveal": "pins-sale-reveal/1", "close": "pins-close/1" }
+```
+
+- **`standards`** lists PINS-1 to PINS-5. PINS-6 (trades between wallets and marketplaces) is not listed, because the indexer reads no PSBT. `status` is the status line of the document. The documents carry no version number: they are Draft, and every change to one is recorded in [docs/specs/CHANGELOG.md](../specs/CHANGELOG.md). A client that depends on a standard should check that its id is in the list, and treat a status other than `draft` as news worth reading. The list comes from `STANDARDS` in `packages/protocol/index.mjs`, and a test compares it with the index and the status line of every document.
+- **`schemas`** are the texts the indexer accepts. These carry a version (`/1`), which is how a record format would change. `collection` and `price` are the launch texts unless the indexer was started with a rehearsal `--schema`. `leafList`, `saleReveal` and `close` are fixed. A record with another schema text is ignored, as PINS-5 says.
+
+## Caching
+
+The indexer keeps the answer of the costly reads until the tip changes, so a gallery or an explorer polling it does not make it recompute the collection for every request:
+
+- the collection view, used by `/collection`, `/pieces` and `/pieces/{n}`;
+- the list of P2MR Inscriptions as the API shows them, with an index by output, used by `/inscriptions` and `/output/{outpoint}`.
+
+The key is the tip: its height, block hash and state hash. The state changes only when a block is applied or disconnected, and either one changes the tip. So the first request after a new block, or after a reorg (even one that ends at the same height with another block), computes the answer again, and the others share it. One tip is kept at a time and nothing is written to disk. The answers are the same as without the cache: on the mainnet replay to block 171486, `/collection`, `/pieces`, the rows of `/inscriptions` and `/status` (apart from the keys added here) are byte for byte what the version before returned. `/status`, `/inscription/{id}` and `/content/{id}` are not cached: they read the store directly, as before. `Cache-Control: no-store` is for the client's own cache and is unchanged. A program that embeds the indexer and changes `store.indexer` other than by `commit`, `disconnect` or `resync` would see stale answers until the next block.
+
+Measured on the mainnet replay to block 171486 (10,002 P2MR Inscriptions, 10,000 collection pieces), one machine: `/collection` and `/pieces` took about 410 ms for every request before. The first request at a tip takes the same time, and the following ones 1 to 3 ms. A whole `/inscriptions` answer is 14.7 MB and takes about 80 ms to serialize. Eleven pages of 1000 take about 140 ms in all, and each page 6 to 7 ms.
 
 ## State hash
 

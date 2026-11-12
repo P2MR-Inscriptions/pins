@@ -40,6 +40,7 @@ test("status reports the indexer snapshot", async () => {
   assert.equal(body.snapshot.ready, true);
   assert.equal(body.snapshot.stale, false);
   assert.equal(body.indexer.mock, true);
+  assert.deepEqual(body.indexer.standards.map((standard: { id: string }) => standard.id), ["PINS-1", "PINS-2", "PINS-3", "PINS-4", "PINS-5"]);
   assert.equal(body.rpc.enabled, false);
   assert.deepEqual(body.artSize, { width: 24, height: 24 });
 });

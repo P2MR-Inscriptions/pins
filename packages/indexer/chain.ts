@@ -8,6 +8,7 @@
 import { hexToBytes } from "@qbit-oss/protocol";
 import { readCompactSize } from "../inscriber/compact.ts";
 import { isP2mr } from "./address.ts";
+import type { FollowNetwork } from "./chains.ts";
 import type { ChainBlock, ChainTx } from "./pins.ts";
 
 export type RpcTransaction = {
@@ -90,6 +91,21 @@ export function parseTransaction(raw: Uint8Array): Parsed {
   return { inputs: vins, outputs: vouts };
 }
 
+const SUBSIDY_INITIAL = 21_000_000_000n;
+const SUBSIDY_NUMERATOR = 598n;
+const SUBSIDY_DENOMINATOR = 625n;
+/** Blocks between stepdowns. Regtest is short, as in Qbit Core's chain parameters. */
+const SUBSIDY_STEP_INTERVAL: Record<FollowNetwork, number> = { mainnet: 43_200, testnet4: 43_200, regtest: 150 };
+
+/** PINS-2 §5.1: the block subsidy in bits, from the height alone. */
+export function subsidyAt(height: number, network: FollowNetwork): bigint {
+  let subsidy = SUBSIDY_INITIAL;
+  for (let steps = Math.floor(height / SUBSIDY_STEP_INTERVAL[network]); steps > 0 && subsidy > 0n; steps -= 1) {
+    subsidy = (subsidy / SUBSIDY_DENOMINATOR) * SUBSIDY_NUMERATOR + ((subsidy % SUBSIDY_DENOMINATOR) * SUBSIDY_NUMERATOR) / SUBSIDY_DENOMINATOR;
+  }
+  return subsidy;
+}
+
 /**
  * PINS-1 §4.2: the leaf script is the second-to-last witness item once an annex is removed,
  * and the control block, the last item, must carry leaf version 0xc0. A reserved version
@@ -109,10 +125,13 @@ function leafScript(witness: Uint8Array[]): Uint8Array | undefined {
  * `p2mr` says whether a stored output is P2MR, and returns undefined when this indexer
  * has no record of its script. An input that spends a known non-P2MR output has no leaf script.
  * Outputs created earlier in the same block are visible to later transactions.
+ * The subsidy comes from the height (PINS-2 §5.1). It is not read back from the coinbase,
+ * so a coinbase that claims less than the subsidy and the fees leaves a lost tail.
  */
 export function toChainBlock(
   block: RpcBlock,
   lookup: (txid: string, vout: number) => bigint | undefined,
+  network: FollowNetwork,
   p2mr: (txid: string, vout: number) => boolean | undefined = () => undefined,
 ): ChainBlock {
   const seen = new Map<string, { value: bigint; p2mr: boolean }>();
@@ -143,17 +162,10 @@ export function toChainBlock(
       outputs: parsed.outputs.map((output) => ({ value: output.value, script: output.script })),
     });
   }
-  let fees = 0n;
-  for (const tx of txs.slice(1)) {
-    const inputTotal = tx.inputs.reduce((sum, input) => sum + input.value, 0n);
-    const outputTotal = tx.outputs.reduce((sum, output) => sum + output.value, 0n);
-    if (inputTotal > outputTotal) fees += inputTotal - outputTotal;
-  }
-  const claimed = txs[0]?.outputs.reduce((sum, output) => sum + output.value, 0n) ?? 0n;
   return {
     hash: block.hash,
     height: block.height,
-    subsidy: claimed > fees ? claimed - fees : 0n,
+    subsidy: subsidyAt(block.height, network),
     txs,
   };
 }

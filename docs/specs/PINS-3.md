@@ -82,7 +82,8 @@ Several inscriptions MAY be bound to the same bit. The second and later ones car
    outputs are spendable only after 1,000 confirmations (`src/consensus/consensus.h:19`).
 3. If the coinbase claims less than subsidy plus fees (allowed by consensus,
    `src/validation.cpp:2942-2946`), the unclaimed tail is **lost**. An inscription in it becomes
-   `lost`, permanently.
+   `lost`, permanently. The subsidy is the one of PINS-2 §5.1 for the height of the block. It is not
+   derived from the coinbase, because a miner that claims less would shift every fee bit.
 4. AuxPoW (merged-mined) blocks follow the same rule: only the Qbit block's own coinbase counts.
 
 ## 7. Burns and special outputs

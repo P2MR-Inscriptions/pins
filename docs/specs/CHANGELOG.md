@@ -34,6 +34,9 @@ today becomes invalid.
   the spent-output rule excludes only that spend.
 - PINS-2 §2. An input that spends a P2MR output with no witness items is a gap in the witness data,
   and the indexer must stop.
+- PINS-2 §5 and PINS-3 §6. The subsidy schedule of PINS-2 §5.1 applies to every indexer, because it
+  fixes where fee bits sit in the coinbase. The text gives the stepdown interval of testnet4 and
+  regtest, and says the subsidy is never read from the coinbase.
 - PINS-4 §2.1. A leading U+FEFF in a text string is kept, and a map key named `__proto__` is an
   ordinary key.
 

@@ -92,8 +92,10 @@ Q11).
 
 ## 5. Part B: bit-numbering overlay (OPTIONAL)
 
-Ownership (PINS-3) does not depend on this overlay. An indexer that implements it MUST follow this
-section exactly, so that every implementation gives each bit the same number.
+Ownership (PINS-3) does not depend on the bit numbers of this overlay. It does depend on the subsidy
+of section 5.1, which sets where the fee bits sit in the coinbase (PINS-3 §6), so every indexer MUST
+use that schedule. An indexer that implements the numbering MUST follow this section exactly, so that
+every implementation gives each bit the same number.
 
 ### 5.1 Subsidy
 
@@ -111,6 +113,10 @@ subsidy(h):
         s = (s / DEN) * NUM + ((s % DEN) * NUM) / DEN      # integer division
     return s
 ```
+
+Testnet4 has the same parameters (`src/kernel/chainparams.cpp:334-337`). Regtest has `INTERVAL = 150`
+and the same `NUM` and `DEN` (`src/kernel/chainparams.cpp:546-548`). The reference indexer reads the subsidy from this schedule
+and never from the coinbase.
 
 There is no halving: the subsidy steps down by the factor 598/625 every 43,200 blocks (about 30
 days). It reaches 0 after 480 stepdowns; the last subsidized height is 20,735,999.

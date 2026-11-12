@@ -4,7 +4,7 @@
 
 This repository is the protocol. It does not name a collection, a Merkle root, or reserve groups. Those live in a collection profile and a zip that you pass on the command line. Keep that profile and that zip out of this tree.
 
-This guide is for anyone who wants to launch their own collection: your own images, your own profile, your own issuer key, your own addresses. Rehearse on regtest first. The public example, [FlatBits](../examples/flatbits.md), shows what a finished mainnet collection looks like on chain and what an indexer reports for it, so you can check your own result against the same kind of record. It is not a template that this repository ships: its art, keys, profile and plan are not here. To mint a single P2MR Inscription with no collection, use `--single` (see [Single P2MR Inscriptions](../../README.md#single-p2mr-inscriptions)).
+This guide is for anyone who wants to launch their own collection: your own images, your own profile, your own issuer key, your own addresses. Rehearse on regtest first. The public example, [Flatbits](../examples/flatbits.md), shows what a finished mainnet collection looks like on chain and what an indexer reports for it, so you can check your own result against the same kind of record. It is not a template that this repository ships: its art, keys, profile and plan are not here. To mint a single P2MR Inscription with no collection, use `--single` (see [Single P2MR Inscriptions](../../README.md#single-p2mr-inscriptions)).
 
 The specifications are Draft and some regtest vectors are open ([list](../specs/README.md#open-test-vectors)). Read them before a mainnet launch, and do the launch on a network you control first.
 
@@ -51,11 +51,69 @@ A profile without `sale`, or with `"sale": true`, works as before.
 
 Do not bake either path into the tool. The next collection passes different files.
 
+What goes in each file:
+
+```text
+collection.zip
+├── collection.json      any JSON object: the collection's own description
+├── images/1.png         ordinary PNGs, numbered 1 to supply
+├── images/2.png
+├── json/1.json          one metadata record per image
+└── json/2.json
+```
+
+- `json/N.json` is a one-element array: `[{"meta": {"name": "Dot #1", "attributes": [{"trait_type": "Tone", "value": "0"}, {"trait_type": "Size", "value": "S"}]}}]`. `trait_type` and `value` are text. The reserve groups of the profile match these exactly.
+- The inscriber re-encodes each PNG without loss (no extra chunks, the smallest encoding that gives the same pixels) and each metadata record as CBOR, and the Merkle root commits to those canonical bytes. So you can use the PNGs you have: the root of the zip is the root of what will be inscribed. [Canonical bytes](../../packages/collection/canonical.mjs) says exactly how.
+- Make the zip with any tool: `zip -r collection.zip images json collection.json` from the folder that holds them. The reference loader runs the system `unzip`, so it must be installed.
+
+## The Merkle root before the profile
+
+The profile's `root` must equal the root of the zip, so you cannot write the profile first. `root` computes it offline from the zip:
+
+```text
+npm run inscribe -- root --zip collection.zip --supply 12
+```
+
+It prints `merkle root <64 hex characters>` and `items 12`. Put the value in the profile. Later, `root --zip collection.zip --collection profile.json` reads `supply` from the profile and checks `root`: it prints that the profile has this root, or stops and prints the root it found. `assign`, `plan`, `sign` and `preflight` make the same check.
+
+## A sample to start from
+
+`npm run example:collection -- --out ./sample` (an empty or new folder) writes a made-up collection, "Example Dots", of twelve 16×16 pictures called "Dot #N", with no link to any real collection. You get `collection/` (the layout above), `collection.zip`, `profile.sale.json` (a sale, with a reserve of one `Tone` `0` item and one extra), `profile.nosale.json` (`"sale": false`), and `price.json`. It prints the Merkle root. The files are the same every time you run it. `--supply` and `--batch-size` change the size (at least 8 items). It is meant to rehearse on regtest and to show the file formats, not to launch.
+
+`profile.sale.json`, with the fields above (the sample's own root, which `root` prints for its zip):
+
+```json
+{
+  "name": "Example Dots",
+  "namePrefix": "Dot #",
+  "supply": 12,
+  "first": 1,
+  "schema": "pins-collection/1",
+  "itemType": "image/png",
+  "root": "77acd694b728c1b511cecf8aa3d8292d2caabc0ae9bcd86cda02dddf54e0cdbc",
+  "batchSize": 4,
+  "reserveGroups": [{ "trait_type": "Tone", "value": "0", "count": 1 }],
+  "reserveExtra": 1
+}
+```
+
+`price.json` is the file `price --price` reads:
+
+| Field | Rule |
+|---|---|
+| `price_bits` | a positive whole number of bits (1 QBT is 100,000,000 bits). The issuer's own number |
+| `price_sources` | a non-empty list of text: where the number comes from |
+| `price_time` | `YYYY-MM-DDTHH:MM:SSZ`, when the number was set |
+
+The sample's `price.json` is `{"price_bits": 50000, "price_sources": ["rehearsal: the issuer chose 50000 bits"], "price_time": "2026-01-01T00:00:00Z"}`. The tools hold no price of their own.
+
+[Try it on your own regtest node](REGTEST.md) mints the sample three ways: a single P2MR Inscription, the collection without a sale commitment, and the collection with one.
+
 ## Order of commands
 
-Offline, with no RPC URL: `keygen`, then `address`, then `assign` with `--collection` and `--zip`.
+Offline, with no RPC URL: `root` (to write the profile's `root`), `keygen`, then `address`, then `assign` with `--collection` and `--zip`.
 
-Fund the address from `address` with one QBT payment. That address is the issuer funding address. Do not use it as Reserve, Sale, Change, or Revenue.
+Fund the address from `address` with one QBT payment. That address is the issuer funding address. Do not use it as Reserve, Sale, Change, or Revenue. Wait for 6 confirmations, then write the funding output with `utxo` (online, from your own node: [how](../inscriber/README.md#getting-utxojson-from-your-own-node)).
 
 Online, no keyfile: `plan` with the same profile and zip, the public JSON, the assignment, one funding outpoint, and the three addresses.
 
@@ -73,4 +131,4 @@ Command lines are in [the inscriber guide](../inscriber/README.md) and in the re
 
 ## After the mint: the sale
 
-The inscriber mints and puts the items where the profile says. It does not run the sale. With a sale, the items for sale sit at the `--sale` address and the issuer publishes the price (`price`, above). A buyer then takes an item with a PSBT trade (PINS-6 §6): the sale server builds it, and the buyer checks it before signing. The code for both is `packages/sale`, a library with no command line, described in [its README](../../packages/sale/README.md). A collection with no sale has nothing to run: its items belong to the creator or the holder, who can sell any of them the same way.
+The inscriber mints and puts the items where the profile says. It does not run the sale. With a sale, the items for sale sit at the `--sale` address and the issuer publishes the price (`price`, above). A buyer then takes an item with a PSBT trade (PINS-6 §6): the sale server builds it, and the buyer checks it before signing. The code for both is `packages/sale`, a library, described in [its README](../../packages/sale/README.md), with a regtest example of one trade. What to do with the sale secret, and how a sale server hands out the PSBTs, is in [Sell and trade](SALE-AND-TRADE.md). A collection with no sale has nothing to run: its items belong to the creator or the holder, who can sell any of them the same way.

@@ -211,6 +211,24 @@ export function scan(root = resolve(dirname(fileURLToPath(import.meta.url)), "..
   return results.filter((r) => { const key = `${r.file}:${r.line}:${r.category}`; if (seen.has(key)) return false; seen.add(key); return true; });
 }
 
+/**
+ * The first collection inscribed on mainnet is spelled as its genesis spells it. One wrong capital is a typo,
+ * so this finds the other spelling anywhere in the repository. The word is built from two parts so that this
+ * file does not contain it.
+ */
+const WRONG_SPELLING = new RegExp(`${"Flat"}${"Bits"}`);
+
+export function spellingProblems(root = resolve(dirname(fileURLToPath(import.meta.url)), "..")) {
+  const problems = [];
+  for (const path of walk(root)) {
+    const file = relative(root, path).split("\\").join("/");
+    readFileSync(path, "utf8").split("\n").forEach((line, index) => {
+      if (WRONG_SPELLING.test(line)) problems.push({ file, line: index + 1, text: line.trim().slice(0, 160) });
+    });
+  }
+  return problems;
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const rows = scan();
   const byCategory = new Map();
@@ -222,6 +240,9 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     if (list || category === "UNCLASSIFIED") for (const item of items) process.stdout.write(`        ${item.file}:${item.line}: ${item.text}\n`);
   }
   const bad = byCategory.get("UNCLASSIFIED")?.length ?? 0;
+  const spelling = spellingProblems();
+  for (const item of spelling) process.stdout.write(`        ${item.file}:${item.line}: wrong spelling of the Flatbits name: ${item.text}\n`);
   process.stdout.write(bad === 0 ? "OK: every bare occurrence is allowed.\n" : `FAIL: ${bad} unclassified occurrence(s).\n`);
-  process.exit(bad === 0 ? 0 : 1);
+  if (spelling.length > 0) process.stdout.write(`FAIL: ${spelling.length} line(s) spell the collection name with another capital. It is Flatbits, as in its genesis.\n`);
+  process.exit(bad === 0 && spelling.length === 0 ? 0 : 1);
 }

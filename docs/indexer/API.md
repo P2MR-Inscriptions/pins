@@ -18,6 +18,25 @@ A request whose `Host` header is not `127.0.0.1`, `localhost` or `[::1]` (any po
 
 The sale field is always `waiting_for_wallet`. The sale stays closed until Qbit Wallet can complete a pre-signed `0x83` offer. The indexer does not use an online sale key.
 
+## Find a P2MR Inscription you just minted
+
+The indexer reads a block when its node has it, so a new P2MR Inscription shows after its reveal is confirmed (on regtest, after you mine a block, and within `--poll` seconds). Three ways to find it:
+
+```bash
+INDEXER=http://127.0.0.1:8787
+curl -s "$INDEXER/inscription/<txid>i0"                 # by id
+curl -s "$INDEXER/inscriptions?owner=<address>&limit=5"  # by the address you sent it to
+curl -s "$INDEXER/inscriptions?limit=5&offset=0"        # all of them, by number
+```
+
+- The id of a single P2MR Inscription is the txid of its reveal followed by `i0`; `plan --single` prints it. The id of a collection's genesis is the first txid of the `reveals` list that `broadcast` prints, followed by `i0`. An item's id is the txid of its reveal and the position of the item in it, `i1`, `i2` and so on.
+- `owner` is an address of the network the indexer follows (`qbrt1…` on regtest). It matches the address of the output where the P2MR Inscription is now, so it follows a trade.
+- `/inscription/{id}` answers `404` while the reveal is not confirmed or indexed. `/status` has `height` and `inscriptions`, to see that the indexer has caught up with your node.
+- `location.state` is `located` (with `txid`, `vout` and `offset`) while the P2MR Inscription sits in an output, and another value (for example `burned`, `unbound` or `lost`) when it does not. `/output/{txid}:{vout}` lists what an output holds.
+- On a chain with more than one collection, `/collection` and `/pieces` answer for the genesis given with `--genesis` only. Everything else is not limited by it.
+
+The explorer shows the same: [regtest guide, section 8](../guides/REGTEST.md#8-find-what-you-minted).
+
 ## OpenAPI
 
 ```yaml

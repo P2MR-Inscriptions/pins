@@ -1,22 +1,22 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-# Worked example: FlatBits on mainnet
+# Worked example: Flatbits on mainnet
 
-FlatBits is the first collection inscribed with PINS on Qbit mainnet. This page records it as a public example of the protocol, for two uses: **verify the example** (check on the public chain that the protocol gives the results recorded here), and **apply the same steps to your own collection**. The protocol, the inscriber, the indexer, and the explorer have no default collection, and nothing here is read by them.
+Flatbits is the first collection inscribed with PINS on Qbit mainnet. This page records it as a public example of the protocol, for two uses: **verify the example** (check on the public chain that the protocol gives the results recorded here), and **apply the same steps to your own collection**. The protocol, the inscriber, the indexer, and the explorer have no default collection, and nothing here is read by them.
 
 ## What this page holds, and what it does not
 
-Everything below is public chain data: ids, heights, the Merkle root, the issuer public key, and what an indexer reports. This page and this repository hold no art, no key, no seed, no sale price, no reserve groups, no collection profile, no zip, no plan, and no leaf data beyond what is on chain. Nothing in the repository can rebuild FlatBits, re-inscribe it, or change it, and nothing here is meant to. The sale length and price are terms of that collection. They are not rules of the protocol and are not recorded here.
+Everything below is public chain data: ids, heights, the Merkle root, the issuer public key, and what an indexer reports. This page and this repository hold no art, no key, no seed, no sale price, no reserve groups, no collection profile, no zip, no plan, and no leaf data beyond what is on chain. Nothing in the repository can rebuild Flatbits, re-inscribe it, or change it, and nothing here is meant to. The sale length and price are terms of that collection. They are not rules of the protocol and are not recorded here.
 
 ## A copy can never be authentic
 
-FlatBits is identified by its genesis P2MR Inscription and its issuer key, not by its images. A P2MR Inscription is an authentic item of a collection only if it satisfies every rule of [PINS-5 §9](../specs/PINS-5.md), and three of them close the door on copies:
+Flatbits is identified by its genesis P2MR Inscription and its issuer key, not by its images. A P2MR Inscription is an authentic item of a collection only if it satisfies every rule of [PINS-5 §9](../specs/PINS-5.md), and three of them close the door on copies:
 
 - It must be confirmed after the collection's genesis (rule 2).
-- Its reveal leaf must start with the issuer key written in that genesis (rule 3). Someone who inscribes the same image bytes uses another key, so the copy is not an item of FlatBits.
+- Its reveal leaf must start with the issuer key written in that genesis (rule 3). Someone who inscribes the same image bytes uses another key, so the copy is not an item of Flatbits.
 - Only the first P2MR Inscription that meets the rules for a given number counts (rule 7). A later P2MR Inscription of an item that is already taken, by anyone, does not change which one is authentic.
 
-All 10,000 numbers of FlatBits are taken by their original P2MR Inscriptions (see the table below), so re-inscribing the same data neither creates nor changes FlatBits. A person who inscribes copies publishes, at most, a different collection with a different genesis id and a different issuer key. The example is here to show how to verify a collection, not to supply one.
+All 10,000 numbers of Flatbits are taken by their original P2MR Inscriptions (see the table below), so re-inscribing the same data neither creates nor changes Flatbits. A person who inscribes copies publishes, at most, a different collection with a different genesis id and a different issuer key. The example is here to show how to verify a collection, not to supply one.
 
 ## What is on chain
 
@@ -96,8 +96,8 @@ If a value differs, one of the two sides is wrong, and the chain is the authorit
 
 ## Apply the same steps to your own collection
 
-The mint of FlatBits used a batch size of 625 and a supply of 10,000. In the tools both come from your profile (`supply`, `batchSize`). A collection of another size, for example 100 items in batches of 25, or one item, goes through the same `plan`, `sign`, and indexer path. You bring your own images, your own profile, your own issuer key, and your own addresses. None of these comes from FlatBits.
+The mint of Flatbits used a batch size of 625 and a supply of 10,000. In the tools both come from your profile (`supply`, `batchSize`). A collection of another size, for example 100 items in batches of 25, or one item, goes through the same `plan`, `sign`, and indexer path. You bring your own images, your own profile, your own issuer key, and your own addresses. None of these comes from Flatbits.
 
 - To launch a collection, follow [COLLECTION-LAUNCH.md](../guides/COLLECTION-LAUNCH.md). Try it on regtest first.
 - To feature your collection in the explorer, point `MANIFEST` at your own file, shaped like [`explorer/config/examples/flatbits.json`](../../explorer/config/examples/flatbits.json). That file is only the public data of this example: name, supply, genesis id, Merkle root, item type, and image size.
-- To check your own collection the way this page checks FlatBits, record the same public values after the mint: genesis id, leaf list id, Merkle root, issuer key, heights, and the indexer result.
+- To check your own collection the way this page checks Flatbits, record the same public values after the mint: genesis id, leaf list id, Merkle root, issuer key, heights, and the indexer result.

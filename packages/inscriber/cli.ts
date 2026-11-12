@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * Mint CLI. `broadcast` and `preflight` talk to a node through `--rpc`. `plan`, `sign`, `assign`,
- * `address`, `keygen` and `price` are offline and refuse a node URL where they would otherwise use it.
+ * Mint CLI. `broadcast`, `preflight` and `utxo` talk to a node through `--rpc`. `plan`, `sign`, `assign`,
+ * `address`, `keygen`, `price` and `root` are offline and refuse a node URL where they would otherwise use it.
  * The default network is regtest. `plan`, `sign` and `preflight` take `--single` for one stand-alone
  * P2MR Inscription (a body file and its content type) instead of a collection.
  */
@@ -15,6 +15,7 @@ import { fundingAddress } from "./address.ts";
 import { assertMarkerForNetwork, formatMarkerLine, parseMarker } from "./marker.ts";
 import { LAUNCH_COLLECTION_SCHEMA, LAUNCH_PRICE_SCHEMA, priceBody, priceSchemaFor } from "./price.ts";
 import { broadcastPlan } from "./broadcast.ts";
+import { findFunding, FUNDING_CONFIRMATIONS, type FundingFile } from "./funding.ts";
 import {
   addressChecks,
   bitsFromQbt,
@@ -40,7 +41,7 @@ import {
   weightChecks,
 } from "./preflight.ts";
 import { createKeyfile, openKeyfile, readPassphrase, writeKeyfile, zeroSecrets } from "./keyfile.ts";
-import { assertBroadcastNetwork, parseNetwork } from "./network.ts";
+import { assertBroadcastNetwork, parseNetwork, rpcChainName } from "./network.ts";
 import { buildPlan, buildSinglePlan, type MintPlan, type PlanContent } from "./plan.ts";
 import { assertSingleFlags, readSingleContent } from "./single.ts";
 import { signPlan } from "./sign.ts";
@@ -184,7 +185,6 @@ function assertNoSaleAssignment(assignment: { reserve?: number[]; sale?: number[
   }
 }
 
-type FundingFile = { txid: string; vout: number; value: string; script: string };
 
 /** `plan` and `sign` of one stand-alone P2MR Inscription. Offline. The files, not the plan, decide what is signed. */
 async function runSingle(command: "plan" | "sign", flag: Record<string, string | boolean>): Promise<void> {
@@ -310,7 +310,7 @@ async function preflightSingle(flag: Record<string, string | boolean>): Promise<
 async function main(): Promise<void> {
   const [command, ...rest] = process.argv.slice(2);
   const flag = flags(rest);
-  if (command === "sign" || command === "keygen" || command === "assign" || command === "address" || command === "price") {
+  if (command === "sign" || command === "keygen" || command === "assign" || command === "address" || command === "price" || command === "root") {
     if (flag.rpc || flag["rpc-user"] || flag["rpc-password"]) throw new Error("this step is offline and refuses an RPC URL");
   }
   const single = assertSingleFlags(command, flag);
@@ -323,6 +323,36 @@ async function main(): Promise<void> {
     const network = parseNetwork(typeof flag.network === "string" ? flag.network : undefined);
     const address = fundingAddress(Buffer.from(pubs.issuerPublic, "hex"), network);
     process.stdout.write(`${network} funding address ${address}\nSend QBT to this address in one payment. The wallet cannot spend it. Do not use it as Reserve, Sale, Change, or Revenue.\n`);
+    return;
+  }
+  if (command === "root") {
+    const profile = await readProfile(flag, false);
+    const supply = profile ? shapeOf(profile).supply : Number(text(flag, "supply"));
+    if (!Number.isInteger(supply) || supply < 1) throw new Error("--supply must be a positive whole number, the number of items in the zip");
+    const canonical = await loadCanonical(text(flag, "zip"), { supply });
+    const root = merkleRoot(canonical.items.map((item, index) => leafPreimage(index + 1, item.body, item.metadata ?? new Uint8Array())));
+    process.stdout.write(`merkle root ${root}\nitems ${supply}\n`);
+    if (profile) {
+      assertRoot(root, profile.root);
+      process.stdout.write("The collection profile has this root.\n");
+    } else {
+      process.stdout.write("Put this value in the profile's root.\n");
+    }
+    return;
+  }
+  if (command === "utxo") {
+    const pubs = JSON.parse(readFileSync(text(flag, "pub"), "utf8")) as { issuerPublic: string };
+    const network = parseNetwork(typeof flag.network === "string" ? flag.network : undefined);
+    const address = fundingAddress(Buffer.from(pubs.issuerPublic, "hex"), network);
+    const rpc = httpRpc(text(flag, "rpc"), text(flag, "rpc-user"), text(flag, "rpc-password"));
+    const info = await rpc.call<{ chain: string }>("getblockchaininfo");
+    if (info.chain !== rpcChainName(network)) throw new Error(`the node is on chain ${info.chain}, not ${network}`);
+    const found = await findFunding(rpc, address, network, typeof flag.txid === "string" ? flag.txid : undefined);
+    process.stdout.write(`${network} funding address ${address}\nfunding output ${found.file.txid}:${found.file.vout}, ${found.file.value} bits, ${found.confirmations} confirmations\n`);
+    if (found.confirmations < FUNDING_CONFIRMATIONS) process.stdout.write(`preflight wants ${FUNDING_CONFIRMATIONS} confirmations. Wait for them before broadcast.\n`);
+    if (flag["dry-run"]) return;
+    writeFileSync(text(flag, "out"), `${JSON.stringify(found.file)}\n`);
+    process.stdout.write("Wrote the funding file. plan, sign and preflight read it with --utxo.\n");
     return;
   }
   if (command === "keygen") {
@@ -675,7 +705,7 @@ async function main(): Promise<void> {
     process.stdout.write("Wrote the price plan. It is not a mint. Sign it, then broadcast it when the sale opens. The first confirmed valid price P2MR Inscription is the one indexers keep.\n");
     return;
   }
-  throw new Error("commands: keygen, address, assign, plan, sign, broadcast, preflight, price");
+  throw new Error("commands: keygen, address, utxo, root, assign, plan, sign, broadcast, preflight, price");
 }
 
 async function mainnetOrCollectionField(
@@ -701,31 +731,22 @@ async function mainnetOrCollectionField(
       issuer,
     });
   }
-  if (network === "mainnet") {
-    if (!saleCommitment || !/^[0-9a-f]{64}$/.test(saleCommitment)) throw new Error("assignment is missing saleCommitment; run assign again");
-    return encodeGenesisField({
-      schema: profile.schema,
-      name: profile.name,
-      supply: profile.supply,
-      first: profile.first,
-      namePrefix: profile.namePrefix,
-      itemType: profile.itemType,
-      root,
-      issuer,
-      saleCommitment,
-    });
-  }
-  const specifier = "../collection/canonical.mjs";
-  const canonical = await import(specifier) as { encodeCbor: (value: unknown) => Uint8Array };
-  return canonical.encodeCbor({
+  // A collection with a sale carries the commitment of its sale secret on every network. Mainnet refuses an
+  // assignment without it. Regtest and testnet4 accept an older assignment that has none and write the genesis
+  // without it, which is a collection that declares no sale commitment.
+  const valid = saleCommitment !== undefined && /^[0-9a-f]{64}$/.test(saleCommitment);
+  if (network === "mainnet" && !valid) throw new Error("assignment is missing saleCommitment; run assign again");
+  if (saleCommitment !== undefined && !valid) throw new Error("the saleCommitment of the assignment is not 64 lowercase hex characters; run assign again");
+  return encodeGenesisField({
     schema: profile.schema,
     name: profile.name,
     supply: profile.supply,
     first: profile.first,
-    name_prefix: profile.namePrefix,
+    namePrefix: profile.namePrefix,
+    itemType: profile.itemType,
     root,
     issuer,
-    item_type: profile.itemType,
+    ...(saleCommitment === undefined ? {} : { saleCommitment }),
   });
 }
 

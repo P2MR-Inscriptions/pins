@@ -56,6 +56,8 @@ Clone this repository and run it from that checkout. PINS runs TypeScript throug
 
 `npm run build` and `npm run typecheck` both run `tsc --noEmit`. The tools run under Node's type stripper. There is no emit step. The package is `private` so `npm publish` is refused. The npm name `pins` belongs to an unrelated package.
 
+**New here? Start with [Try it on your own regtest node](docs/guides/REGTEST.md).** It starts a private Qbit regtest node, mints a single P2MR Inscription, a collection without a sale commitment and a collection with one from a made-up sample, finds them in the indexer and the explorer, and trades one. Every command in it was run, in order.
+
 Then, with a Qbit node of your own (regtest to rehearse):
 
 1. Start the [indexer](#indexer) on that node. It serves the API on `127.0.0.1`.
@@ -69,10 +71,10 @@ Then, with a Qbit node of your own (regtest to rehearse):
 | `packages/protocol` | Shared constants, the list of standards, the collection Merkle tree, the profile reader, the reserve selection | [README](packages/protocol/README.md) |
 | `packages/inscriber` | The command line that builds, signs and broadcasts a mint: `npm run inscribe` | [Inscriber](#inscriber), [docs/inscriber/README.md](docs/inscriber/README.md) |
 | `packages/indexer` | The reference indexer and its read-only HTTP API: `npm run indexer:serve` | [Indexer](#indexer), [packages/indexer/README.md](packages/indexer/README.md), [docs/indexer/API.md](docs/indexer/API.md) |
-| `packages/sale` | A library for PSBT trades: build a trade and check it before signing. No command line | [README](packages/sale/README.md) |
-| `packages/collection` | Reads the collection zip and gives the canonical bytes of each item (used by the inscriber) | [launch guide, Zip](docs/guides/COLLECTION-LAUNCH.md#zip) |
+| `packages/sale` | A library for PSBT trades: build a trade and check it before signing, plus `regtest-trade.ts`, a runnable regtest example of one trade | [README](packages/sale/README.md), [Sell and trade](docs/guides/SALE-AND-TRADE.md) |
+| `packages/collection` | Reads the collection zip and gives the canonical bytes of each item (used by the inscriber), and writes a made-up sample collection | [launch guide, Zip](docs/guides/COLLECTION-LAUNCH.md#zip), [sample](docs/guides/COLLECTION-LAUNCH.md#a-sample-to-start-from) |
 | `explorer/` | A local, read-only explorer on top of the indexer | [Explorer](#explorer), [explorer/README.md](explorer/README.md) |
-| `scripts/` | `indexer-run.ts` (the indexer process), `vectors.ts` (checks or rewrites the test vectors), `canonical-batch.ts` (envelope sizes of a zip) | [Specifications](#specifications-and-test-vectors) |
+| `scripts/` | `indexer-run.ts` (the indexer process), `vectors.ts` (checks or rewrites the test vectors), `canonical-batch.ts` (envelope sizes of a zip), `example-collection.ts` (`npm run example:collection`, the sample) | [Specifications](#specifications-and-test-vectors) |
 | `docs/` | The specifications, the guides, the worked example | [docs/specs](docs/specs/README.md), [docs/guides](docs/guides/COLLECTION-LAUNCH.md), [docs/examples](docs/examples/flatbits.md) |
 
 ### Indexer
@@ -84,7 +86,7 @@ The RPC URL is your local node. The port below is an example. `--rpc-user` and `
 ```text
 npm run indexer:serve -- \
   --db index.sqlite \
-  --rpc http://127.0.0.1:18443/ \
+  --rpc http://127.0.0.1:18452/ \
   --rpc-user YOUR_RPC_USER \
   --rpc-password YOUR_RPC_PASSWORD \
   --network regtest \
@@ -95,7 +97,7 @@ The HTTP routes are in [docs/indexer/API.md](docs/indexer/API.md). The list endp
 
 ### Inscriber
 
-`npm run inscribe` runs `packages/inscriber/cli.ts`. The commands are `keygen`, `address`, `assign`, `plan`, `sign`, `broadcast`, `preflight`, and `price`. Two of them, `broadcast` and `preflight`, talk to a node and need `--rpc`. `keygen`, `address`, `assign`, `sign`, and `price` refuse an RPC URL. `plan` reads the funding output from a file (`utxo.json`) and never calls a node.
+`npm run inscribe` runs `packages/inscriber/cli.ts`. The commands are `keygen`, `address`, `utxo`, `root`, `assign`, `plan`, `sign`, `broadcast`, `preflight`, and `price`. Three of them, `utxo`, `broadcast` and `preflight`, talk to a node and need `--rpc`. `keygen`, `address`, `root`, `assign`, `sign`, and `price` refuse an RPC URL. `utxo` writes `utxo.json` from your own node, and `root` prints the Merkle root of a zip before you write the profile. `plan` reads the funding output from a file (`utxo.json`) and never calls a node.
 
 `assign`, `plan`, and `preflight` require `--collection` and `--zip`. `sign` requires them when the plan uses the `pins` marker, except for the plan `price` writes, which needs `--collection` and `--assignment` and no zip. `broadcast` and `preflight` on testnet4 or mainnet refuse to run until `--confirm-network` repeats `--network`.
 
@@ -109,8 +111,8 @@ npm run inscribe -- address --pub issuer.key.pub.json --network regtest
 npm run inscribe -- assign --key issuer.key --collection profile.json --zip collection.zip --out assignment.json
 npm run inscribe -- plan --pub issuer.key.pub.json --assignment assignment.json --collection profile.json --zip collection.zip --utxo utxo.json --creator CREATOR_ADDRESS --sale SALE_ADDRESS --change CHANGE_ADDRESS --fee-rate 1 --out plan.json
 npm run inscribe -- sign --key issuer.key --plan plan.json --collection profile.json --zip collection.zip --out plan.signed.json
-npm run inscribe -- preflight --network regtest --plan plan.json --signed plan.signed.json --assignment assignment.json --collection profile.json --zip collection.zip --utxo utxo.json --pub issuer.key.pub.json --key issuer.key --rpc http://127.0.0.1:18443/ --rpc-user YOUR_RPC_USER --rpc-password YOUR_RPC_PASSWORD
-npm run inscribe -- broadcast --plan plan.signed.json --rpc http://127.0.0.1:18443/ --rpc-user YOUR_RPC_USER --rpc-password YOUR_RPC_PASSWORD --mine
+npm run inscribe -- preflight --network regtest --plan plan.json --signed plan.signed.json --assignment assignment.json --collection profile.json --zip collection.zip --utxo utxo.json --pub issuer.key.pub.json --key issuer.key --rpc http://127.0.0.1:18452/ --rpc-user YOUR_RPC_USER --rpc-password YOUR_RPC_PASSWORD
+npm run inscribe -- broadcast --plan plan.signed.json --rpc http://127.0.0.1:18452/ --rpc-user YOUR_RPC_USER --rpc-password YOUR_RPC_PASSWORD --mine
 ```
 
 `--mine` is regtest only. `utxo.json` is one object: `txid`, `vout`, `value` (bits, as a decimal string), and `script` (hex). The output must be the issuer key's own P2MR address. `price` is optional and for a collection with a sale. It builds the sale-open P2MR Inscription from the `--price` file and does not broadcast.
@@ -167,7 +169,7 @@ A P2MR Inscription does not need a collection. PINS-1 defines one P2MR Inscripti
 Steps, in order (the reference inscriber commands are in [Inscriber](#inscriber) and [docs/inscriber/README.md](docs/inscriber/README.md)):
 
 1. `keygen --no-sale --out issuer.key`, then `address --pub issuer.key.pub.json --network regtest`, on a machine with no network. A single P2MR Inscription reads no sale secret, and a keyfile made with a sale secret works too.
-2. Pay the funding address in one payment, and write that output to `utxo.json` (one object: `txid`, `vout`, `value` in bits as a decimal string, `script` in hex; it must be the issuer key's own P2MR address).
+2. Pay the funding address in one payment, wait for 6 confirmations, and write that output to `utxo.json` with `utxo` (one object: `txid`, `vout`, `value` in bits as a decimal string, `script` in hex; it must be the issuer key's own P2MR address). A wallet's `listunspent` does not show it, because no wallet owns the address.
 3. Run `plan --single`, then `sign --single` offline, then `preflight --single`, then `broadcast` (the four commands are below).
 4. Point the [indexer](#indexer) at the same node and read the P2MR Inscription from `/inscription/{id}`.
 
@@ -181,8 +183,8 @@ Steps, in order (the reference inscriber commands are in [Inscriber](#inscriber)
 ```text
 node --experimental-strip-types packages/inscriber/cli.ts plan --single --body note.txt --content-type "text/plain;charset=utf-8" --pub issuer.key.pub.json --utxo utxo.json --creator <address> --change <address> --fee-rate 1 --network regtest --out plan.json
 node --experimental-strip-types packages/inscriber/cli.ts sign --single --body note.txt --content-type "text/plain;charset=utf-8" --key issuer.key --plan plan.json --utxo utxo.json --creator <address> --change <address> --network regtest --out plan.signed.json
-node --experimental-strip-types packages/inscriber/cli.ts preflight --single --body note.txt --content-type "text/plain;charset=utf-8" --network regtest --plan plan.json --signed plan.signed.json --utxo utxo.json --pub issuer.key.pub.json --rpc http://127.0.0.1:18443/ --rpc-user YOUR_RPC_USER --rpc-password YOUR_RPC_PASSWORD
-node --experimental-strip-types packages/inscriber/cli.ts broadcast --plan plan.signed.json --network regtest --mine --rpc http://127.0.0.1:18443/ --rpc-user YOUR_RPC_USER --rpc-password YOUR_RPC_PASSWORD
+node --experimental-strip-types packages/inscriber/cli.ts preflight --single --body note.txt --content-type "text/plain;charset=utf-8" --network regtest --plan plan.json --signed plan.signed.json --utxo utxo.json --pub issuer.key.pub.json --rpc http://127.0.0.1:18452/ --rpc-user YOUR_RPC_USER --rpc-password YOUR_RPC_PASSWORD
+node --experimental-strip-types packages/inscriber/cli.ts broadcast --plan plan.signed.json --network regtest --mine --rpc http://127.0.0.1:18452/ --rpc-user YOUR_RPC_USER --rpc-password YOUR_RPC_PASSWORD
 ```
 
 `--single` takes `plan`, `sign` and `preflight`. `keygen`, `address` and `broadcast` are the same as for a collection, and there is no `assign` step because there is no reserve. The keyfile may be made with `keygen --no-sale`, since no sale secret is read. On mainnet, pass `--network mainnet` and `--confirm-network mainnet` to `preflight` and `broadcast`, as for a collection. The same rule holds as everywhere: rehearse on regtest first, and read the open items in [Status](#status).
@@ -222,11 +224,11 @@ A P2MR Inscription moves with its output (PINS-3), so a sale is a Qbit transacti
 3. The buyer reads what each input holds from the indexer (`/output/{txid}:{vout}`), runs `checkPurchasePsbt` on the PSBT, and signs only if it passes. The check is the buyer side of PINS-6 §4.4: the P2MR Inscription lands in the buyer's output by FIFO, no output is dust or of another kind than P2MR, `OP_RETURN` or PayToAnchor, the fee is not negative, and the buyer's own inputs hold no P2MR Inscription.
 4. The buyer signs, finalizes and broadcasts with `@qbit-oss/protocol` and the node. After 6 confirmations the indexer shows the new owner.
 
-This part is a library in [packages/sale](packages/sale/README.md): there is no command line for a trade yet. That page lists exactly what is checked, what is left to you (the receive address, the amounts on the chain), and a worked call. It changes no rule of the indexer.
+This part is a library in [packages/sale](packages/sale/README.md). That page lists exactly what is checked, what is left to you (the receive address, the amounts on the chain), and a worked call. `packages/sale/regtest-trade.ts` runs one trade on a regtest node with Qbit Core's wallet, and [Try it on your own regtest node](docs/guides/REGTEST.md#9-trade-a-p2mr-inscription) runs it. There is no sale server, no wallet and no command to close a sale in this repository, and Qbit Wallet (the browser extension) does not sign `0x83` as of v1.0.7: [Sell and trade](docs/guides/SALE-AND-TRADE.md) says what each piece is and how the sale secret and the primary sale are handled. It changes no rule of the indexer.
 
 ## Worked example
 
-FlatBits is the first collection inscribed on Qbit mainnet. [docs/examples/flatbits.md](docs/examples/flatbits.md) records it as a public example: its genesis id, Merkle root, heights, and the indexer result for it. Use it to verify the example (index the public chain and compare) and to apply the same steps to your own collection. It is not a default of any tool here. This repository holds none of its art, keys, seed, price, profile, or plan, and a copy of its images can never be an authentic FlatBits item: authenticity is bound to the original genesis and issuer key, and the first valid P2MR Inscription of each number is the only one that counts (PINS-5 §9).
+Flatbits is the first collection inscribed on Qbit mainnet. [docs/examples/flatbits.md](docs/examples/flatbits.md) records it as a public example: its genesis id, Merkle root, heights, and the indexer result for it. Use it to verify the example (index the public chain and compare) and to apply the same steps to your own collection. It is not a default of any tool here. This repository holds none of its art, keys, seed, price, profile, or plan, and a copy of its images can never be an authentic Flatbits item: authenticity is bound to the original genesis and issuer key, and the first valid P2MR Inscription of each number is the only one that counts (PINS-5 §9).
 
 ## Specifications and test vectors
 

@@ -29,6 +29,17 @@ npm start
 
 `npm run indexer` starts `scripts/indexer-run.ts` of this repository from the repository root, the same process as `npm run indexer:serve` there. It stores the index in `data/index.sqlite` in this directory and passes the genesis id of the manifest as `--genesis`. The explorer has no copy of the indexer.
 
+## Over a regtest node of your own
+
+You do not need a manifest, a `.env`, or the `indexer` script to look at P2MR Inscriptions you minted on regtest. Start the indexer of the repository root on your regtest node (`npm run indexer:serve`, see the [regtest guide](../docs/guides/REGTEST.md#4-start-the-indexer)), then, from `explorer/`:
+
+```bash
+npm ci --ignore-scripts
+MANIFEST= INDEXER_URL=http://127.0.0.1:8787 PORT=8081 npm start
+```
+
+The empty `MANIFEST` matters: it keeps the explorer from featuring a collection that is not on your chain. The home page lists the latest P2MR Inscriptions, and the search box takes a P2MR Inscription id, a transaction id or an address. The pages are at `http://127.0.0.1:8081/#/inscription/<id>`, `#/address/<address>` and `#/tx/<txid>`. The same data is at `/api/inscription/<id>` and `/api/inscriptions?limit=20`.
+
 ## An existing install
 
 An install made with an earlier version kept a separate copy of the indexer in `vendor/pins`. That copy is no longer used. Keep `.env`, `data/`, and `config/`, including `data/index.sqlite` and its `-wal` and `-shm` files. After copying the new source files over the same relative paths, run `npm --prefix .. ci --ignore-scripts` once, stop the old indexer, and start `npm run indexer`. The explorer directory must sit inside a checkout of the PINS repository. Restart the explorer afterwards.
@@ -54,7 +65,7 @@ Ctrl+C stops the mock and the explorer that this command started. `npm test` use
 
 The RPC password is placed in the indexer process environment. It is not an npm, node, or curl argument. `npm --silent` only suppresses npm's log line. Curl reads the user from stdin.
 
-The genesis id is read from the file that `MANIFEST` names. Without `MANIFEST` the explorer looks for `config/manifest.json`. If that file is absent, no collection is featured and the indexer is started without `--genesis`. When a manifest is read, the indexer is started with its genesis id as `--genesis`. `.env.example` sets `MANIFEST=config/examples/flatbits.json`, the FlatBits manifest, as a worked example of a real mainnet collection. Replace that line with your own manifest. The manifest is collection configuration, not a protocol rule, and the page names its items "item" (`#/item/12`) for every collection.
+The genesis id is read from the file that `MANIFEST` names. Without `MANIFEST` the explorer looks for `config/manifest.json`. If that file is absent, no collection is featured and the indexer is started without `--genesis`. When a manifest is read, the indexer is started with its genesis id as `--genesis`. `.env.example` sets `MANIFEST=config/examples/flatbits.json`, the Flatbits manifest, as a worked example of a real mainnet collection. Replace that line with your own manifest. The manifest is collection configuration, not a protocol rule, and the page names its items "item" (`#/item/12`) for every collection.
 
 ## Limits
 

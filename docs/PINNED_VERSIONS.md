@@ -28,6 +28,8 @@ These come from Qbit Core v1.0.0, not from memory:
 | Leaf in force | `0xc0`. Depth-0 control byte `0xc1` |
 | Initial stack | 1,000 items, 16,384 bytes each, 131,072 bytes total, per input |
 | Weight | `WITNESS_SCALE_FACTOR = 1`. Standard transaction 400,000. Block 2,000,000 |
+| Coinbase maturity | `COINBASE_MATURITY = 1000` blocks, so a regtest chain needs 1,001 blocks before the first coinbase can be spent |
+| Ports | RPC and P2P: mainnet 8352 and 8355, testnet4 48352 and 48355, regtest **18452 and 18460** |
 | Relay / dust | 250 bits/kvB minimum relay, 750 bits/kvB dust |
 | Address HRP | mainnet `qb`, testnet4 `tq`, regtest `qbrt`. Bech32m, witness version 2 (`…1z…`) |
 | Coinbase maturity | 1,000 blocks |

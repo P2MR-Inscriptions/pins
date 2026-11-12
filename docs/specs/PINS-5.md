@@ -201,7 +201,7 @@ recorded `too-long-mempool-chain, exceeds descendant size limit for tx 459f4ebaf
 
 ### 6.2 Mainnet record
 
-The first mint on mainnet is the public example collection FlatBits (genesis `15d6f9c48865b579f7d1144e4d2d71d905c6fe04458bebc814052a3e39a07784i0`, [example](../examples/flatbits.md)). It used the plan of section 6.1 with 10,000 items and 625 per reveal. These figures were read from the
+The first mint on mainnet is the public example collection Flatbits (genesis `15d6f9c48865b579f7d1144e4d2d71d905c6fe04458bebc814052a3e39a07784i0`, [example](../examples/flatbits.md)). It used the plan of section 6.1 with 10,000 items and 625 per reveal. These figures were read from the
 chain on 2026-11-12 (`mempool.qbit.org`). Fees are 1 bit per byte for every reveal.
 
 | Transaction | Block | Bytes | Fee in bits |

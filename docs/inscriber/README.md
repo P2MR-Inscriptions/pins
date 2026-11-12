@@ -25,7 +25,7 @@ commitment and no `--sale` address, and every item goes to the creator address. 
 
 ## Air gap
 
-The reference inscriber has eight commands: `keygen`, `address`, `assign`, `plan`, `sign`, `broadcast`, `preflight` and `price`. Only `broadcast` and `preflight` talk to a node, and both need `--rpc`. `keygen`, `address`, `assign`, `sign` and `price` refuse an RPC URL. `plan` reads the funding output from a file (`utxo.json`) and never calls a node, so it can run on an online watch-only machine with no node credentials. `price` builds the sale-open P2MR Inscription and does not broadcast. The numbered steps below are the mint itself: `keygen`, `assign`, `plan`, `sign`, `broadcast`. `address` gives the funding address, and `preflight` checks a plan and a signed plan against a node before `broadcast`.
+The reference inscriber has ten commands: `keygen`, `address`, `utxo`, `root`, `assign`, `plan`, `sign`, `broadcast`, `preflight` and `price`. Only `utxo`, `broadcast` and `preflight` talk to a node, and all three need `--rpc`. `keygen`, `address`, `root`, `assign`, `sign` and `price` refuse an RPC URL. `plan` reads the funding output from a file (`utxo.json`) and never calls a node, so it can run on an online watch-only machine with no node credentials. `price` builds the sale-open P2MR Inscription and does not broadcast. The numbered steps below are the mint itself: `keygen`, `assign`, `plan`, `sign`, `broadcast`. `address` gives the funding address, and `preflight` checks a plan and a signed plan against a node before `broadcast`.
 
 1. `keygen` and `assign` run on the offline machine. `keygen` writes an encrypted keyfile
    and a public JSON file. Make two encrypted copies of the keyfile and keep them apart.
@@ -63,7 +63,7 @@ node --experimental-strip-types packages/inscriber/cli.ts address --pub issuer.k
 node --experimental-strip-types packages/inscriber/cli.ts assign --key issuer.key --collection profile.json --zip collection.zip --out reserve.json
 node --experimental-strip-types packages/inscriber/cli.ts plan --pub issuer.key.pub.json --assignment reserve.json --collection profile.json --zip collection.zip --utxo utxo.json --creator <address> --sale <address> --change <address> --fee-rate 1 --out plan.json
 node --experimental-strip-types packages/inscriber/cli.ts sign --key issuer.key --plan plan.json --collection profile.json --zip collection.zip --out plan.signed.json
-node --experimental-strip-types packages/inscriber/cli.ts broadcast --plan plan.signed.json --rpc http://127.0.0.1:18443/ --rpc-user YOUR_RPC_USER --rpc-password YOUR_RPC_PASSWORD --mine
+node --experimental-strip-types packages/inscriber/cli.ts broadcast --plan plan.signed.json --rpc http://127.0.0.1:18452/ --rpc-user YOUR_RPC_USER --rpc-password YOUR_RPC_PASSWORD --mine
 node --experimental-strip-types packages/inscriber/cli.ts preflight --network mainnet --confirm-network mainnet --plan plan.json --signed plan.signed.json --assignment reserve.json --collection profile.json --zip collection.zip --utxo utxo.json --pub issuer.key.pub.json --key issuer.key --rpc http://127.0.0.1:RPC_PORT/ --rpc-user YOUR_RPC_USER --rpc-password YOUR_RPC_PASSWORD
 node --experimental-strip-types packages/inscriber/cli.ts price --pub issuer.key.pub.json --price price.json --genesis <txid>i0 --utxo utxo.json --creator <address> --sale <address> --change <address> --fee-rate 1 --network regtest --root <64 hex> --out price-plan.json
 ```
@@ -103,6 +103,32 @@ The keyfile is JSON: scrypt parameters (`n`, `r`, `p`), a salt, and an AES-256-G
 
 `utxo.json` is one object: `txid`, `vout`, `value` (bits, as a decimal string), and
 `script` (hex). The output must be the issuer key's own P2MR address.
+
+### Getting `utxo.json` from your own node
+
+The funding address belongs to the issuer key, not to a wallet, so a wallet's `listunspent` never shows it. `utxo` asks your node for the output and writes the file:
+
+```text
+node --experimental-strip-types packages/inscriber/cli.ts utxo --pub issuer.key.pub.json --network regtest --rpc http://127.0.0.1:18452/ --rpc-user YOUR_RPC_USER --rpc-password YOUR_RPC_PASSWORD --out utxo.json
+```
+
+- It asks the node for the outputs that pay the address (`scantxoutset`), and writes the one that does. If the address has no output, or several, it stops and lists them. With several, `--txid <txid>` picks the payment (it also needs the node's `txindex=1`, to read the transaction, and `gettxout` to check that the output is unspent).
+- It checks that the node is on the chain `--network` names, and prints the address, the output, its value and its confirmations. `preflight` wants 6 confirmations on the funding output, so `utxo` says so when it has fewer.
+- `--dry-run` prints and writes nothing. The file is the same four fields as above, with no more keys. It is read-only: the command never sends anything.
+- By hand, `qbit-cli getrawtransaction <txid> true` gives `vout[n].value` (in QBT, so multiply by 100,000,000 for bits) and `vout[n].scriptPubKey.hex`. `utxo` does that and the bits arithmetic for you.
+
+### The Merkle root before the profile
+
+The profile's `root` is the Merkle root of the zip, so it is known only after the zip exists. `root` reads the zip with the loader `plan` uses and prints the root:
+
+```text
+node --experimental-strip-types packages/inscriber/cli.ts root --zip collection.zip --supply 12
+node --experimental-strip-types packages/inscriber/cli.ts root --zip collection.zip --collection profile.json
+```
+
+The first form needs the number of items (`first` is 1). It prints `merkle root <hex>` and `items <n>`: put the value in the profile. The second form reads `supply` from the profile and checks its `root`: it says that the profile has this root, or stops and names the root it expects. It is offline and refuses an RPC URL.
+
+The ports in the examples are Qbit regtest's: RPC 18452 and P2P 18460. [Try it on your own regtest node](../guides/REGTEST.md) starts a node on them.
 
 ## Regtest measurement
 

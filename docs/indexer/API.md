@@ -132,7 +132,7 @@ with `resync()` to check every input. Each of those calls is synchronous, so the
 height or a new tip hash calls `follow` again. Pass `--no-follow` to serve the API from the
 catch-up snapshot and ignore later blocks. Output amounts are taken from transaction hex. A reorg
 is a height whose stored hash is not the node's hash: the indexer disconnects to the fork and
-applies the new blocks, including a reorg that arrives while it is polling. Undo rows are kept
+applies the new blocks, including a reorg that arrives while it is polling. A node call that fails while polling is retried after 1 s, 2 s, 4 s and so on up to 60 s, and the process stops after 30 failures in a row. Undo rows are kept
 for the last 1,000 blocks (configurable). A deeper reorg throws and names `store.resync()` followed
 by `follow()` from the activation height.
 

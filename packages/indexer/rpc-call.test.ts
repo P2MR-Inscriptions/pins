@@ -4,7 +4,7 @@ import { chmodSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { rpcCall } from "./follow.ts";
+import { rpcCall, RpcError } from "./follow.ts";
 import { curlRpcInvocation } from "./rpc-curl.ts";
 
 function pinsRpcDirs(): string[] {
@@ -52,4 +52,43 @@ test("rpcCall removes its own temporary directory on success, failure, and bad J
   }
   const leaked = pinsRpcDirs().filter((name) => !before.has(name));
   assert.deepEqual(leaked, []);
+});
+
+test("rpcCall does not block the event loop while the node answers", async () => {
+  let ticks = 0;
+  const timer = setInterval(() => { ticks += 1; }, 20);
+  try {
+    await withCurl("#!/bin/sh\nsleep 1\nprintf '%s\\n' '{\"result\":7,\"error\":null}'\n", async () => {
+      assert.equal(await rpcCall("http://127.0.0.1:9/", "user", "secret", "getblockcount"), 7);
+    });
+  } finally {
+    clearInterval(timer);
+  }
+  assert.ok(ticks >= 10, `the event loop ran ${ticks} times during a 1 s call`);
+});
+
+test("a failed call is an RpcError that can be repeated, unless curl cannot work at all", async () => {
+  await withCurl("#!/bin/sh\necho 'connection refused' >&2\nexit 7\n", async () => {
+    await assert.rejects(() => rpcCall("http://127.0.0.1:9/", "user", "secret", "getblockcount"), (error: unknown) => error instanceof RpcError && error.retry);
+  });
+  await withCurl("#!/bin/sh\nprintf '%s\\n' '{\"result\":null,\"error\":{\"message\":\"Loading block index\"}}'\n", async () => {
+    await assert.rejects(() => rpcCall("http://127.0.0.1:9/", "user", "secret", "getblockcount"), (error: unknown) => error instanceof RpcError && error.retry && /Loading block index/.test(error.message));
+  });
+  await withCurl("#!/bin/sh\nexit 3\n", async () => {
+    await assert.rejects(() => rpcCall("http://127.0.0.1:9/", "user", "secret", "getblockcount"), (error: unknown) => error instanceof RpcError && !error.retry);
+  });
+  const empty = mkdtempSync(join(tmpdir(), "pins-no-curl-"));
+  const previous = process.env.PATH;
+  process.env.PATH = empty;
+  try {
+    await assert.rejects(() => rpcCall("http://127.0.0.1:9/", "user", "secret", "getblockcount"), (error: unknown) => error instanceof RpcError && !error.retry);
+  } finally {
+    process.env.PATH = previous;
+  }
+});
+
+test("rpcCall does not put the password in an error", async () => {
+  await withCurl("#!/bin/sh\necho 'failed for user:secret-value' >&2\nexit 7\n", async () => {
+    await assert.rejects(() => rpcCall("http://127.0.0.1:9/", "user", "secret-value", "getblockcount"), (error: Error) => !error.message.includes("secret-value"));
+  });
 });

@@ -19,6 +19,7 @@ This file records the reference tools and the repository layout. Specification e
 - Indexer: a node call that fails while polling (a restart, a timeout, a block index that is still loading) is logged and retried after 1 s, 2 s, 4 s and so on up to 60 s. The process stops after 30 failures in a row. It used to exit at the first failure. An error from the indexer itself still stops it at once.
 - Indexer: node calls no longer block the process. `curl` runs as a child process without waiting on it, so the HTTP API answers during a call, including the 180 s limit of one. The credentials still go to curl on stdin only.
 - Indexer: the `outputs` table no longer keeps every output for ever. A spent output is deleted once the undo of the block that spent it is, so a reorg within the undo depth still finds it. A database from before this is upgraded in place; its older outputs are kept, because it does not record which are spent.
+- Inscriber: `broadcast` on testnet4 no longer scans the planned bytes against a hard-coded list of words and a hash. The list was unrelated to the protocol and is removed with its module. The testnet4 refusal of the `pins` marker stays.
 - Specifications: clarifications that match the deployed format and the reference indexer. No valid inscription becomes invalid. See [docs/specs/CHANGELOG.md](docs/specs/CHANGELOG.md).
 
 ## 1.0.0

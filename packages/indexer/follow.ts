@@ -103,7 +103,7 @@ export async function follow(store: Store, rpc: Rpc, activationHeight = 0, netwo
         store.saveOutput(input.prevTxid, input.prevVout, output.value, isP2mr(output.script));
       }
     }
-    const chainBlock = toChainBlock(block, (txid, vout) => store.outputValue(txid, vout), (txid, vout) => store.outputIsP2mr(txid, vout));
+    const chainBlock = toChainBlock(block, (txid, vout) => store.outputValue(txid, vout), network, (txid, vout) => store.outputIsP2mr(txid, vout));
     store.commit(chainBlock);
   }
   const tip = store.tip();

@@ -62,7 +62,7 @@ function block(...tx: RpcBlock["tx"]): RpcBlock {
 /** The reveal spends an output worth 10,000 bits that `kind` describes. */
 function apply(rpcBlock: RpcBlock, kind: boolean | undefined): Indexer {
   const indexer = new Indexer();
-  indexer.applyBlock(toChainBlock(rpcBlock, () => 10_000n, () => kind));
+  indexer.applyBlock(toChainBlock(rpcBlock, () => 10_000n, "regtest", () => kind));
   return indexer;
 }
 
@@ -101,7 +101,7 @@ test("an output created earlier in the same block is checked by its script", () 
   const run = (script: Uint8Array) => {
     const indexer = new Indexer();
     const rpcBlock: RpcBlock = { hash: HASH, height: 1, tx: [coinbaseTx(), create(script), reveal(witness)] };
-    indexer.applyBlock(toChainBlock(rpcBlock, () => 10_000n));
+    indexer.applyBlock(toChainBlock(rpcBlock, () => 10_000n, "regtest"));
     return indexer.inscriptions.size;
   };
   assert.equal(run(P2MR), 1);
@@ -113,7 +113,7 @@ test("a P2MR spend without a witness stops the indexer", () => {
   const stripped = block(reveal(null));
   assert.throws(() => apply(stripped, true), /witness pruned/);
   const indexer = new Indexer();
-  assert.throws(() => indexer.applyBlock(toChainBlock(stripped, () => 10_000n, () => true)), /witness pruned/);
+  assert.throws(() => indexer.applyBlock(toChainBlock(stripped, () => 10_000n, "regtest", () => true)), /witness pruned/);
   assert.equal(indexer.tipNumber, -1);
   assert.equal(indexer.inscriptions.size, 0);
 });

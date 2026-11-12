@@ -1,18 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * Protocol core boundary.
- *
- * The public name is P2MR Inscriptions. The marker is the 4 bytes `pins`
- * (70 69 6e 73), specified in docs/specs/PINS-1.md. This module is configuration
- * only. It must not emit witness bytes.
+ * Protocol constants shared by the packages. The marker is the 4 bytes `pins`
+ * (70 69 6e 73), specified in docs/specs/PINS-1.md, and the inscriber defines it
+ * in `packages/inscriber/marker.ts`. This module is configuration only. It must
+ * not emit witness bytes.
  */
-
-/** On-chain marker. Exactly the 4 ASCII bytes `pins`. The inscriber writes this value. This module does not. */
-export const PROTOCOL_TAG = "pins";
-
-/** Public name of the protocol. Not a Qbit consensus name. */
-export const PROTOCOL_NAME = "P2MR Inscriptions";
 
 /**
  * Reserve quotas are not a protocol default. Pass them from a collection profile
@@ -31,17 +24,5 @@ export const SALE_DOMAIN = 0x02;
  * them. A collection's profile and its price inscription carry the values the tools use.
  */
 
-/** Marketplace finality. A sale is final after this many confirmations. */
+/** Marketplace finality. A sale is final after this many confirmations (PINS-2 §4.3). The one definition: the indexer reads it from here. */
 export const CONFIRMATIONS_FINAL = 6;
-
-/**
- * The protocol repository is https://github.com/P2MR-Inscriptions/pins.
- * That URL is not a constant here, and it is not a collection account.
- */
-
-/**
- * @param {string} feature
- */
-export function notImplemented(feature) {
-  throw new Error(`not_implemented:${feature}`);
-}

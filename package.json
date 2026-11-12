@@ -30,6 +30,11 @@
   },
   "version": "1.0.0",
   "license": "Apache-2.0",
+  "author": {
+    "name": "The PINS authors",
+    "url": "https://github.com/P2MR-Inscriptions/pins"
+  },
+  "packageManager": "npm@10.9.2",
   "keywords": [
     "qbit",
     "p2mr",
@@ -37,7 +42,7 @@
     "inscriptions"
   ],
   "engines": {
-    "node": ">=22 <23"
+    "node": ">=22.13 <25"
   },
   "repository": {
     "type": "git",

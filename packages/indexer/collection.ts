@@ -8,6 +8,7 @@
 import { createHash } from "node:crypto";
 import { LAUNCH_PRICE_SCHEMA, priceBody } from "../inscriber/price.ts";
 import { parsePrice, type PriceRecord } from "../inscriber/preflight.ts";
+import { CONFIRMATIONS_FINAL } from "../protocol/index.mjs";
 import { leafHash, leafListRoot } from "../protocol/merkle.mjs";
 import { decodeCbor } from "./cbor.ts";
 import type { Indexer, Inscription } from "./pins.ts";
@@ -112,8 +113,6 @@ function matchesProfile(genesis: Genesis, profile: CollectionProfile | null | un
     && genesis.itemType === profile.itemType
     && genesis.root === profile.root;
 }
-
-const CONFIRMATIONS_FINAL = 6;
 
 export type PieceStatus = "reserve" | "sale" | "unassigned";
 

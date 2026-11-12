@@ -100,7 +100,7 @@ flowchart LR
 
 ## Requirements
 
-Node.js 22. `node -v` must start with `v22`. The inscriber reads the collection zip with the system `unzip` (Info-ZIP) program, which must be on the PATH; it is already there on most Linux and macOS systems. Qbit Core `v1.0.0`, or a later 1.x release you have checked against its own checksums, is the node this code was written for.
+Node.js 22.13 or newer, up to Node 24 (`engines` is `>=22.13 <25`). Node 22.12 and older do not have `node:sqlite` without a flag, and the indexer needs it. `.nvmrc` names Node 22, the version continuous integration runs. The root and explorer tests also pass on Node 24. The inscriber reads the collection zip with the system `unzip` (Info-ZIP) program, which must be on the PATH; it is already there on most Linux and macOS systems. Qbit Core `v1.0.0`, or a later 1.x release you have checked against its own checksums, is the node this code was written for.
 
 ```text
 npm ci

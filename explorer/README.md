@@ -8,7 +8,7 @@ PINS is an independent protocol.
 
 ## Requirements
 
-Node.js 22.12 or newer, and older than 23. `npm` installs the tools of this package and of the repository root, which holds the indexer. A synced Qbit node with RPC on loopback is required for a real index. The mock UI does not need one.
+Node.js 22.13 or newer, and older than 25. The root indexer needs `node:sqlite`, which is not available without a flag before 22.13. `npm` installs the tools of this package and of the repository root, which holds the indexer. A synced Qbit node with RPC on loopback is required for a real index. The mock UI does not need one.
 
 ## Fresh install
 

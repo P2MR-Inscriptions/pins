@@ -41,7 +41,6 @@ qbit-data/
 testnet4/
 
 # Local preview and generated files
-.grok/
 artifacts/
 screenshots/
 attachments/

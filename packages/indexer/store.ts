@@ -213,6 +213,12 @@ export class Store {
     this.setMeta("activation_height", String(height));
   }
 
+  /** The height this database started from, or null before `follow` has recorded it. */
+  activationHeight(): number | null {
+    const stored = this.meta("activation_height");
+    return stored === null ? null : Number(stored);
+  }
+
   close(): void {
     this.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
     this.db.close();

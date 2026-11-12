@@ -77,12 +77,19 @@ export function startMock(port = 8787): Promise<{ url: string; close: () => Prom
     const url = new URL(req.url ?? "/", "http://127.0.0.1");
     const json = (code: number, body: unknown) => { res.writeHead(code, { "content-type": "application/json" }); res.end(JSON.stringify(body)); };
     const p = url.pathname;
-    if (p === "/status") return json(200, { network: "regtest", chain: "regtest", height: BASE + 12, hash: sha("tip"), stateHash: sha("state"), inscriptions: items.length, mock: true });
+    if (p === "/status") return json(200, { network: "regtest", chain: "regtest", height: BASE + 12, hash: sha("tip"), stateHash: sha("state"), inscriptions: items.length, mock: true, standards: [1, 2, 3, 4, 5].map((n) => ({ id: `PINS-${n}`, status: "draft" })) });
     if (p === "/collection") return json(200, { status: "present", sale: "waiting_for_wallet", genesisId: genesis.id, name: mockBrand.name, supply: SUPPLY, first: 1, namePrefix: mockBrand.prefix, root: "00".repeat(32), issuer: "ab".repeat(32), itemType: "image/png", authentic: MINTED });
-    if (p === "/inscriptions") { const o = url.searchParams.get("owner"); return json(200, { inscriptions: items.filter((i) => !o || i.ownerAddress === o).map(strip) }); }
+    if (p === "/inscriptions") {
+      // Like the real indexer: every row unless a limit is given, and the total of the list.
+      const o = url.searchParams.get("owner"), offset = Number(url.searchParams.get("offset") ?? 0), text = url.searchParams.get("limit");
+      const limit = text === null ? null : Number(text);
+      if (!Number.isInteger(offset) || offset < 0 || (limit !== null && !(Number.isInteger(limit) && limit >= 1 && limit <= 1000))) return json(400, { error: "offset and limit" });
+      const rows = items.filter((i) => !o || i.ownerAddress === o);
+      return json(200, { total: rows.length, offset, limit, inscriptions: rows.slice(offset, limit === null ? undefined : offset + limit).map(strip) });
+    }
     if (p === "/pieces") {
       const offset = Number(url.searchParams.get("offset") ?? 0), limit = Number(url.searchParams.get("limit") ?? 100);
-      if (!(limit >= 1 && limit <= 100)) return json(400, { error: "offset and limit" });
+      if (!(limit >= 1 && limit <= 1000)) return json(400, { error: "offset and limit" });
       return json(200, { total: pieces.length, offset, limit, pieces: pieces.slice(offset, offset + limit) });
     }
     let m = /^\/inscription\/(.+)$/.exec(p);

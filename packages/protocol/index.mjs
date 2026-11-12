@@ -26,3 +26,17 @@ export const SALE_DOMAIN = 0x02;
 
 /** Marketplace finality. A sale is final after this many confirmations (PINS-2 §4.3). The one definition: the indexer reads it from here. */
 export const CONFIRMATIONS_FINAL = 6;
+
+/**
+ * The standards of docs/specs, by id, with the status each one states. A test compares this list with the
+ * index and with the status line of every document, so it cannot drift. The indexer reports the ones it
+ * implements in `/status`.
+ */
+export const STANDARDS = Object.freeze([
+  Object.freeze({ id: "PINS-1", status: "draft" }),
+  Object.freeze({ id: "PINS-2", status: "draft" }),
+  Object.freeze({ id: "PINS-3", status: "draft" }),
+  Object.freeze({ id: "PINS-4", status: "draft" }),
+  Object.freeze({ id: "PINS-5", status: "draft" }),
+  Object.freeze({ id: "PINS-6", status: "draft" }),
+]);

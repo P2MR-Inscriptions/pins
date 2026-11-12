@@ -4,6 +4,8 @@
 
 ## Unreleased
 
+- The explorer reads the P2MR Inscription list from the indexer in pages of 1000 (`/inscriptions?offset=…&limit=1000`, four at a time) instead of one answer with every row. A total above `MAX_INSCRIPTIONS` is refused after the first page. Pages that do not add up to the total are refused and the last snapshot stays. An indexer from before paging ignores both parameters and sends every row without a total, and that is still accepted. The snapshot is still dropped when the tip moves during the read.
+- The mock indexer pages `/inscriptions` and lists the standards in `/status`, like the real one. `/api/status` passes the indexer's `standards` and `schemas` through.
 - The explorer reads CBOR with `packages/indexer/cbor.ts`. Its own copy `server/cbor.ts` is removed. The copy had fallen behind: it dropped a map key named `__proto__` and a leading byte order mark in a text string, which the indexer keeps.
 - With `TRUST_PROXY=1` the rate limit uses the last element of `X-Forwarded-For`, which the proxy appended, not the first, which a client can set.
 - The version in `/api/status` is read from `package.json`.

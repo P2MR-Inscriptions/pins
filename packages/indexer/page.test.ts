@@ -23,7 +23,8 @@ test("piece pages stay inside the requested window", () => {
   const pieces = [piece(1), piece(2), piece(3)];
   assert.equal(piecePage(pieces, -1, 1), null);
   assert.equal(piecePage(pieces, 0, 0), null);
-  assert.equal(piecePage(pieces, 0, 101), null);
+  assert.equal(piecePage(pieces, 0, 1000)?.pieces.length, 3);
+  assert.equal(piecePage(pieces, 0, 1001), null);
   const page = piecePage(pieces, 1, 1);
   assert.equal(page?.total, 3);
   assert.deepEqual(page?.pieces.map((item) => item.number), [2]);

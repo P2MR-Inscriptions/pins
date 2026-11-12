@@ -39,7 +39,7 @@ before(async () => {
       res.end(JSON.stringify({ network: "regtest", chain: "regtest", height: 3, hash: "aa", stateHash: "bb", inscriptions: 3 }));
       return;
     }
-    if (path === "/inscriptions") {
+    if (path.split("?")[0] === "/inscriptions") {
       res.setHeader("content-type", "application/json");
       res.end(JSON.stringify({ inscriptions: [inscription(id, "text/html"), inscription(htmlId, "text/html"), inscription(svgId, "image/svg+xml"), inscription(chunkId, "image/png"), inscription(bigId, "image/png")] }));
       return;

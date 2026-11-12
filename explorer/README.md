@@ -60,9 +60,13 @@ The genesis id is read from the file that `MANIFEST` names. Without `MANIFEST` t
 
 Explorer 1.0.1 is this package only. It does not change the indexer and it is not a production release. The page was checked with the mock indexer. A separate mainnet run of an earlier build reached height 165925 and 10002 inscriptions; this build does not repeat that check, and it does not decide whether every item of a collection is authentic. While the indexer is catching up, each RPC call is a blocking `spawnSync`, so its own HTTP server does not answer during that call. This is not a production release.
 
-The indexer still returns every inscription in one response, and this process keeps that snapshot in memory. The browser asks for one page of images, not the whole collection. One indexer process follows one genesis id.
+The explorer reads the list of P2MR Inscriptions from the indexer in pages of 1000, and this process keeps that snapshot in memory. The browser asks for one page of images, not the whole collection. One indexer process follows one genesis id.
 
 The explorer answers only a `Host` header that names loopback, plus the names in `TRUSTED_HOSTS` (comma separated). Behind a reverse proxy on the same machine, set `TRUST_PROXY=1`: the explorer then reads `X-Forwarded-Host`, and it rate-limits by the last address in `X-Forwarded-For`, the one the proxy appended. A proxy that does not set that header leaves the limit per proxy connection, not per client. `INDEXER_URL` must stay on loopback, which is also what the indexer's own Host check allows.
+
+## Search
+
+`/api/search?q=` (the search box) takes a query of at most 128 characters after trimming. A longer one gets the same "not recognized" answer (`404`) as text that matches nothing. It recognizes: a P2MR Inscription id (`<txid>i<n>`), a transaction id, an address, a collection piece (`item 12`, `piece #12`, `#12`), a block (`block 5`, `block #5`), and a P2MR Inscription number (`7`, `no. 7`, `n° 7`, `inscription #7`). The patterns are in `server/search.ts`, and `test/search.test.ts` lists what each accepts and refuses.
 
 ## What a frame can show
 

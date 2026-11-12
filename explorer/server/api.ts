@@ -4,13 +4,10 @@ import { mediaKind, normalizeType, PREVIEW_BYTES } from "../public/content-view.
 import { config } from "./config.ts";
 import { decodeCbor } from "../../packages/indexer/cbor.ts";
 import { cache, type Inscription } from "./index-cache.ts";
-import { profile } from "./profile.ts";
 import { publicError } from "./redact.ts";
 import { rpc, rpcEnabled, rpcProbe } from "./rpc.ts";
+import { ADDRESS, HEX64, ID, classifyQuery } from "./search.ts";
 
-const ID = /^[0-9a-f]{64}i\d+$/;
-const HEX64 = /^[0-9a-f]{64}$/;
-const ADDRESS = /^(qb|tq|qbrt)1[0-9a-z]{6,120}$/;
 const INERT_CSP = "default-src 'none'; sandbox";
 /**
  * Unique origin, inline page only. The response blocks fetch, outside scripts, images, fonts and media, nested frames,
@@ -255,24 +252,6 @@ async function blockView(param: string) {
   return { height, hash, header, nodeError, created: created.map(summary) };
 }
 
-function search(q: string): { type: string; path: string } | null {
-  const s = q.trim();
-  if (!s) return null;
-  const lower = s.toLowerCase();
-  if (ID.test(lower)) return { type: "inscription", path: `/inscription/${lower}` };
-  if (HEX64.test(lower)) return { type: "transaction", path: `/tx/${lower}` };
-  if (ADDRESS.test(lower)) return { type: "address", path: `/address/${lower}` };
-  const words = profile.pieceWords.join("|");
-  const piece = new RegExp(`^(?:${words})?\\s*#\\s*(\\d+)$`, "i").exec(s) ?? new RegExp(`^(?:${words})\\s+(\\d+)$`, "i").exec(s);
-  if (piece) return { type: "collection piece", path: `/${profile.piecePath}/${Number(piece[1])}` };
-  const block = /^block\s*#?\s*(\d+)$/i.exec(s);
-  if (block) return { type: "block", path: `/block/${Number(block[1])}` };
-  const numbered = /^(?:no\.?|n°|inscription)\s*#?\s*(\d+)$/i.exec(s);
-  if (numbered) return { type: "inscription number", path: `/number/${Number(numbered[1])}` };
-  if (/^\d+$/.test(s)) return { type: "inscription number", path: `/number/${Number(s)}` };
-  return null;
-}
-
 export async function handleApi(req: IncomingMessage, res: ServerResponse, url: URL): Promise<void> {
   try {
     const path = url.pathname.replace(/^\/api/, "") || "/";
@@ -300,7 +279,7 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse, url: 
       throw new HttpError(503, "The collection piece check is still loading");
     }
     if (path === "/search") {
-      const found = search(url.searchParams.get("q") ?? "");
+      const found = classifyQuery(url.searchParams.get("q") ?? "");
       send(res, found ? 200 : 404, found ?? { error: "Not a recognized P2MR Inscription id or number, txid, address, or piece." });
       return;
     }

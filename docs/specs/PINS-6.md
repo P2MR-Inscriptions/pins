@@ -5,7 +5,7 @@
 |---|---|
 | Standard | PINS-6 |
 | Title | PSBT Trades (atomic swaps) |
-| Status | Draft. Regtest measurements are recorded. Vectors still marked TODO-regtest are open. |
+| Status | Draft. Regtest measurements are recorded. TV6-1 through TV6-4 and the lines marked TODO-regtest are open (§9). |
 | Type | Application, normative for marketplaces and wallets |
 | License | CC0-1.0 |
 | Requires | PINS-1, PINS-3 |
@@ -115,7 +115,7 @@ at most 3,763 bytes, sighash-type byte included (`P2MR_V1_SINGLE_KEY_SPEND_SIZE`
 `src/script/p2mr_sizing.h:15-41`). A clean-template sale with one funding input has 4 inputs, about 15.1 kB. At the
 minimum relay fee (250 bits/kvB) that is about 3,800 bits. TODO-regtest: exact sizes.
 
-## 5.1 Price inscription
+### 5.1 Price inscription
 
 Native QBT has no public market price that a genesis inscription can freeze. `qbit.org` lists none,
 and a ticker search is not a price for this asset. The genesis map MUST NOT carry `price_bits`,

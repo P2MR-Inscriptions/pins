@@ -2,6 +2,8 @@
 
 # Mint tool
 
+This page describes the reference minter, which mints a collection: a genesis inscription and the items of a zip. It does not mint a single stand-alone inscription (see [Single inscriptions](../../README.md#single-inscriptions)).
+
 The reference minter builds one confirmed fan-out, then the reveals. Postage is 10,000 bits.
 A reveal heavier than 400,000 bytes is refused. How many pieces are reserved is the
 collection profile, not a default in this tool. The reserve size is the sum of the profile's
@@ -23,7 +25,7 @@ commitment and no `--sale` address, and every item goes to the creator address. 
 
 ## Air gap
 
-Four mint commands. Only `plan` and `broadcast` touch a network. `price` is also offline. It builds the sale-open inscription and does not broadcast.
+The reference inscriber has eight commands: `keygen`, `address`, `assign`, `plan`, `sign`, `broadcast`, `preflight` and `price`. Only `broadcast` and `preflight` talk to a node, and both need `--rpc`. `keygen`, `address`, `assign`, `sign` and `price` refuse an RPC URL. `plan` reads the funding output from a file (`utxo.json`) and never calls a node, so it can run on an online watch-only machine with no node credentials. `price` builds the sale-open inscription and does not broadcast. The numbered steps below are the mint itself: `keygen`, `assign`, `plan`, `sign`, `broadcast`. `address` gives the funding address, and `preflight` checks a plan and a signed plan against a node before `broadcast`.
 
 1. `keygen` and `assign` run on the offline machine. `keygen` writes an encrypted keyfile
    and a public JSON file. Make two encrypted copies of the keyfile and keep them apart.

@@ -5,12 +5,12 @@
 |---|---|
 | Standard | PINS-1 |
 | Title | Core Inscription |
-| Status | Draft. Regtest measurements are recorded. Vectors still marked TODO-regtest are open. |
+| Status | Draft. Regtest measurements are recorded. Vectors marked TODO-regtest are open, and so are the regtest runs of TV1-1, TV1-3 and TV1-4 (§11). |
 | Type | Protocol, normative |
 | License | CC0-1.0 |
 | Requires | none |
 | Required by | PINS-2, PINS-3, PINS-4, PINS-5, PINS-6 |
-| Protocol marker | `pins` (`0x70 0x69 0x6e 0x73`), final (collision check: `collision-check.md`) |
+| Protocol marker | `pins` (`0x70 0x69 0x6e 0x73`), fixed: it is in use on mainnet (collision check: `collision-check.md`) |
 
 > P2MR Inscriptions is an independent, open protocol. It is not affiliated with, endorsed by, or
 > an official proposal of the Qbit project or Qbit-Org. "Qbit", "QBT" and "P2MR" are used only to
@@ -287,7 +287,7 @@ Writers:
 
 1. MUST use leaf version `0xc0` and MUST NOT include an annex.
 2. MUST use minimal push opcodes for every push (indexers MUST still accept non-minimal pushes
-   inside envelopes; see TODO-regtest Q7 in the README).
+   inside envelopes; see open question Q7 in the README).
 3. MUST encode the marker as `04 70696e73` and tags as `01 <tag>` (one-byte direct push).
 4. MUST split the body and chunked fields into pushes of 520 bytes, except the last (F4).
 5. MUST NOT include any OP_SUCCESS opcode (F17) anywhere in the leaf script.

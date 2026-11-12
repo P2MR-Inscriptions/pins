@@ -5,7 +5,7 @@
 |---|---|
 | Standard | PINS-4 |
 | Title | Metadata |
-| Status | Draft. The canonical PNG and CBOR rules below are the format. A collection's images are not part of this document. |
+| Status | Draft. The canonical PNG and CBOR rules below are the format. A collection's images are not part of this document. TV4-2 is TODO-spec and TV4-3 is TODO-regtest (§7). |
 | Type | Data format, normative |
 | License | CC0-1.0 |
 | Requires | PINS-1 |
@@ -100,6 +100,10 @@ Example shape, not a collection: `{"meta": {"name": "Item#1", "attributes": [{"t
 ## 5. Content rules for image items
 
 - `content_type` MUST be `image/png`. The body MUST be the canonical PNG defined below.
+- `content_encoding` MUST NOT be used.
+- Review renders are not part of the inscribed item and MUST NOT be inscribed.
+- Renderers SHOULD display the image scaled by an integer factor with nearest-neighbour sampling
+  (CSS `image-rendering: pixelated`).
 
 ### 5.1 Canonical PNG
 
@@ -140,10 +144,6 @@ length keeps the earlier candidate. RGBA is the starting file.
 
 The reference encoder is `encodeCanonicalPng` in `packages/collection/canonical.mjs`. The manifest
 hashes are the check that an independent encoder matched these rules.
-- `content_encoding` MUST NOT be used.
-- Review renders are not part of the inscribed item and MUST NOT be inscribed.
-- Renderers SHOULD display the image scaled by an integer factor with nearest-neighbour sampling
-  (CSS `image-rendering: pixelated`).
 
 ## 6. Collection documents
 

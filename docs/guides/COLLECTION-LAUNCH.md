@@ -4,6 +4,10 @@
 
 This repository is the protocol. It does not name a collection, a Merkle root, or reserve groups. Those live in a collection profile and a zip that you pass on the command line. Keep that profile and that zip out of this tree.
 
+This guide is for anyone who wants to launch their own collection: your own images, your own profile, your own issuer key, your own addresses. Rehearse on regtest first. The public example, [FlatBits](../examples/flatbits.md), shows what a finished mainnet collection looks like on chain and what an indexer reports for it, so you can check your own result against the same kind of record. It is not a template that this repository ships: its art, keys, profile and plan are not here. To mint a single inscription with no collection, see [Single inscriptions](../../README.md#single-inscriptions).
+
+The specifications are Draft and some regtest vectors are open ([list](../specs/README.md#open-test-vectors)). Read them before a mainnet launch, and do the launch on a network you control first.
+
 ## Profile
 
 `--collection` is a JSON file. `packages/protocol/profile.mjs` accepts these fields:

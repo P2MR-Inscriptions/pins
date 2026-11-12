@@ -8,6 +8,8 @@ Dates are the day the change was recorded. The documents stay CC0-1.0.
 Clarifications. They describe the deployed format and the reference indexer. No inscription that is valid
 today becomes invalid.
 
+- Editorial. The status line of PINS-2 says Draft, and the status lines of PINS-1 to PINS-6 name their open vectors. The index lists every open vector. "Final" is no longer used for the marker (it is fixed, because it is in use on mainnet). PINS-6 §5.1 is a level-3 heading, three rules of PINS-4 §5 are back in their list, PINS-1 §9.2 points to open question Q7, and the two entries of 2026-11-04 have distinct headings. Nothing normative changes.
+- `collision-check.md` records the scan of blocks 160,951 to 161,947 as open.
 - New [vectors/](vectors/README.md): JSON test vectors for the Merkle leaf, root and proof (PINS-5 §5.1), the leaf list (PINS-5 §6), the field 5 reader (PINS-4 §2.1), canonical metadata (PINS-4 §2), the genesis (PINS-5 §3), reveal leaf envelopes (PINS-1 §4), and the reserve and sale order (PINS-5 §8). A test of the repository recomputes them.
 - PINS-1 §5.3. The reference writer repeats the tag of field 5 with each chunk of 520 bytes, as this section says. Test vectors with field 5 of 600, 1040 and 1041 bytes are added to `vectors/envelope.json`. The reader is unchanged.
 - PINS-5 §5.1. The reference code has one implementation of the leaf, the root and the proof, `packages/protocol/merkle.mjs`. The sentence that the tree is folded in a private function is replaced.
@@ -88,7 +90,7 @@ Relaxation. No inscription that is valid today becomes invalid, and a genesis th
   `pins-price/1` inscription, published when the sale opens and signed by the same issuer key.
   The first valid one wins. Later ones are ignored. The median rule moved with it.
 
-## 2026-11-04
+## 2026-11-04 (buyer receive address)
 
 - PINS-6 §4.3. The buyer chooses the receive output before signing. The default is the signing
   wallet. Another P2MR address on the same network is allowed. The buyer's `SIGHASH_DEFAULT`
@@ -96,7 +98,7 @@ Relaxation. No inscription that is valid today becomes invalid, and a genesis th
   6-confirmation finality are unchanged. Qbit Wallet v1.0.7 shows such an output as
   **Unrecognised** and still offers to sign it.
 
-## 2026-11-04
+## 2026-11-04 (regtest measurements)
 
 Regtest measurements from a private regtest node. The normative text was updated to match.
 The raw log is not in this repository.

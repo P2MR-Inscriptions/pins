@@ -5,7 +5,7 @@
 |---|---|
 | Standard | PINS-2 |
 | Title | Indexing |
-| Status | Mainnet `ACTIVATION_HEIGHT` is 161948. TV2-2, TV2-3, and TV2-4 are open. |
+| Status | Draft. Mainnet `ACTIVATION_HEIGHT` is 161948. TV2-2, TV2-3, and TV2-4 are open (§6). |
 | Type | Protocol, normative |
 | License | CC0-1.0 |
 | Requires | PINS-1, PINS-3 |

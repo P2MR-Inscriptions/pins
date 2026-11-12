@@ -4,7 +4,7 @@
 
 Language-independent checks for another implementation of PINS. Each file is JSON. The values were produced by the reference code of this repository, and `packages/protocol/vectors.test.ts` recomputes every file on each test run and fails on a difference. The Merkle files are also checked there by a second reading of PINS-5 §5.1 that shares no code with the repository.
 
-Bytes are lowercase hex. A case marked `error` or `valid: false` is a case the reader must refuse. Nothing here is a rule: the specifications in the folder above are the rules, and a vector is an example of one.
+Bytes are lowercase hex. A case marked `error` or `valid: false` is a case the reader must refuse. Nothing here is a rule: the specifications in the folder above are the rules, and a vector is an example of one. The specifications are Draft, and these files do not close the regtest vectors that are still open (listed in the [specifications index](../README.md#open-test-vectors)). A file here is a check of the reference code against a rule, not a regtest run.
 
 | File | What it checks | Specification |
 |---|---|---|

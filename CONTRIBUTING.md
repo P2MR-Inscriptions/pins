@@ -33,6 +33,8 @@ Everything below lives in `.github/` and is plain configuration. You can read it
 
 CI runs once per change: on a pull request, and on `main` after a merge. It uses the Node version in `.nvmrc`. Every action is pinned by commit SHA with its version in a comment, and the workflow token is read-only. `.github/dependabot.yml` opens weekly pull requests for newer actions and npm packages. When you add an action, pin it by SHA the same way, and give a job only the permissions it needs.
 
+**Major updates of npm packages are made on purpose, not by the bot.** Dependabot opens pull requests for minor and patch updates (grouped) and for actions. It does not open one for a new major version of an npm package, in the root or in `explorer/`, because a major can break the build, and the two trees are linked: the explorer imports and typechecks the root indexer sources, so a major in one can fail the other. To take a major update, open one pull request that changes the root and `explorer/` together: update both `package.json` and both lock files, and make lint, typecheck, build and the tests of both pass (`npm run lint`, `npm run typecheck`, `npm run build`, `npm test`, then the same in `explorer/`). Say in the description why the major is wanted. Security updates are not held back by this rule: Dependabot still opens a pull request when a published advisory has a fix, even a major one.
+
 ## What not to change
 
 Do not change the marker, the envelope layout, the leaf preimage, the Merkle folding, the reserve domain byte `0x01`, or the sale-order domain byte `0x02`. Those bytes are the protocol. A change there is a new marker, not a patch.

@@ -70,3 +70,32 @@ test("a declared array of twenty million items does not exhaust a small heap", a
   assert.match(out, /THREW/);
   assert.equal(out.includes("RETURNED"), false);
 });
+
+test("a map key named __proto__ is kept as an own key and does not change the prototype", () => {
+  const key = Uint8Array.of(0x69, ...Buffer.from("__proto__"));
+  const decoded = decodeCbor(Uint8Array.of(0xa2, ...key, 0xa1, 0x61, 0x61, 0x01, 0x61, 0x78, 0xf5)) as Record<string, unknown>;
+  assert.deepEqual(Object.keys(decoded), ["__proto__", "x"]);
+  assert.equal(Object.getPrototypeOf(decoded), Object.prototype);
+  assert.deepEqual(Object.getOwnPropertyDescriptor(decoded, "__proto__")?.value, { a: 1 });
+  assert.equal((decoded as { a?: number }).a, undefined);
+  assert.equal(decoded.x, true);
+});
+
+test("a __proto__ key with a scalar value is kept", () => {
+  const key = Uint8Array.of(0x69, ...Buffer.from("__proto__"));
+  const decoded = decodeCbor(Uint8Array.of(0xa1, ...key, 0x07)) as Record<string, unknown>;
+  assert.deepEqual(Object.keys(decoded), ["__proto__"]);
+  assert.equal(Object.getOwnPropertyDescriptor(decoded, "__proto__")?.value, 7);
+});
+
+test("a repeated key keeps the last value at the position of the first", () => {
+  const decoded = decodeCbor(Uint8Array.of(0xa3, 0x61, 0x61, 0x01, 0x61, 0x62, 0x02, 0x61, 0x61, 0x03));
+  assert.deepEqual(Object.entries(decoded as Record<string, unknown>), [["a", 3], ["b", 2]]);
+});
+
+test("a leading byte order mark in a text string is kept", () => {
+  assert.equal(decodeCbor(Uint8Array.of(0x65, 0xef, 0xbb, 0xbf, 0x61, 0x62)), "\ufeffab");
+  const decoded = decodeCbor(Uint8Array.of(0xa1, 0x64, 0xef, 0xbb, 0xbf, 0x61, 0xf4)) as Record<string, unknown>;
+  assert.deepEqual(Object.keys(decoded), ["\ufeffa"]);
+  assert.equal(decoded.a, undefined);
+});

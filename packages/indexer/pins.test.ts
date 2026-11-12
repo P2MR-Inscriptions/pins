@@ -161,3 +161,17 @@ test("a fee inscription lands in the coinbase after the subsidy", () => {
     assert.equal(item.location.offset, 50n);
   }
 });
+
+test("a content type with a leading byte order mark is not the plain type", () => {
+  const indexer = new Indexer();
+  const leaf = revealLeaf(PUBKEY, [buildEnvelope([{ tag: 1, value: Uint8Array.of(0xef, 0xbb, 0xbf, ...new TextEncoder().encode("application/json")) }], Uint8Array.of(1))]);
+  indexer.applyBlock(block({
+    hash: "h1",
+    height: 1,
+    txs: [
+      { txid: "coin", inputs: [{ coinbase: true, value: 50n }], outputs: [{ value: 50n, script: SCRIPT }] },
+      { txid: "aa", inputs: [{ prevTxid: "00", prevVout: 0, value: 10_000n, leafScript: leaf }], outputs: [{ value: 10_000n, script: SCRIPT }] },
+    ],
+  }));
+  assert.equal(indexer.get("aai0")?.contentType, "\ufeffapplication/json");
+});

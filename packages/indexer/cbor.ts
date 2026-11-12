@@ -47,7 +47,7 @@ function read(data: Uint8Array, offset: number, depth: number): [unknown, number
     if (next + count > data.length) throw new Error("CBOR length exceeds data");
     const slice = data.subarray(next, next + count);
     if (major === 2) return [slice, next + count];
-    return [new TextDecoder("utf-8", { fatal: true }).decode(slice), next + count];
+    return [new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(slice), next + count];
   }
   if (major === 4) {
     const count = asLength();
@@ -68,7 +68,8 @@ function read(data: Uint8Array, offset: number, depth: number): [unknown, number
       const [key, afterKey] = read(data, next, depth + 1);
       const [value, afterValue] = read(data, afterKey, depth + 1);
       if (typeof key !== "string") throw new Error("CBOR map key is not text");
-      map[key] = value;
+      // A plain assignment to "__proto__" would set the prototype and drop the key.
+      Object.defineProperty(map, key, { value, writable: true, enumerable: true, configurable: true });
       next = afterValue;
     }
     return [map, next];

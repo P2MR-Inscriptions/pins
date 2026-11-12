@@ -4,6 +4,7 @@
  * Follow a local node and serve the read-only indexer API on 127.0.0.1.
  * `npm run indexer:serve` and `npm run indexer:run` are the same process.
  * After the first catch-up it keeps polling getblockcount and getbestblockhash.
+ * A failed node call is retried with a growing wait; 30 failures in a row stop it.
  * Pass `--no-follow` to stop after that first catch-up. `--poll` is the gap in
  * seconds (default 15). Regtest is the default network. Testnet4 and mainnet
  * need --network and the same word typed as --confirm-network.

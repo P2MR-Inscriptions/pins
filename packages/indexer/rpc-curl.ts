@@ -27,7 +27,10 @@ export function curlConfigQuoted(value: string): string {
  * Redirects are refused with `--max-redirs 0`, and `-q` is first so a curlrc
  * cannot enable `--location`.
  */
-export function curlRpcInvocation(url: string, user: string, password: string, bodyFile: string, timeoutSeconds = 180): { args: string[]; input: string } {
+/** Total time curl may take for one call. */
+export const CURL_TIMEOUT_SECONDS = 180;
+
+export function curlRpcInvocation(url: string, user: string, password: string, bodyFile: string, timeoutSeconds = CURL_TIMEOUT_SECONDS): { args: string[]; input: string } {
   assertRpcEndpoint(url);
   if (!Number.isFinite(timeoutSeconds) || timeoutSeconds <= 0) throw new Error("curl timeout must be positive");
   if (/[\r\n\0]/.test(user) || /[\r\n\0]/.test(password)) throw new Error("RPC credential must be a single line");

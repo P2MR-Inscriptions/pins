@@ -46,6 +46,18 @@ today becomes invalid.
 - PINS-4 §2.1. A leading U+FEFF in a text string is kept, and a map key named `__proto__` is an
   ordinary key.
 
+Relaxation. No inscription that is valid today becomes invalid, and a genesis that carries
+`sale_commitment` reads exactly as before.
+
+- PINS-5 §3. `sale_commitment` is optional. The genesis map is the eight keys from `schema` to
+  `item_type`, then `sale_commitment` if present, then `reserve` if present. A map without
+  `sale_commitment` is now a genesis, and it declares no sale. Every map accepted before is still
+  accepted, with the same fields. The rule is the same for the launch schema and a rehearsal schema.
+- PINS-5 §8. The sale secret, sale reveal, sale order and reserve selection apply only to a genesis
+  that carries `sale_commitment`. A collection without a sale is authentic by section 9 alone.
+- PINS-6 §5.1. A price inscription counts only for a genesis that carries `sale_commitment`. For
+  one without it, `/collection` reports `orderStatus` `none` and `priceStatus` `none`.
+
 ## 2026-11-06
 
 - PINS-2 §3. Mainnet `ACTIVATION_HEIGHT` is 161948, the block containing the first `pins` envelope

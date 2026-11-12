@@ -6,7 +6,7 @@
  * An online sale key is not read and not required.
  */
 import { createHash } from "node:crypto";
-import { LAUNCH_COLLECTION_SCHEMA, LAUNCH_PRICE_SCHEMA, priceBody } from "../inscriber/price.ts";
+import { LAUNCH_PRICE_SCHEMA, priceBody } from "../inscriber/price.ts";
 import { parsePrice, type PriceRecord } from "../inscriber/preflight.ts";
 import { decodeCbor } from "./cbor.ts";
 
@@ -143,8 +143,11 @@ export type CollectionView = {
   orderBlockHash?: string;
   order?: number[] | null;
   orderVerified?: boolean | null;
-  /** `pending` until the first valid price inscription by the genesis issuer. Later ones are ignored. */
-  priceStatus?: "pending" | "ready";
+  /**
+   * `none` when the genesis declares no sale: no price inscription is read. Otherwise `pending` until the
+   * first valid price inscription by the genesis issuer, then `ready`. Later ones are ignored.
+   */
+  priceStatus?: "none" | "pending" | "ready";
   priceId?: string;
   priceBits?: number;
   priceSources?: string[];
@@ -224,8 +227,9 @@ function sha256(bytes: Uint8Array): Buffer {
 }
 
 const HEX32 = /^[0-9a-f]{64}$/;
-const LAUNCH_KEYS = ["schema", "name", "supply", "first", "name_prefix", "root", "issuer", "item_type", "sale_commitment"];
-const OTHER_KEYS = ["schema", "name", "supply", "first", "name_prefix", "root", "issuer", "item_type"];
+/** The keys every genesis has, in order. `sale_commitment` and then `reserve` may follow, each optional. */
+const GENESIS_KEYS = ["schema", "name", "supply", "first", "name_prefix", "root", "issuer", "item_type"];
+const GENESIS_KEYS_WITH_SALE = [...GENESIS_KEYS, "sale_commitment"];
 
 function chainOrder(left: Inscription, right: Inscription): number {
   return left.createdHeight - right.createdHeight || left.createdIndex - right.createdIndex || left.n - right.n;
@@ -249,8 +253,9 @@ function merkleOfLeafList(body: Uint8Array): string | null {
 
 /**
  * Genesis parameters come only from field 5. A JSON body, earlier or not, is not a source.
- * `pins-collection/1` requires `sale_commitment`. Another schema may omit it: the regtest
- * encoder does. The issuer text must be the reveal key.
+ * The eight base keys come first, in order. `sale_commitment` is optional, and so is `reserve`,
+ * which comes last. A genesis without `sale_commitment` declares no sale. The issuer text must
+ * be the reveal key.
  */
 function genesisOf(indexer: Indexer): Genesis | null {
   const found = [...indexer.inscriptions.values()]
@@ -268,11 +273,10 @@ function genesisOf(indexer: Indexer): Genesis | null {
       continue;
     }
     if (field.schema !== indexer.collectionSchema || carriesPrice(field)) continue;
-    const launch = indexer.collectionSchema === LAUNCH_COLLECTION_SCHEMA;
     const keys = Object.keys(field);
-    const base = launch ? LAUNCH_KEYS : OTHER_KEYS;
-    const withoutReserve = keys.filter((key) => key !== "reserve");
-    if (withoutReserve.join(",") !== base.join(",")) continue;
+    const withoutReserve = keys.filter((key) => key !== "reserve").join(",");
+    const declaresSale = withoutReserve === GENESIS_KEYS_WITH_SALE.join(",");
+    if (!declaresSale && withoutReserve !== GENESIS_KEYS.join(",")) continue;
     if (field.reserve !== undefined && keys[keys.length - 1] !== "reserve") continue;
     const { name, supply, first, root, issuer } = field;
     const namePrefix = field.name_prefix;
@@ -284,7 +288,7 @@ function genesisOf(indexer: Indexer): Genesis | null {
     if (typeof root !== "string" || !HEX32.test(root)) continue;
     if (typeof issuer !== "string" || !HEX32.test(issuer) || issuer !== item.leafIssuer) continue;
     let saleCommitment = "";
-    if (launch || field.sale_commitment !== undefined) {
+    if (declaresSale) {
       if (typeof field.sale_commitment !== "string" || !HEX32.test(field.sale_commitment)) continue;
       saleCommitment = field.sale_commitment;
     }
@@ -550,17 +554,20 @@ export async function collectionView(indexer: Indexer, cursor: ChainCursor, prof
       if (reserveMode === "none") for (const piece of pieces) piece.status = "sale";
     }
   }
-  const price = firstValidPrice(
-    [...indexer.inscriptions.values()].filter((item) => after(genesis, item)),
-    genesis.inscription.id,
-    genesis.issuer,
-    indexer.priceSchema,
-  );
+  // A price opens a sale. A genesis that declares none has nothing to open, so none is read.
+  const price = genesis.saleCommitment
+    ? firstValidPrice(
+      [...indexer.inscriptions.values()].filter((item) => after(genesis, item)),
+      genesis.inscription.id,
+      genesis.issuer,
+      indexer.priceSchema,
+    )
+    : null;
   return {
     status: "present",
     ...base,
     genesisId: genesis.inscription.id,
-    priceStatus: price ? "ready" : "pending",
+    priceStatus: !genesis.saleCommitment ? "none" : price ? "ready" : "pending",
     priceId: price?.id,
     priceBits: price?.price.price_bits,
     priceSources: price?.price.price_sources,

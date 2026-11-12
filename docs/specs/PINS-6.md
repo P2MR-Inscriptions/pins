@@ -141,6 +141,10 @@ prices ascending. If the count is odd, the median `M` is the middle price. If th
 `M` is the arithmetic mean of the two central prices. `price_bits` is the integer closest to
 `100,000,000 / M` (a tie rounds away from zero). That is the QBT amount of 1 USD, in bits.
 
+A price inscription belongs to a sale, so it counts only for a genesis that declares one, that is, one
+that carries `sale_commitment` (PINS-5 §3). For a genesis without it, indexers read no price
+inscription, and `/collection` reports `priceStatus` `none`.
+
 Indexers MUST NOT treat a sale as open until a valid price inscription exists. Validity is: body
 `pins-price/1` plus one trailing newline, `content_type` `text/plain`, schema `pins-price/1`,
 `genesis` equal to this collection's genesis id, `leafIssuer` equal to the genesis issuer, the
@@ -148,8 +152,8 @@ three price fields well formed, and creation strictly after the genesis. The ear
 inscription wins. Order is creation height, then the creating transaction's index in that block,
 then the inscription index `n`. Every later price inscription is ignored, including one from the
 same issuer. The first one is immutable. A genesis whose map contains any price key is not a
-valid genesis. `/collection` exposes `priceStatus` `pending` until that inscription exists and
-`ready` after it, plus `priceBits`, `priceSources`, `priceTime`, and `priceId` of the winner.
+valid genesis. For a genesis that declares a sale, `/collection` exposes `priceStatus` `pending` until
+that inscription exists and `ready` after it, plus `priceBits`, `priceSources`, `priceTime`, and `priceId` of the winner.
 
 ## 6. Primary sale of a collection
 

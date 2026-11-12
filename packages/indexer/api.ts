@@ -18,6 +18,37 @@ const HEADERS = {
   "cache-control": "no-store",
 };
 
+/** Host names a client of the loopback listener may use. `allowedHosts` adds names, for a reverse proxy. */
+const LOOPBACK_HOSTS = ["127.0.0.1", "localhost", "[::1]"];
+
+/**
+ * A page on another site can make a browser send requests to 127.0.0.1 under that site's own name
+ * (DNS rebinding). Its Host header then is not a loopback name, and the request is refused.
+ * A request with no Host header is HTTP/1.0 and cannot come from such a page.
+ */
+export function hostAllowed(header: string | undefined, allowedHosts: readonly string[] = []): boolean {
+  if (header === undefined) return true;
+  const name = header.toLowerCase().replace(/:\d+$/, "");
+  return LOOPBACK_HOSTS.includes(name) || allowedHosts.some((host) => host.toLowerCase() === name);
+}
+
+/**
+ * A recorded content type is whatever the inscriber wrote. One that is not a plain header value would make
+ * `writeHead` throw, so the item could not be read. Such a value is served as bytes. `/inscription/{id}` still shows it.
+ */
+export function servedContentType(value: string): string {
+  return value.length > 0 && /^[\x20-\x7e]+$/.test(value) ? value : "application/octet-stream";
+}
+
+/** `decodeURIComponent` throws on a bad escape such as `%zz`. That is a bad request, not a server error. */
+function decodePath(text: string): string | null {
+  try {
+    return decodeURIComponent(text);
+  } catch {
+    return null;
+  }
+}
+
 function send(response: ServerResponse, status: number, body: unknown): void {
   const text = JSON.stringify(body, (_key, value) => typeof value === "bigint" ? value.toString() : value);
   response.writeHead(status, HEADERS);
@@ -50,8 +81,13 @@ function inscriptionJson(item: ReturnType<Store["indexer"]["get"]>) {
   };
 }
 
-export function startApi(store: Store, port = 0, network: FollowNetwork = "regtest"): Promise<{ url: string; close: () => Promise<void> }> {
+export function startApi(store: Store, port = 0, network: FollowNetwork = "regtest", options: { allowedHosts?: readonly string[] } = {}): Promise<{ url: string; close: () => Promise<void> }> {
+  const allowedHosts = options.allowedHosts ?? [];
   const server = createServer((request, response) => {
+    if (!hostAllowed(request.headers.host, allowedHosts)) {
+      send(response, 403, { error: "host not allowed" });
+      return;
+    }
     void handle(store, request, response, network);
   });
   return new Promise((resolve) => {
@@ -84,6 +120,7 @@ async function handle(store: Store, request: { method?: string; url?: string }, 
         stateHash: tip?.stateHash ?? null,
         inscriptions: store.indexer.inscriptions.size,
         undoBlocks: store.undoCount(),
+        activationHeight: store.activationHeight(),
       });
       return;
     }
@@ -103,19 +140,29 @@ async function handle(store: Store, request: { method?: string; url?: string }, 
       return;
     }
     if (url.pathname.startsWith("/inscription/")) {
-      const item = store.indexer.get(decodeURIComponent(url.pathname.slice("/inscription/".length)));
+      const id = decodePath(url.pathname.slice("/inscription/".length));
+      if (id === null) {
+        send(response, 400, { error: "bad escape in the path" });
+        return;
+      }
+      const item = store.indexer.get(id);
       if (!item) send(response, 404, { error: "not found" });
       else send(response, 200, inscriptionJson(item));
       return;
     }
     if (url.pathname.startsWith("/content/")) {
-      const item = store.indexer.get(decodeURIComponent(url.pathname.slice("/content/".length)));
+      const id = decodePath(url.pathname.slice("/content/".length));
+      if (id === null) {
+        send(response, 400, { error: "bad escape in the path" });
+        return;
+      }
+      const item = store.indexer.get(id);
       if (!item) {
         send(response, 404, { error: "not found" });
         return;
       }
       response.writeHead(200, {
-        "content-type": item.contentType || "application/octet-stream",
+        "content-type": servedContentType(item.contentType),
         "x-content-type-options": "nosniff",
         "content-security-policy": "default-src 'none'; sandbox",
         "cache-control": "no-store",
@@ -124,7 +171,11 @@ async function handle(store: Store, request: { method?: string; url?: string }, 
       return;
     }
     if (url.pathname.startsWith("/output/")) {
-      const outpoint = decodeURIComponent(url.pathname.slice("/output/".length));
+      const outpoint = decodePath(url.pathname.slice("/output/".length));
+      if (outpoint === null) {
+        send(response, 400, { error: "bad escape in the path" });
+        return;
+      }
       const [txid, voutText] = outpoint.split(":");
       const vout = Number(voutText);
       const rows = [...store.indexer.inscriptions.values()].filter((item) => item.location.state === "located" && item.location.txid === txid && item.location.vout === vout);

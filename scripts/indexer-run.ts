@@ -78,7 +78,8 @@ async function main(): Promise<void> {
   if (!rpcPassword) throw new Error("missing --rpc-password (or QBIT_RPC_PASSWORD)");
   const rpc = httpRpc(text(flag, "rpc"), rpcUser, rpcPassword);
   const synced = await follow(store, rpc, activation, network);
-  const api = await startApi(store, port, network);
+  const allowedHosts = typeof flag["allow-host"] === "string" ? flag["allow-host"].split(",").map((name) => name.trim()).filter((name) => name.length > 0) : [];
+  const api = await startApi(store, port, network, { allowedHosts });
   // Follow is the default. `--no-follow` keeps today's one-shot catch-up and still serves the API.
   if (flag["no-follow"] === true) {
     process.stdout.write(`Indexer caught up on ${network} at ${api.url}\nHeight ${synced.height}. Not following new blocks (--no-follow). Leave this running and open the checks in another terminal.\n`);

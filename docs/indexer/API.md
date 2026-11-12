@@ -10,6 +10,9 @@ Every response sets:
 - `Cache-Control: no-store`
 
 `/content/:id` uses the inscription's recorded content type instead of JSON. Those bytes are not executed.
+A recorded content type that is not a plain header value (empty, or with a control or non-ASCII character) is served as `application/octet-stream`. `/inscription/{id}` still shows the recorded value.
+
+A request whose `Host` header is not `127.0.0.1`, `localhost` or `[::1]` (any port) gets `403`. That keeps a web page on another site from reading the API through DNS rebinding. Behind a reverse proxy that passes its own host name, start the indexer with `--allow-host name[,name]`. A path with a bad percent escape, such as `/content/%zz`, gets `400`.
 
 The sale field is always `waiting_for_wallet`. The sale stays closed until Qbit Wallet can complete a pre-signed `0x83` offer. The indexer does not use an online sale key.
 
@@ -23,7 +26,7 @@ info:
 paths:
   /status:
     get:
-      summary: Tip height, state hash, inscription count, and undo rows
+      summary: Tip height and hash, state hash, inscription count, undo rows, and the activation height the database started from
       responses:
         "200":
           description: Indexer status
@@ -37,6 +40,7 @@ paths:
           schema: { type: string }
       responses:
         "200": { description: Inscription }
+        "400": { description: Bad percent escape in the path }
         "404": { description: Missing }
   /inscriptions:
     get:
@@ -57,6 +61,7 @@ paths:
           schema: { type: string, example: "abc:0" }
       responses:
         "200": { description: Inscriptions at that output }
+        "400": { description: Bad percent escape in the path }
   /pieces:
     get:
       summary: One page of collection pieces. offset is the first index, limit is 1 to 100. authentic=1 returns only pieces the indexer marks authentic.
@@ -95,6 +100,8 @@ paths:
           required: true
           schema: { type: string }
       responses:
+        "400": { description: Bad percent escape in the path }
+        "404": { description: Missing }
         "200":
           description: Body bytes
           content:

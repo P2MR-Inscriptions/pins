@@ -132,18 +132,17 @@ equal the genesis `issuer`. A price inscription signed by any other key is ignor
 |---|---|---|
 | `schema` | text | `pins-price/1` |
 | `genesis` | text | genesis inscription id `G` (`<txid>i<n>`) |
-| `price_bits` | uint | bits charged for 1 USD, from the median below |
-| `price_sources` | array of text | each entry names one public market and the USD price it listed for 1 QBT, in the order observed |
-| `price_time` | text | UTC timestamp `YYYY-MM-DDTHH:MM:SSZ` |
+| `price_bits` | uint | price of one sale item, in bits, as the issuer declares it |
+| `price_sources` | array of text | the issuer's record of where the price comes from, one non-empty entry per source |
+| `price_time` | text | UTC timestamp `YYYY-MM-DDTHH:MM:SSZ` of the price |
 
-The median rule, moved here from the genesis: each source lists one USD price for 1 QBT. Sort those
-prices ascending. If the count is odd, the median `M` is the middle price. If the count is even,
-`M` is the arithmetic mean of the two central prices. `price_bits` is the integer closest to
-`100,000,000 / M` (a tie rounds away from zero). That is the QBT amount of 1 USD, in bits.
+The protocol fixes no price and no way to set one. A collection that ties its price to a market can
+record, as `price_sources`, one entry per market and the price it listed, and derive `price_bits`
+from them by a rule it publishes to its buyers (for example the median of the listed prices).
+That rule is not part of this specification.
 
-No tool and no indexer computes the median or checks `price_bits` against `price_sources`. The issuer
-fills the three fields, and a reader checks only that they are well formed (below). The protocol fixes
-no price.
+No tool and no indexer computes a price or checks `price_bits` against `price_sources`. The issuer
+fills the three fields, and a reader checks only that they are well formed (below).
 
 A price inscription belongs to a sale, so it counts only for a genesis that declares one, that is, one
 that carries `sale_commitment` (PINS-5 §3). For a genesis without it, indexers read no price
@@ -163,8 +162,8 @@ that inscription exists and `ready` after it, plus `priceBits`, `priceSources`, 
 
 1. The whole collection is inscribed at launch. Sale items (those not in the creator reserve, PINS-5 §8.1) go to `K_sale`.
    Reserve items go directly to the creator's wallet and are never listed in the primary sale.
-2. Price: 1 USD of creator revenue per item, paid in QBT, plus network fees paid by the buyer.
-   `price_bits` is the median conversion in §5.1. It is fixed by the first valid price inscription
+2. Price: the creator revenue per item is the issuer's `price_bits`, paid in QBT, plus network fees paid by the buyer.
+   The protocol fixes no amount. `price_bits` is fixed by the first valid price inscription
    and never changed during the sale. There is no re-pricing. A later price inscription is ignored.
 3. Primary listings use `seller_payment = price_bits` (the creator gives the 10,000-bit postage to the
    buyer with the item), so the buyer pays `price_bits` + network fees and receives an output worth
@@ -175,7 +174,7 @@ that inscription exists and `ready` after it, plus `priceBits`, `priceSources`, 
 5. A sale is final after 6 confirmations (PINS-2 §4.3). Until then the server MUST NOT release the
    next listing of the order to someone else if the pending sale might be reorged out; if a sale
    disappears in a reorg, the same item is offered again before the next one in the order.
-6. The sale lasts 30 days (PINS-5 §8.5). At close, `sale_secret` is published in its own inscription
+6. The collection decides how long the sale lasts (PINS-5 §8.5). At close, `sale_secret` is published in its own inscription
    so anyone can check the order. Unsold items go to the address committed before close.
 
 ## 7. Qbit Wallet compatibility (as of `v1.0.7`, 2026-11-02)

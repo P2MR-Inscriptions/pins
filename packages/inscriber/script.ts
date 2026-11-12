@@ -79,6 +79,9 @@ export function encodePointer(value: bigint): Uint8Array {
 
 export type EnvelopeField = { tag: number; value: Uint8Array };
 
+/** The tags PINS-1 §5.2 marks as chunked. Only the metadata field is. The reader joins the repeats of the same tag. */
+const CHUNKED_TAGS: ReadonlySet<number> = new Set([5]);
+
 /**
  * One PINS envelope. Tag 0 is reserved for the body separator and is not a field.
  * `minimal` is false only for the Q7 standardness probe.
@@ -87,8 +90,15 @@ export function buildEnvelope(fields: EnvelopeField[], body: Uint8Array, minimal
   const parts: Uint8Array[] = [Uint8Array.of(OP_FALSE, OP_IF), pushBytes(marker, minimal)];
   for (const field of fields) {
     if (field.tag < 1 || field.tag > 255) throw new Error("field tag must be one byte");
-    parts.push(pushBytes(Uint8Array.of(field.tag), minimal));
-    for (const piece of chunks(field.value)) parts.push(pushBytes(piece, minimal));
+    // PINS-1 §5.3. A chunked field is written as a tag and a chunk of at most 520 bytes, repeated.
+    // The reader joins the values of repeated tags in order. A field that is not chunked cannot
+    // repeat, so a value above one push is refused instead of written in a form the reader misreads.
+    if (CHUNKED_TAGS.has(field.tag)) {
+      for (const piece of chunks(field.value)) parts.push(pushBytes(Uint8Array.of(field.tag), minimal), pushBytes(piece, minimal));
+    } else {
+      if (field.value.length > MAX_PUSH) throw new Error(`field ${field.tag} is longer than ${MAX_PUSH} bytes and is not chunked`);
+      parts.push(pushBytes(Uint8Array.of(field.tag), minimal), pushBytes(field.value, minimal));
+    }
   }
   parts.push(pushBytes(new Uint8Array(), minimal));
   for (const piece of chunks(body)) parts.push(pushBytes(piece, minimal));

@@ -16,7 +16,7 @@ Bytes are lowercase hex. A case marked `error` or `valid: false` is a case the r
 | `metadata.json` | the canonical CBOR of an item's metadata, and records that are refused | PINS-4 §2 |
 | `genesis.json` | the encoding of a genesis field 5, and field 5 maps that are, or are not, taken as the genesis of a collection | PINS-5 §3 |
 | `genesis-example.json` | the real genesis of the public example collection, read from mainnet, and its re-encoding | PINS-5 §3 |
-| `envelope.json` | reveal leaf scripts and what a reader finds in them: fields, body, flags, chunk boundaries at 520 and 521 bytes, three envelopes in one leaf, and scripts with no envelope | PINS-1 §4 |
+| `envelope.json` | reveal leaf scripts and what a reader finds in them: fields, body, flags, chunk boundaries at 520 and 521 bytes, field 5 of 600, 1040 and 1041 bytes written as a repeated tag and chunk, three envelopes in one leaf, and scripts with no envelope | PINS-1 §4 |
 | `reserve.json` | reserve ranks, a reserve selection, the sale seed and the sale order, with test seeds | PINS-5 §8 |
 
 The leaves of the Merkle files are SHA-256 of the text `leaf <index>`. The public key of the envelope scripts is 32 bytes of `0x02`. The example collection appears only through public chain data (ids, root, issuer key, height, field 5). No art and no private value is in this folder.

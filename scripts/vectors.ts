@@ -385,13 +385,25 @@ function envelopeVectors(): Json {
   const meta = canonicalMetadataCbor({ meta: { name: "Item#1", attributes: [{ trait_type: "Tone", value: "0" }] } });
   const one = (fields: { tag: number; value: Uint8Array }[], body: Uint8Array) => revealLeaf(pubkey, [buildEnvelope(fields, body)]);
   const empty = new Uint8Array();
+  // The writer and the specification agree: the tag of a chunked field repeats with each chunk of 520 bytes.
+  const longMetadata = (length: number): Uint8Array => {
+    const value = pattern(length);
+    const pieces: Uint8Array[] = [];
+    for (let offset = 0; offset < length; offset += 520) pieces.push(Uint8Array.of(5), value.subarray(offset, offset + 520));
+    const byHand = raw([Uint8Array.of(1), text("application/octet-stream"), ...pieces, empty, text("x")]);
+    const byWriter = one([contentTypeField("application/octet-stream"), metadataField(value)], text("x"));
+    if (hex(byHand) !== hex(byWriter)) throw new Error(`the writer does not repeat the tag of a ${length}-byte field 5`);
+    return byWriter;
+  };
   const cases = [
     ok("text body with a content type", one([contentTypeField("text/plain;charset=utf-8")], text("hello"))),
     ok("an item: content type, metadata, body", one([contentTypeField("image/png"), metadataField(meta)], pattern(40))),
     ok("body of 520 bytes, one push", one([contentTypeField("application/octet-stream")], pattern(520))),
     ok("body of 521 bytes, two pushes", one([contentTypeField("application/octet-stream")], pattern(521))),
     ok("body of 1040 bytes, two full pushes", one([contentTypeField("application/octet-stream")], pattern(1040))),
-    ok("metadata of 600 bytes, field 5 repeated with a chunk of 520 and a chunk of 80", raw([Uint8Array.of(1), text("application/octet-stream"), Uint8Array.of(5), pattern(600).subarray(0, 520), Uint8Array.of(5), pattern(600).subarray(520), empty, text("x")])),
+    ok("metadata of 600 bytes, field 5 repeated with a chunk of 520 and a chunk of 80", longMetadata(600)),
+    ok("metadata of 1040 bytes, field 5 repeated with two chunks of 520", longMetadata(1040)),
+    ok("metadata of 1041 bytes, field 5 repeated with chunks of 520, 520 and 1", longMetadata(1041)),
     ok("three envelopes with pointers 0, 10000, 20000", revealLeaf(pubkey, [0n, 10000n, 20000n].map((pointer, index) => buildEnvelope([contentTypeField("text/plain"), pointerField(pointer)], text(`item ${index}`))))),
     ok("a leaf with no envelope", revealLeaf(pubkey, [])),
     ok("wrong marker", concatBytes([pushBytes(pubkey), Uint8Array.of(0xb3, OP_FALSE, OP_IF), pushBytes(text("pinx")), pushBytes(empty), pushBytes(text("x")), Uint8Array.of(OP_ENDIF)])),

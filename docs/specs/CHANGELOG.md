@@ -18,6 +18,10 @@ today becomes invalid.
   `--genesis <inscription id>`.
 - PINS-5 §8.1. Where an indexer gets the reserve groups: the `reserve` key, a collection profile, or
   nowhere.
+- PINS-5 §8.1. The protocol fixes no reserve size. It is the sum of the collection's group counts and
+  extra count.
+- PINS-6 §5.1. No tool or indexer computes the median or checks `price_bits` against `price_sources`.
+  Readers check that the three price fields are well formed. The protocol fixes no price.
 - PINS-4 §2.1. The rules of the reference CBOR reader are normative: definite lengths, shortest
   arguments, no tags, floats, or `undefined`, text keys, valid UTF-8, a depth limit of 32, and the
   treatment of repeated keys.

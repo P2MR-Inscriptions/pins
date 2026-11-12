@@ -3,6 +3,11 @@
 /**
  * Price inscription schema.
  *
+ * A price is optional. It belongs to a collection that declares a sale, and it is how that sale opens
+ * (PINS-6 §5.1). A collection with no sale has none. This module holds no price, no price source and
+ * no time: those three fields come from the file the operator gives to `price --price`, and nothing
+ * here computes or checks them beyond their form (`parsePrice`).
+ *
  * PINS-6 §5.1 fixes the launch text. The body is that text plus one newline,
  * and field 5 `schema` is the same text. Mainnet bytes use it and nothing else.
  *

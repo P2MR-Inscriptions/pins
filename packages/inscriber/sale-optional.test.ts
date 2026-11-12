@@ -207,15 +207,15 @@ test("sign takes the addresses of the operator, and the sale flag of the plan mu
   const f = await fixture();
   const none = build(f, { sale: null });
   const withSale = build(f, { sale: f.sale, reserve: [2] });
-  // A plan with no sale is signed with no reserve, and no 500 is applied when the count is left out.
+  // A plan with no sale is signed with no reserve, and no reserve count is invented when it is left out.
   const pinsPlan = { ...none };
   assert.doesNotThrow(() => verifyPlan(pinsPlan, new Set(), expects(f, null), ROOT));
   const signed = signPlan(none, f.secret, new Set(), expects(f, null), ROOT);
   assert.equal(signed.signed, true);
   assert.equal(signed.noSale, true);
   assert.deepEqual(signedBodyChecks(none, signed).map((check) => check.pass), [true]);
-  // A sale plan left without a reserve count still asks for 500, as before.
-  assert.throws(() => verifyPlan(withSale, new Set([2]), expects(f, f.sale), ROOT), /reserve has 1 ids, not 500/);
+  // A sale plan left without a reserve count is refused. There is no default count.
+  assert.throws(() => verifyPlan(withSale, new Set([2]), expects(f, f.sale), ROOT), /needs its reserve count/);
   assert.doesNotThrow(() => verifyPlan(withSale, new Set([2]), expects(f, f.sale), ROOT, 1));
   // The operator says "no sale" and the plan has one, or the other way round.
   assert.throws(() => verifyPlan(withSale, new Set([2]), expects(f, null), ROOT, 1), /addresses do not match/);

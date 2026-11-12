@@ -5,7 +5,6 @@
  * Repeating the command is safe: a transaction already in a block is skipped.
  */
 import { type Rpc } from "../indexer/follow.ts";
-import { forbiddenIn, rawFromPlan } from "./stealth.ts";
 import { assertMarkerForNetwork, isPinsMarker, parseMarker } from "./marker.ts";
 import { assertBroadcastNetwork, rpcChainName, type MintNetwork } from "./network.ts";
 import type { MintPlan } from "./plan.ts";
@@ -117,11 +116,7 @@ export async function broadcastPlan(plan: MintPlan, rpc: Rpc, options: {
   if (!plan.signed) throw new Error("plan is not signed");
   const marker = parseMarker(plan.marker);
   assertMarkerForNetwork(marker, options.network);
-  if (options.network === "testnet4") {
-    if (isPinsMarker(marker)) throw new Error("testnet4 refuses the launch marker");
-    const hit = forbiddenIn(rawFromPlan(plan));
-    if (hit.length) throw new Error(`testnet4 refuses planned bytes containing ${hit.join(",")}`);
-  }
+  if (options.network === "testnet4" && isPinsMarker(marker)) throw new Error("testnet4 refuses the launch marker");
   if (options.mine && options.network !== "regtest") throw new Error("mining from this tool is regtest only");
   const wait = {
     mine: Boolean(options.mine),

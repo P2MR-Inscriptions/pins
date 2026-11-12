@@ -9,6 +9,7 @@ Clarifications. They describe the deployed format and the reference indexer. No 
 today becomes invalid.
 
 - New [vectors/](vectors/README.md): JSON test vectors for the Merkle leaf, root and proof (PINS-5 §5.1), the leaf list (PINS-5 §6), the field 5 reader (PINS-4 §2.1), canonical metadata (PINS-4 §2), the genesis (PINS-5 §3), reveal leaf envelopes (PINS-1 §4), and the reserve and sale order (PINS-5 §8). A test of the repository recomputes them.
+- PINS-1 §5.3. The reference writer repeats the tag of field 5 with each chunk of 520 bytes, as this section says. Test vectors with field 5 of 600, 1040 and 1041 bytes are added to `vectors/envelope.json`. The reader is unchanged.
 - PINS-5 §5.1. The reference code has one implementation of the leaf, the root and the proof, `packages/protocol/merkle.mjs`. The sentence that the tree is folded in a private function is replaced.
 - TV1-1, TV1-3, TV1-4, TV4-1, TV5-1 and TV5-6 point to the vectors. The regtest runs of TV1-1, TV1-3 and TV1-4 are not done.
 - PINS-5 §2 and §6.1. The reveal count is stated for any `supply` and `batch` (`1 + ceil(supply / batch)`). The 10,000-item figures are labeled as the worked example.

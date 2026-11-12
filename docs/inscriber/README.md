@@ -9,6 +9,10 @@ collection profile, not a default in this tool. The reserve size is the sum of t
 `plan` refuses an assignment whose reserve is not that size, and `sign` refuses a plan that
 uses the `pins` marker unless the profile gives it that size.
 
+The number of items is the profile's `supply`, and the number of items in each reveal is its
+`batchSize`. Neither has a default in the tool. The loader reads items 1 through `supply` and
+refuses a zip with one more, and `plan` refuses a profile without `batchSize`.
+
 The sale stays closed until a wallet can complete a pre-signed offer. The tool still
 assigns the profile's reserve ids to the creator address, the rest to a sale holding
 address, and every mint change output to a third address.

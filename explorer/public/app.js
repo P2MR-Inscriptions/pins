@@ -134,10 +134,12 @@ function fitSheet(board) {
 }
 
 function picture(src, alt, index, extra) {
+  // The size hint comes from the manifest (status.artSize). Without one, the image has no hint and the style sizes it.
+  const art = status?.artSize;
   return h("img", {
     class: extra || "px",
     src, alt,
-    width: 24, height: 24,
+    width: art?.width, height: art?.height,
     decoding: "async",
     loading: index < 10 ? "eager" : "lazy",
     fetchpriority: index < 4 ? "high" : "auto",

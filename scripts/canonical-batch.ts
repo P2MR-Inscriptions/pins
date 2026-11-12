@@ -26,16 +26,17 @@ import { revealWeight, STANDARD_WEIGHT, type Batch } from "../packages/inscriber
 
 export type CanonicalBatch = {
   items: RevealItem[];
-  envelopeLengths: number[];
   collectionJson: Uint8Array;
   leafList: Uint8Array;
   pngBytes: number;
   cborBytes: number;
   batches: Batch[];
-  groupsOf625: Batch[];
-  first625Weight: number;
-  maxEnvelope: number;
-  maxGroupWeight: number;
+};
+
+/** What the collection declares about its own size. Nothing here has a default. */
+export type MintShape = {
+  /** Number of items. Ids 1 through `supply` are read from the zip. */
+  supply: number;
 };
 
 function findLayout(root: string): string {
@@ -71,56 +72,64 @@ function leafHash(id: number, png: Uint8Array, cbor: Uint8Array): Buffer {
   return createHash("sha256").update(preimage).digest();
 }
 
+/**
+ * Splits the items into reveals of `size` items, in order. The last reveal holds the rest.
+ * The size is the collection's own choice, kept under the reveal weight limit by `plan`.
+ */
+export function groupsOf(items: RevealItem[], size: number): Batch[] {
+  if (!Number.isInteger(size) || size < 1) throw new Error("the batch size must be a positive integer");
+  const groups: Batch[] = [];
+  for (let start = 0; start < items.length; start += size) {
+    const slice = items.slice(start, start + size);
+    const envelopeSum = slice.reduce((sum, item, index) => sum + itemEnvelope(item, index).length, 0);
+    groups.push({ start, count: slice.length, weight: revealWeight(34 + envelopeSum, slice.length) });
+  }
+  return groups;
+}
+
 /** Real canonical bodies. Envelope lengths use the index inside each reveal. */
-export async function loadCanonical(zipPath: string): Promise<CanonicalBatch> {
-  const { decodePng, encodeCanonicalPng, canonicalMetadataCbor, canonicalCollectionJson } = await canonicalModule();
+export async function loadCanonical(zipPath: string, shape: MintShape): Promise<CanonicalBatch> {
   const staging = mkdtempSync(join(tmpdir(), "pins-canonical-"));
   try {
     execFileSync("unzip", ["-q", "-o", zipPath, "-d", staging], { stdio: "pipe" });
-    const layout = findLayout(staging);
-    const collectionJson = canonicalCollectionJson(readFileSync(join(layout, "collection.json")));
-    const items: RevealItem[] = [];
-    const leaves: Buffer[] = [];
-    let pngBytes = 0;
-    let cborBytes = 0;
-    for (let id = 1; id <= 10_000; id += 1) {
-      const decoded = decodePng(readFileSync(join(layout, "images", `${id}.png`)));
-      const image = encodeCanonicalPng(decoded.rgba, decoded.width, decoded.height);
-      const metadata = canonicalMetadataCbor(JSON.parse(readFileSync(join(layout, "json", `${id}.json`), "utf8")));
-      const body = new Uint8Array(image.bytes);
-      const meta = new Uint8Array(metadata);
-      pngBytes += body.length;
-      cborBytes += meta.length;
-      leaves.push(leafHash(id, body, meta));
-      items.push({ body, contentType: "image/png", metadata: meta });
-    }
-    const batches = packItems(items);
-    const groupsOf625: Batch[] = [];
-    let maxEnvelope = 0;
-    for (let start = 0; start < items.length; start += 625) {
-      const slice = items.slice(start, start + 625);
-      const envelopeSum = slice.reduce((sum, item, index) => {
-        const length = itemEnvelope(item, index).length;
-        if (length > maxEnvelope) maxEnvelope = length;
-        return sum + length;
-      }, 0);
-      groupsOf625.push({ start, count: slice.length, weight: revealWeight(34 + envelopeSum, slice.length) });
-    }
-    const envelopeLengths = items.slice(0, 625).map((item, index) => itemEnvelope(item, index).length);
-    return {
-      items,
-      envelopeLengths,
-      collectionJson: new Uint8Array(collectionJson),
-      leafList: new Uint8Array(Buffer.concat(leaves)),
-      pngBytes,
-      cborBytes,
-      batches,
-      groupsOf625,
-      first625Weight: groupsOf625[0].weight,
-      maxEnvelope,
-      maxGroupWeight: Math.max(...groupsOf625.map((group) => group.weight)),
-    };
+    return await loadCanonicalDir(findLayout(staging), shape);
   } finally {
     rmSync(staging, { recursive: true, force: true });
   }
+}
+
+/** The same, from a folder that has images/, json/, and collection.json. */
+export async function loadCanonicalDir(layout: string, shape: MintShape): Promise<CanonicalBatch> {
+  const { supply } = shape;
+  if (!Number.isInteger(supply) || supply < 1) throw new Error("the supply must be a positive integer");
+  const { decodePng, encodeCanonicalPng, canonicalMetadataCbor, canonicalCollectionJson } = await canonicalModule();
+  const collectionJson = canonicalCollectionJson(readFileSync(join(layout, "collection.json")));
+  for (const [folder, extension] of [["images", "png"], ["json", "json"]] as const) {
+    if (existsSync(join(layout, folder, `${supply + 1}.${extension}`))) {
+      throw new Error(`the zip has more items than the supply of ${supply}: ${folder}/${supply + 1}.${extension} exists`);
+    }
+  }
+  const items: RevealItem[] = [];
+  const leaves: Buffer[] = [];
+  let pngBytes = 0;
+  let cborBytes = 0;
+  for (let id = 1; id <= supply; id += 1) {
+    const decoded = decodePng(readFileSync(join(layout, "images", `${id}.png`)));
+    const image = encodeCanonicalPng(decoded.rgba, decoded.width, decoded.height);
+    const metadata = canonicalMetadataCbor(JSON.parse(readFileSync(join(layout, "json", `${id}.json`), "utf8")));
+    const body = new Uint8Array(image.bytes);
+    const meta = new Uint8Array(metadata);
+    pngBytes += body.length;
+    cborBytes += meta.length;
+    leaves.push(leafHash(id, body, meta));
+    items.push({ body, contentType: "image/png", metadata: meta });
+  }
+  return {
+    items,
+    collectionJson: new Uint8Array(collectionJson),
+    leafList: new Uint8Array(Buffer.concat(leaves)),
+    pngBytes,
+    cborBytes,
+    batches: packItems(items),
+  };
 }

@@ -174,6 +174,13 @@ function need<T>(value: T | undefined | null, what: string): T {
   return value;
 }
 
+/** The image size from the manifest, only when it is two whole numbers in a sane range. */
+function artSize(): { width: number; height: number } | null {
+  const image = config.manifest?.image;
+  const ok = (n: unknown): n is number => Number.isInteger(n) && (n as number) >= 1 && (n as number) <= 4096;
+  return image && ok(image.width) && ok(image.height) ? { width: image.width, height: image.height } : null;
+}
+
 function manifestChecks() {
   const m = config.manifest;
   const c = cache.collection;
@@ -277,6 +284,8 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse, url: 
         rpc: await rpcProbe(),
         externalExplorer: config.externalExplorer,
         manifestLoaded: config.manifest !== null,
+        // The source image size the manifest declares, or null. The page uses it for the width and height hints of an image.
+        artSize: artSize(),
       });
       return;
     }

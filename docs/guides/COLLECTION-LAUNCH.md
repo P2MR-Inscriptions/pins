@@ -20,6 +20,7 @@ This repository is the protocol. It does not name a collection, a Merkle root, o
 | `sale` | optional boolean, `true` when left out. `false` declares a collection with no sale (see below) |
 | `reserveGroups` | non-empty array. Each group has `trait_type`, `value`, and a positive `count`. Not allowed with `sale: false` |
 | `reserveExtra` | non-negative integer. Extra items taken after the groups. Not allowed with `sale: false` |
+| `batchSize` | positive integer. The number of items in each reveal. An operator setting that is not on-chain and has no default. `plan` refuses a profile without it. `assign`, `sign`, and `preflight` do not need it |
 
 `reserveCount` is not a field you write. The parser sets it to the sum of the group counts plus `reserveExtra`, and refuses a sum larger than `supply`. It is the only reserve size the tools use. There is no default size: `plan` refuses an assignment of another size, and `sign` refuses a plan with a sale and the `pins` marker when it is not given the profile.
 
@@ -42,7 +43,7 @@ A profile without `sale`, or with `"sale": true`, works as before.
 
 `--zip` is the canonical zip. It must contain `images/`, `json/`, and `collection.json`. `assign`, `plan`, `sign`, and `preflight` read it and refuse a Merkle root that does not equal the profile.
 
-`images/N.png` and `json/N.json` are numbered from 1. `scripts/canonical-batch.ts`, which those commands call, reads ids 1 through 10,000. The profile's `supply` does not change that loop. A zip with a different count fails when a file in that range is missing. That limit is this loader, not a consensus rule. `collection.json` is inscribed as compact JSON with `largeImageFormat` removed and one trailing newline (PINS-4 §6).
+`images/N.png` and `json/N.json` are numbered from 1, and the profile's `first` must be 1: the reference inscriber numbers items from 1 and refuses another value. `scripts/canonical-batch.ts`, which those commands call, reads ids 1 through the profile's `supply`. A zip that lacks one of them is refused, and so is a zip that has an item after the last one. The size of the image is not checked by the inscriber. `plan` puts `batchSize` items in each reveal, in order, and the last reveal holds the rest. Choose a size whose reveals stay under the weight limit; `plan` refuses one that does not (PINS-1 §9.5 measures one size). `collection.json` is inscribed as compact JSON with `largeImageFormat` removed and one trailing newline (PINS-4 §6).
 
 Do not bake either path into the tool. The next collection passes different files.
 

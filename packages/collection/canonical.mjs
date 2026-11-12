@@ -443,12 +443,14 @@ function findLayout(root) {
   return hits[0];
 }
 
-export function buildCanonicalSet({
-  zipPath,
-  edition = 10_000,
-  artwork = { width: 24, height: 24, colorType: 6, bitDepth: 8 },
-} = {}) {
+/**
+ * `edition` is the number of items and `artwork` is the source image shape the collection declares
+ * ({ width, height, colorType, bitDepth }), or `null` to accept any. Neither has a default.
+ */
+export function buildCanonicalSet({ zipPath, edition, artwork } = {}) {
   if (!zipPath) throw new Error("zipPath is required.");
+  if (!Number.isInteger(edition) || edition < 1) throw new Error("edition is required: the number of items, a positive integer.");
+  if (artwork === undefined) throw new Error("artwork is required: the source image shape { width, height, colorType, bitDepth }, or null to accept any.");
   const sourceBefore = readFileSync(zipPath);
   const sourceZipSha256 = sha256(sourceBefore);
   const staging = mkdtempSync(join(tmpdir(), "pins-canonical-"));

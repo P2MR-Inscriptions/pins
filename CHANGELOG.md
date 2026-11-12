@@ -6,6 +6,10 @@ This file records the reference tools and the repository layout. Specification e
 
 ## Unreleased
 
+- Inscriber: the supply, the batch size, and the number of items no longer come from the tool. The loader reads items 1 through the profile's `supply`, and refuses a zip with an item after it. `plan` puts the profile's new `batchSize` items in each reveal. It has no default, and `plan` refuses a profile without it. A zip with the same files and a profile that declares the same supply and `batchSize` gives the same plan and signed transactions as before. The `first` of the profile must be 1, as the tool always assumed.
+- Inscriber: `loadCanonical` takes the supply, `groupsOf(items, size)` replaces the fixed groups, and the unused size fields of the loader result are gone.
+- Collection: `buildCanonicalSet` takes `edition` and `artwork` from the caller. It had a supply and a source image size built in.
+- Explorer: the width and height hint of an image comes from the manifest `image` (the status reports it as `artSize`), not from the page.
 - Indexer: `--genesis <inscription id>` makes the collection view accept only that inscription as its genesis. Without it, the first valid genesis in chain order is used, as before.
 - Indexer: field 5 metadata whose `name` is not text, or whose `attributes` are not text pairs, is ignored. It no longer makes `/collection` and `/pieces` fail.
 - Inscriber: the envelope reader takes only an empty push at a tag position as the body separator. An empty field value no longer ends the fields early. A multi-byte tag with an even first byte now makes the inscription opaque, as PINS-1 §5.4 says.

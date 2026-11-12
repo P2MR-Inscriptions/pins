@@ -2,7 +2,7 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { createServer, type Server } from "node:http";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -35,7 +35,7 @@ before(async () => {
   const dir = mkdtempSync(join(tmpdir(), "pins-manifest-"));
   const manifest = join(dir, "manifest.json");
   writeFileSync(manifest, JSON.stringify({
-    name: "Config name", supply: 2, first: 1, genesisId, merkleRoot: "cc".repeat(32), itemType: "image/png",
+    name: "Config name", supply: 2, first: 1, genesisId, merkleRoot: "cc".repeat(32), itemType: "image/png", image: { width: 8, height: 12 },
   }));
   process.env.INDEXER_URL = `http://127.0.0.1:${(indexer.address() as { port: number }).port}`;
   process.env.MANIFEST = manifest;
@@ -63,4 +63,12 @@ test("a configured manifest is compared and is not treated as chain data", async
   assert.equal(byField["Merkle root"], false);
   assert.equal(byField.Supply, true);
   assert.equal(byField["Genesis P2MR Inscription"], true);
+});
+
+test("the image size hint comes from the manifest, not from the page", async () => {
+  const status = await (await fetch(`${base}/api/status`)).json() as { artSize: { width: number; height: number } | null };
+  assert.deepEqual(status.artSize, { width: 8, height: 12 });
+  const page = readFileSync(new URL("../public/app.js", import.meta.url), "utf8");
+  assert.equal(/width: 24, height: 24/.test(page), false);
+  assert.match(page, /status\?\.artSize/);
 });

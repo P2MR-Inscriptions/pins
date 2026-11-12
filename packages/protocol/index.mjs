@@ -21,7 +21,7 @@ export const SALE_DOMAIN = 0x02;
 
 /*
  * Sale terms (length, price) are not constants of this package. PINS-5 §8.5 and PINS-6 §5.1 specify
- * them. A collection's profile and its price inscription carry the values the tools use.
+ * them. A collection's profile and its price P2MR Inscription carry the values the tools use.
  */
 
 /** Marketplace finality. A sale is final after this many confirmations (PINS-2 §4.3). The one definition: the indexer reads it from here. */

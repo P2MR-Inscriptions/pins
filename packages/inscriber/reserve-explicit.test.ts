@@ -145,6 +145,6 @@ test("price builds a plan for a collection with a sale and refuses one with no s
   assert.equal(rootOnly.status, 0, rootOnly.out);
   const refused = cli([...args, "--collection", noSale]);
   assert.notEqual(refused.status, 0);
-  assert.match(refused.out, /declares no sale, so there is no price inscription/);
+  assert.match(refused.out, /declares no sale, so there is no price P2MR Inscription/);
   f.made.secrets.issuerSecret.fill(0);
 });

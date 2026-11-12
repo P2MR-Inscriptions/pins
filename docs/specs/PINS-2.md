@@ -16,8 +16,8 @@
 ## 1. Abstract
 
 PINS-2 defines what an indexer must store and compute so that two independent implementations,
-given the same chain, produce the same inscription numbers, the same locations and the same owners.
-Part A covers inscription numbering, activation and reorgs. Part B defines an OPTIONAL bit-numbering
+given the same chain, produce the same P2MR Inscription numbers, the same locations and the same owners.
+Part A covers P2MR Inscription numbering, activation and reorgs. Part B defines an OPTIONAL bit-numbering
 overlay derived exactly from Qbit's subsidy schedule.
 
 ## 2. Data requirements
@@ -27,7 +27,7 @@ overlay derived exactly from Qbit's subsidy schedule.
 2. Qbit Core offers opt-in witness pruning: `-prunewitnesses` (default `0`) discards witnesses of
    blocks deeper than the coinbase maturity (1,000 blocks) and cannot be combined with `-txindex`
    (`src/init.cpp:492,991-992`). An indexer's node MUST NOT run with `-prunewitnesses=1`. An indexer
-   MUST NOT treat a block whose witnesses are missing as having no inscriptions; it MUST stop and
+   MUST NOT treat a block whose witnesses are missing as having no P2MR Inscriptions; it MUST stop and
    report the gap. A spend of a P2MR output always carries a leaf script and a control block, so an
    input that spends one with no witness items is such a gap.
 3. An indexer MAY use `-txindex`; it is not required by this standard.
@@ -36,31 +36,31 @@ overlay derived exactly from Qbit's subsidy schedule.
 
 ## 3. Activation height
 
-- `ACTIVATION_HEIGHT` (mainnet) is the height of the block that contains inscription number 0. It is
+- `ACTIVATION_HEIGHT` (mainnet) is the height of the block that contains P2MR Inscription number 0. It is
   fixed in this document and does not change afterwards.
   Value: **161948**, the block containing the first `pins` envelope on mainnet.
-- Envelopes in blocks below `ACTIVATION_HEIGHT` are not inscriptions (PINS-1 §7.1). This prevents
+- Envelopes in blocks below `ACTIVATION_HEIGHT` are not P2MR Inscriptions (PINS-1 §7.1). This prevents
   anyone from claiming low numbers before the protocol is published.
 - When every block from an earlier start up to but not including this height contains no `pins`
-  envelope, that earlier start and a start at 161948 produce the same inscriptions, numbers, and
-  owners. The constant remains 161948, because that is the block that contains inscription number 0.
+  envelope, that earlier start and a start at 161948 produce the same P2MR Inscriptions, numbers, and
+  owners. The constant remains 161948, because that is the block that contains P2MR Inscription number 0.
 - Test networks: testnet4 and regtest activation heights are separate constants. Regtest indexers
   SHOULD use height 0. This document does not set a testnet4 height.
 - The chain scan done on 2026-11-04 found no `pins` envelope on mainnet through height 160,950, or
   on testnet4 through height 201,912 (see `collision-check.md`).
 
-## 4. Part A: inscription numbering
+## 4. Part A: P2MR Inscription numbering
 
 ### 4.1 Order
 
-Every inscription (PINS-1 §7.2, all flags included) gets the next number in a single sequence that
+Every P2MR Inscription (PINS-1 §7.2, all flags included) gets the next number in a single sequence that
 starts at 0. Order is:
 
 1. block height, ascending;
 2. transaction position in the block, ascending;
 3. envelope index `n` in the transaction (PINS-1 §6.1), ascending.
 
-Numbers are assigned only to inscriptions in blocks of the active chain. Mempool inscriptions have
+Numbers are assigned only to P2MR Inscriptions in blocks of the active chain. Mempool P2MR Inscriptions have
 no number.
 
 ### 4.2 Event log
@@ -70,8 +70,8 @@ simple:
 
 | Event | Fields |
 |---|---|
-| `inscribed` | inscription ID, number, initial location or `unbound`, flags |
-| `transferred` | inscription ID, old location, new location (or `fee` / `burned` / `lost`) |
+| `inscribed` | P2MR Inscription ID, number, initial location or `unbound`, flags |
+| `transferred` | P2MR Inscription ID, old location, new location (or `fee` / `burned` / `lost`) |
 
 ### 4.3 Reorgs
 
@@ -79,7 +79,7 @@ simple:
    then apply the blocks of the new branch. Numbers freed by the undo are reused by the new branch.
 2. An indexer MUST keep undo data for at least the deepest reorg it is willing to follow. It SHOULD
    keep at least 1,000 blocks (one coinbase maturity).
-3. Applications MUST NOT present a sale, transfer or inscription as final before it has
+3. Applications MUST NOT present a sale, transfer or P2MR Inscription as final before it has
    `CONFIRMATIONS_FINAL` confirmations. Recommended value: 6 (Qbit targets 60-second blocks,
    `src/kernel/chainparams.cpp:152-154`). A marketplace that adopts that value treats a sale as final after 6
    confirmations.
@@ -87,7 +87,7 @@ simple:
 ### 4.4 Determinism checks
 
 Two independent implementations MUST produce byte-identical outputs for the reference export
-(inscription ID, number, height, location, flags) on the shared test chain (TODO-regtest, README
+(P2MR Inscription ID, number, height, location, flags) on the shared test chain (TODO-regtest, README
 Q11).
 
 ## 5. Part B: bit-numbering overlay (OPTIONAL)
@@ -153,7 +153,7 @@ Bit ranges flow by the same first-in-first-out rule as PINS-3 §3:
 
 ### 5.5 Consistency with ownership
 
-For any inscription, the bit number of its location computed by this overlay MUST be consistent with
+For any P2MR Inscription, the bit number of its location computed by this overlay MUST be consistent with
 the bitpoint location of PINS-3: the bitpoint `(outpoint, offset)` maps to exactly one bit number.
 
 ## 6. Test vectors
@@ -161,7 +161,7 @@ the bitpoint location of PINS-3: the bitpoint `(outpoint, offset)` maps to exact
 | Vector | Content | Status |
 |---|---|---|
 | TV2-1 | `subsidy(h)` for h = 0, 43,199, 43,200, 160,950, 20,735,999, 20,736,000 | computed: 21,000,000,000; 21,000,000,000; 20,092,800,000; 18,394,280,067 (matches the mainnet explorer reward of block 160,950); 1; 0 |
-| TV2-2 | Numbering across a reorg of depth 2 with inscriptions in both branches | TODO-regtest |
+| TV2-2 | Numbering across a reorg of depth 2 with P2MR Inscriptions in both branches | TODO-regtest |
 | TV2-3 | Synthetic chain covering fees to coinbase, lost bits, `OP_RETURN`, unbound, opaque, duplicates, bad pointer | TODO-regtest |
 | TV2-4 | Indexer with a `-prunewitnesses` node stops and reports the gap | TODO-regtest |
 

@@ -15,7 +15,7 @@ recording the first push after every `OP_FALSE OP_IF`.
 | mainnet | mempool.qbit.org | 160,950 | 27,092 | 211,833 | 0 | 0 |
 | testnet4 | mempool-testnet.qbit.org | 201,912 | 3,431 | 18,821 | 3 (`ord`) | 0 |
 
-Testnet4 envelopes (an unknown third party tested Ordinals-style inscriptions on 2026-09-10,
+Testnet4 envelopes (an unknown third party tested Ordinals-style envelopes on 2026-09-10,
 18:42–18:51 UTC):
 
 | Height | Txid | Content |
@@ -33,30 +33,30 @@ for it was found on GitHub.
 
 | Where | Query | Result |
 |---|---|---|
-| GitHub code | `PROTOCOL_ID` + `pins` + inscription | no protocol using `pins` as marker; hits are MetaID (`metaid`), Radiant Glyph (`gly`), unrelated |
+| GitHub code | `PROTOCOL_ID` + `pins` + `inscription` | no protocol using `pins` as marker; hits are MetaID (`metaid`), Radiant Glyph (`gly`), unrelated |
 | GitHub repos | `p2mr inscription`, `pins inscriptions`, `qbit ord inscriptions` | none relevant |
 | GitHub users/orgs | `p2mr-inscriptions`, `pins-protocol` | free |
 | npm | `p2mr-inscriptions`, `pins-protocol`, `p2mr-pins` | free; `pins` taken (unrelated, 2022) |
-| Web | "P2MR Inscriptions", "PINS" inscription protocol | no existing use found that day; PINs Network (an ERC-20 social token); BIP-360 uses "P2MR" for a draft output type on another network |
-| X | "P2MR inscriptions", "PINS-1" | no relevant post; one user asked on 2026-11-03 whether Qbit "will have inscriptions" |
+| Web | "P2MR Inscriptions", `"PINS" inscription protocol` | no existing use found that day; PINs Network (an ERC-20 social token); BIP-360 uses "P2MR" for a draft output type on another network |
+| X | `"P2MR inscriptions"`, `"PINS-1"` | no relevant post; one user asked on 2026-11-03 whether Qbit `"will have inscriptions"` |
 | Domains (RDAP) | `p2mrinscriptions.com/.org`, `p2mr-inscriptions.org`, `pinsprotocol.org` | not registered; `pins.dev` registered |
 
 ## 3. Assessment
 
 - **Marker `pins`: free on the day of the scan.** No envelope with this marker was found on Qbit
   mainnet through height 160,950 (blocks 160,951 to 161,947 are not scanned: section 4), or on testnet4 through height 201,912. Decision
-  (2026-11-04): `pins` is the marker. This scan did not identify any earlier inscription, and
+  (2026-11-04): `pins` is the marker. This scan did not identify any earlier P2MR Inscription, and
   it is not a claim that none exists after those tips.
 - **Name overlap to know about (not a blocker):**
-  - MetaID, on other networks, calls each of its inscriptions a "PIN" (Personal Information Node) and
+  - MetaID, on other networks, calls each of its on-chain records a "PIN" (Personal Information Node) and
     uses the same `<txid>i<n>` ID format. Its marker is `metaid`, so indexers cannot confuse them,
     but people might.
   - "P2MR" is also the name of the draft BIP-360 output type on another network. The `pins` marker
     and the "on Qbit" wording keep them apart.
-  - An `ord` port exists on Qbit testnet4. If it launches on mainnet, Qbit will have two inscription
-    namespaces. Separate markers mean separate, non-conflicting indexes; PINS keeps the Ordinals
+  - An `ord` port exists on Qbit testnet4. If it launches on mainnet, Qbit will have two namespaces of items (those of `ord`, and
+    P2MR Inscriptions). Separate markers mean separate, non-conflicting indexes; PINS keeps the Ordinals
     field numbers, so content tooling stays compatible.
-- **Fallback markers (not needed, kept for the record):** `pmri` (`70 6d 72 69`, "P2MR inscription", 4 bytes, no known
+- **Fallback markers (not needed, kept for the record):** `pmri` (`70 6d 72 69`, "P2MR Inscription", 4 bytes, no known
   use) or `p2mi` (`70 32 6d 69`). Neither appeared in any search hit.
 
 ## 4. Open: blocks 160,951 to 161,947

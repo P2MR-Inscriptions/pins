@@ -12,7 +12,7 @@ One list of the Qbit and package versions that this repository was written and c
 | `@qbit-oss/protocol` | **0.1.1** | Addresses, PSBT, sighash. A dependency of this tree. |
 | `@qbit-oss/api` | **0.1.1** | Esplora and mempool client. Not a dependency of this tree. |
 | Qbit Wallet | [Qbit-Org/qbit-wallet](https://github.com/Qbit-Org/qbit-wallet) **v1.0.7** (`eb9f77941a`) | Browser extension cited by PINS-6. |
-| qbit-electrs | [Qbit-Org/qbit-electrs](https://github.com/Qbit-Org/qbit-electrs) | General Electrum index. Not an inscription index. No commit pin yet. |
+| qbit-electrs | [Qbit-Org/qbit-electrs](https://github.com/Qbit-Org/qbit-electrs) | General Electrum index. Not a P2MR Inscription index. No commit pin yet. |
 
 The Core pin was reviewed on 2 November 2026. No newer Qbit Core release was on the public releases page that day. On 5 November 2026 the npm dependencies in this tree are the 0.1.1 pins above. This note does not record a second review of the Core tree.
 
@@ -35,6 +35,6 @@ These come from Qbit Core v1.0.0, not from memory:
 
 When the Core pin was reviewed, `qbit.org/consensus` section 5.10 said 3,730 while the tag and `main` profile said 3,683. Follow the profile. No specification here uses the 3,730 figure.
 
-`rawmr` outputs are expert-only. Qbit Core's wallet will not sign them. An inscription signer has to be external.
+`rawmr` outputs are expert-only. Qbit Core's wallet will not sign them. A P2MR Inscription signer has to be external.
 
 The npm packages are pinned to their published 0.1.1 releases, not to git revisions.

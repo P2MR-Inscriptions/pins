@@ -2,7 +2,7 @@
 
 /**
  * Canonical state hash. Two indexers that saw the same blocks produce the
- * same hex digest. The preimage is one line per inscription, sorted by number.
+ * same hex digest. The preimage is one line per P2MR Inscription, sorted by number.
  */
 import { createHash } from "node:crypto";
 import type { Indexer } from "./pins.ts";

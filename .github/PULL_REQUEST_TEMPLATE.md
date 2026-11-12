@@ -8,7 +8,7 @@
 
 <!-- Confirm the marker, envelope, leaf preimage, Merkle folding, and reserve and sale domain bytes are unchanged. If they are not, stop and open a discussion first. -->
 
-- [ ] No change to inscription bytes or to the hash rules
+- [ ] No change to P2MR Inscription bytes or to the hash rules
 - [ ] `npm ci`, `npm run build`, `npm run lint`, `npm run typecheck`, and `npm test` pass on Node.js 22
 
 ## Notes

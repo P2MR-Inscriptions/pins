@@ -28,11 +28,11 @@ export type Inscription = {
   metadata: Uint8Array | null;
   /** Tag/value pairs other than the body, values as hex. */
   fields: { tag: number; value: string }[];
-  /** Block that created the inscription. Not the collection genesis. */
+  /** Block that created the P2MR Inscription. Not the collection genesis. */
   createdHeight: number;
   /** Position of the creating transaction in that block. */
   createdIndex: number;
-  /** Height of the block that last placed the inscription. */
+  /** Height of the block that last placed the P2MR Inscription. */
   locationHeight: number;
   /** Public key that opened the reveal leaf, hex, when the leaf has that prefix. */
   leafIssuer: string;
@@ -100,7 +100,7 @@ export class Indexer {
    * A rehearsal schema `c/1` derives `p/1`, the same stand-in `inscribe price --schema` writes.
    */
   readonly priceSchema: string;
-  /** When set, the collection view only accepts the inscription with this id as its genesis. */
+  /** When set, the collection view only accepts the P2MR Inscription with this id as its genesis. */
   readonly genesisId: string | null;
   readonly inscriptions = new Map<string, Inscription>();
   private readonly held = new Map<string, Held[]>();
@@ -124,7 +124,7 @@ export class Indexer {
   }
 
   /**
-   * PINS-2 §2.2: a block whose witnesses are missing is not a block without inscriptions.
+   * PINS-2 §2.2: a block whose witnesses are missing is not a block without P2MR Inscriptions.
    * A P2MR spend always carries a script and a control block, so an empty witness on one
    * means the source dropped it.
    */
@@ -217,7 +217,7 @@ export class Indexer {
     this.nextNumber = max + 1;
   }
 
-  /** Highest inscription number already assigned, or -1. */
+  /** Highest P2MR Inscription number already assigned, or -1. */
   get tipNumber(): number {
     return this.nextNumber - 1;
   }

@@ -109,7 +109,7 @@ export function subsidyAt(height: number, network: FollowNetwork): bigint {
 /**
  * PINS-1 §4.2: the leaf script is the second-to-last witness item once an annex is removed,
  * and the control block, the last item, must carry leaf version 0xc0. A reserved version
- * is not an inscription.
+ * is not a P2MR Inscription.
  */
 function leafScript(witness: Uint8Array[]): Uint8Array | undefined {
   if (witness.length < 2) return undefined;

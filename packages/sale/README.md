@@ -10,7 +10,7 @@ This is a **library**. There is no command line, no HTTP route and no wallet in 
 
 | Step | Who | Tool |
 |---|---|---|
-| Mint a single P2MR Inscription, or a collection with or without a sale | creator | the inscriber, [README](../../README.md#single-inscriptions) and [launch guide](../../docs/guides/COLLECTION-LAUNCH.md) |
+| Mint a single P2MR Inscription, or a collection with or without a sale | creator | the inscriber, [README](../../README.md#single-p2mr-inscriptions) and [launch guide](../../docs/guides/COLLECTION-LAUNCH.md) |
 | Follow the chain, read who holds what | anyone | the indexer and its API, [API.md](../../docs/indexer/API.md) |
 | Look at it | anyone | the explorer (`explorer/`) |
 | **Build the trade PSBT** | seller or sale server | `primarySalePsbt` (this package) |

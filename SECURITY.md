@@ -2,7 +2,7 @@
 
 # Security policy
 
-PINS inscriptions are chain data. This repository is the specification and the reference indexer and inscriber.
+PINS P2MR Inscriptions are chain data. This repository is the specification and the reference indexer and inscriber.
 
 ## Reporting
 

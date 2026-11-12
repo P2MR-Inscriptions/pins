@@ -8,7 +8,7 @@ export type FollowNetwork = "regtest" | "testnet4" | "mainnet";
 
 /**
  * Default height `follow` starts at when the operator does not pass one.
- * Mainnet is PINS-2: the block that contains inscription number 0.
+ * Mainnet is PINS-2: the block that contains P2MR Inscription number 0.
  * Regtest stays 0, which PINS-2 recommends.
  * Testnet4 has no height in PINS-2. 0 here means the reference indexer scans
  * from genesis until a testnet4 constant is published. It is not that constant.

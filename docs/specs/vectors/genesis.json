@@ -1,5 +1,5 @@
 {
-  "description": "Genesis of a collection, PINS-5 §3. Field 5 is a CBOR map with these keys in this order: schema, name, supply, first, name_prefix, root, issuer, item_type, then sale_commitment when the collection declares a sale, then reserve when it declares one. `genesis` says whether the reference indexer takes the inscription as the genesis of a collection. The issuer text must equal the key that signs the reveal (`reveal_key`). The content type must be `application/json`.",
+  "description": "Genesis of a collection, PINS-5 §3. Field 5 is a CBOR map with these keys in this order: schema, name, supply, first, name_prefix, root, issuer, item_type, then sale_commitment when the collection declares a sale, then reserve when it declares one. `genesis` says whether the reference indexer takes the P2MR Inscription as the genesis of a collection. The issuer text must equal the key that signs the reveal (`reveal_key`). The content type must be `application/json`.",
   "spec": "PINS-5 §3",
   "encode": [
     {

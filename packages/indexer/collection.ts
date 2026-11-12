@@ -35,7 +35,7 @@ async function reserveModule(): Promise<ReserveModule> {
 }
 
 /**
- * The earliest valid price inscription wins. A later one, even from the same issuer, is ignored.
+ * The earliest valid price P2MR Inscription wins. A later one, even from the same issuer, is ignored.
  * Invalid field 5, the wrong genesis id, or any other signer is skipped.
  * `priceSchema` is the launch text unless the indexer was started with a rehearsal schema.
  */
@@ -135,7 +135,7 @@ export type CollectionView = {
   issuer?: string;
   itemType?: string;
   leafListId?: string;
-  /** The closing inscription of PINS-5 §7. Items inscribed after it are not authentic. */
+  /** The closing P2MR Inscription of PINS-5 §7. Items inscribed after it are not authentic. */
   closingId?: string;
   seedRevealed?: boolean;
   reserveMode?: "configured" | "declared" | "none";
@@ -151,8 +151,8 @@ export type CollectionView = {
   order?: number[] | null;
   orderVerified?: boolean | null;
   /**
-   * `none` when the genesis declares no sale: no price inscription is read. Otherwise `pending` until the
-   * first valid price inscription by the genesis issuer, then `ready`. Later ones are ignored.
+   * `none` when the genesis declares no sale: no price P2MR Inscription is read. Otherwise `pending` until the
+   * first valid price P2MR Inscription by the genesis issuer, then `ready`. Later ones are ignored.
    */
   priceStatus?: "none" | "pending" | "ready";
   priceId?: string;
@@ -172,7 +172,7 @@ export type PublicLocation =
   | { state: "burned" }
   | { state: "lost" };
 
-/** Hex script and decimal offset. `null` when the piece has no inscription yet. */
+/** Hex script and decimal offset. `null` when the piece has no P2MR Inscription yet. */
 export function publicLocation(location: Inscription["location"] | null): PublicLocation | null {
   if (!location) return null;
   if (location.state !== "located") return { state: location.state };
@@ -344,7 +344,7 @@ function leafListOf(indexer: Indexer, genesis: Genesis): Inscription | undefined
   return undefined;
 }
 
-/** Field 5 of an inscription that is not a reinscription or opaque, as a map. Other values are not records of the collection. */
+/** Field 5 of a P2MR Inscription that is not a reinscription or opaque, as a map. Other values are not records of the collection. */
 function recordOf(item: Inscription): Record<string, unknown> | null {
   if (!item.metadata || item.flags.includes("reinscription") || item.flags.includes("opaque")) return null;
   try {
@@ -355,7 +355,7 @@ function recordOf(item: Inscription): Record<string, unknown> | null {
   }
 }
 
-/** The issuer's inscriptions after the genesis whose field 5 is a map of three keys (`0xa3`), in chain order. */
+/** The issuer's P2MR Inscriptions after the genesis whose field 5 is a map of three keys (`0xa3`), in chain order. */
 function recordCandidates(indexer: Indexer, genesis: Genesis): Inscription[] {
   return [...indexer.inscriptions.values()]
     .filter((item) => item.metadata?.[0] === 0xa3 && item.leafIssuer === genesis.issuer && after(genesis, item))
@@ -385,9 +385,9 @@ function saleRevealOf(indexer: Indexer, genesis: Genesis): { inscription: Inscri
 }
 
 /**
- * PINS-5 §7: the closing inscription is signed by the issuer key, comes after the genesis, and
+ * PINS-5 §7: the closing P2MR Inscription is signed by the issuer key, comes after the genesis, and
  * has field 5 `{ schema: "pins-close/1", root, count }` with `root` the genesis root and `count`
- * the supply. The first one in chain order counts. No inscription after it is an item.
+ * the supply. The first one in chain order counts. No P2MR Inscription after it is an item.
  */
 function closingOf(indexer: Indexer, genesis: Genesis): Inscription | null {
   for (const item of recordCandidates(indexer, genesis)) {
@@ -415,9 +415,9 @@ function isTrait(value: unknown): value is { trait_type: string; value: string }
 }
 
 /**
- * Field 5 can come from any inscription, so each value is checked before it is used.
+ * Field 5 can come from any P2MR Inscription, so each value is checked before it is used.
  * PINS-5 §9 rule 4 needs a text `meta.name`, and PINS-4 §3 gives attributes as text pairs.
- * An inscription without them is not an item of the collection and affects no other one.
+ * A P2MR Inscription without them is not an item of the collection and affects no other one.
  */
 function metaOf(item: Inscription): { name?: string; attributes?: { trait_type: string; value: string }[] } | null {
   if (!item.metadata) return null;
@@ -463,7 +463,7 @@ export async function collectionView(indexer: Indexer, cursor: ChainCursor, prof
       number,
       inscriptionId: match?.id ?? null,
       authentic: Boolean(match),
-      reason: match ? "ok" : "no authentic inscription",
+      reason: match ? "ok" : "no authentic P2MR Inscription",
       status: "unassigned",
       location: publicLocation(match?.location ?? null),
       ownerAddress: match?.ownerAddress ?? "",

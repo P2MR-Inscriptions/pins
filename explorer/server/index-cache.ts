@@ -42,7 +42,7 @@ async function get<T>(path: string, signal: AbortSignal): Promise<T> {
   return (await response.json()) as T;
 }
 
-/** Newest inscription first: block height, then transaction index, then input index. */
+/** Newest P2MR Inscription first: block height, then transaction index, then input index. */
 export function latestFirst(a: { createdHeight: number; createdIndex: number; n: number; number: number }, b: { createdHeight: number; createdIndex: number; n: number; number: number }): number {
   return b.createdHeight - a.createdHeight || b.createdIndex - a.createdIndex || b.n - a.n || b.number - a.number;
 }
@@ -68,7 +68,7 @@ export class IndexCache {
   newest: Inscription[] = [];
   byId = new Map<string, Inscription>();
   byNumber = new Map<number, Inscription>();
-  /** Inscription numbers that exist, ascending. Rebuilt with each snapshot. */
+  /** P2MR Inscription numbers that exist, ascending. Rebuilt with each snapshot. */
   numberOrder: number[] = [];
   byTxid = new Map<string, Inscription[]>();
   byLocationTx = new Map<string, Inscription[]>();
@@ -123,7 +123,7 @@ export class IndexCache {
     };
     await Promise.all(Array.from({ length: Math.min(4, pages - 1) }, () => worker()));
     const pieces = chunks.flat();
-    if (pieces.length > config.maxInscriptions) throw new Error("indexer snapshot exceeds the inscription limit");
+    if (pieces.length > config.maxInscriptions) throw new Error("indexer snapshot exceeds the P2MR Inscription limit");
     return pieces;
   }
 
@@ -135,8 +135,8 @@ export class IndexCache {
     const first = await get<{ total?: unknown; inscriptions: Inscription[] }>(`/inscriptions?offset=0&limit=${INSCRIPTION_PAGE}`, signal);
     const total = first.total;
     if (total === undefined) return { inscriptions: first.inscriptions, total: null };
-    if (typeof total !== "number" || !Number.isInteger(total) || total < 0) throw new Error("indexer inscriptions total is invalid");
-    if (total > config.maxInscriptions) throw new Error("indexer snapshot exceeds the inscription limit");
+    if (typeof total !== "number" || !Number.isInteger(total) || total < 0) throw new Error("indexer P2MR Inscriptions total is invalid");
+    if (total > config.maxInscriptions) throw new Error("indexer snapshot exceeds the P2MR Inscription limit");
     const pages = Math.max(1, Math.ceil(total / INSCRIPTION_PAGE));
     const chunks: Inscription[][] = new Array(pages);
     chunks[0] = first.inscriptions;
@@ -166,8 +166,8 @@ export class IndexCache {
       }
       this.loading = true;
       const { inscriptions, total } = await this.loadInscriptions(signal);
-      if (inscriptions.length > config.maxInscriptions) throw new Error("indexer snapshot exceeds the inscription limit");
-      // The latest inscriptions can be shown before every collection piece page returns.
+      if (inscriptions.length > config.maxInscriptions) throw new Error("indexer snapshot exceeds the P2MR Inscription limit");
+      // The latest P2MR Inscriptions can be shown before every collection piece page returns.
       if (!this.ready) this.publishPreview(inscriptions, status.height);
       const collection = await get<Record<string, unknown>>("/collection", signal);
       if (!this.ready) this.collection = collection;
@@ -181,7 +181,7 @@ export class IndexCache {
         return;
       }
       // The tip did not move, so the pages are one list. A count that differs from the total is an indexer fault.
-      if (total !== null && inscriptions.length !== total) throw new Error("indexer inscription pages do not add up to the total");
+      if (total !== null && inscriptions.length !== total) throw new Error("indexer P2MR Inscription pages do not add up to the total");
       this.apply(inscriptions, collection, pieces, status.height);
       this.piecesComplete = true;
       this.previewReady = true;
@@ -200,7 +200,7 @@ export class IndexCache {
     }
   }
 
-  /** Inscription list only. Does not claim collection piece totals. */
+  /** P2MR Inscription list only. Does not claim collection piece totals. */
   private publishPreview(inscriptions: Inscription[], height: number): void {
     this.fillInscriptions(inscriptions, height);
     this.pieces = [];

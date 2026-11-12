@@ -30,7 +30,7 @@ The consensus document still says some named launch parameters are not normative
 | Statement | Spec |
 | --- | --- |
 | Content is an unexecuted envelope in a revealed leaf at version `0xc0`. The marker is `pins`. Conforming indexers assign the same identifiers, numbers, and initial bit. | `docs/specs/PINS-1.md` §1 and §4 |
-| Each inscription is bound to one bit. Later spends follow first-in-first-out. | `docs/specs/PINS-3.md` §1 and §3 |
+| Each P2MR Inscription is bound to one bit. Later spends follow first-in-first-out. | `docs/specs/PINS-3.md` §1 and §3 |
 
 PINS-3 is marked Draft. Its transfer test vectors are still TODO-regtest. The explorer shows the indexer snapshot. It does not recompute that rule.
 
@@ -54,6 +54,6 @@ The indexer HTTP API in `scripts/indexer-run.ts` starts after the first catch-up
 
 ## Not checked
 
-A synced mainnet node, a full 10,000-item collection, a restart of a real index, and a live reorg were not run for this package. An earlier build was observed at height 165925 with 10002 inscriptions. This build does not repeat that observation and does not decide whether a collection is authentic.
+A synced mainnet node, a full 10,000-item collection, a restart of a real index, and a live reorg were not run for this package. An earlier build was observed at height 165925 with 10002 P2MR Inscriptions. This build does not repeat that observation and does not decide whether a collection is authentic.
 
 Chrome 156 played WAV, MP3, Ogg Vorbis, WebM Opus, WebM VP8, and MP4 H.264 with AAC on synthetic fixtures. It did not play Ogg Theora. That is not a claim about every codec, site, or game. The sandbox does not cap processor time.

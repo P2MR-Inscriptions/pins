@@ -77,5 +77,5 @@ test("a copy of an indexer keeps the genesis id", async () => {
 test("the indexer command refuses a genesis id that is not an inscription id", () => {
   const run = spawnSync(process.execPath, ["--experimental-strip-types", "scripts/indexer-run.ts", "--db", "unused.sqlite", "--genesis", "not-an-id"], { encoding: "utf8" });
   assert.notEqual(run.status, 0);
-  assert.match(run.stderr, /--genesis must be an inscription id/);
+  assert.match(run.stderr, /--genesis must be a P2MR Inscription id/);
 });

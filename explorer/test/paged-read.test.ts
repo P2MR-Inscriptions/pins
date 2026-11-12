@@ -97,7 +97,7 @@ test("a total above the limit is refused after the first page, before the rest i
   hash = "d";
   requests = [];
   await cache.tick();
-  assert.match(cache.error ?? "", /exceeds the inscription limit/);
+  assert.match(cache.error ?? "", /exceeds the P2MR Inscription limit/);
   assert.deepEqual(requests, ["?offset=0&limit=1000"]);
   assert.equal(cache.list.length, ROWS);
 });

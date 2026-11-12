@@ -4,7 +4,7 @@
 
 This repository is the protocol. It does not name a collection, a Merkle root, or reserve groups. Those live in a collection profile and a zip that you pass on the command line. Keep that profile and that zip out of this tree.
 
-This guide is for anyone who wants to launch their own collection: your own images, your own profile, your own issuer key, your own addresses. Rehearse on regtest first. The public example, [FlatBits](../examples/flatbits.md), shows what a finished mainnet collection looks like on chain and what an indexer reports for it, so you can check your own result against the same kind of record. It is not a template that this repository ships: its art, keys, profile and plan are not here. To mint a single inscription with no collection, use `--single` (see [Single inscriptions](../../README.md#single-inscriptions)).
+This guide is for anyone who wants to launch their own collection: your own images, your own profile, your own issuer key, your own addresses. Rehearse on regtest first. The public example, [FlatBits](../examples/flatbits.md), shows what a finished mainnet collection looks like on chain and what an indexer reports for it, so you can check your own result against the same kind of record. It is not a template that this repository ships: its art, keys, profile and plan are not here. To mint a single P2MR Inscription with no collection, use `--single` (see [Single P2MR Inscriptions](../../README.md#single-p2mr-inscriptions)).
 
 The specifications are Draft and some regtest vectors are open ([list](../specs/README.md#open-test-vectors)). Read them before a mainnet launch, and do the launch on a network you control first.
 
@@ -63,11 +63,11 @@ Offline again: `sign` with the same profile and zip. `sign` refuses an RPC URL.
 
 Online: `preflight`, then `broadcast`. Testnet4 and mainnet need `--confirm-network` equal to `--network`.
 
-`price` is a later offline command. It builds the sale-open inscription and does not broadcast. Sign its plan with `sign`, using the same profile and the assignment from `assign`. No zip is needed for it. Omit `--schema` on mainnet. The launch text stays `pins-price/1`.
+`price` is a later offline command. It builds the sale-open P2MR Inscription and does not broadcast. Sign its plan with `sign`, using the same profile and the assignment from `assign`. No zip is needed for it. Omit `--schema` on mainnet. The launch text stays `pins-price/1`.
 
-A price is optional, and it belongs to a sale. A collection with no sale has none: `price` refuses a profile with `"sale": false`, and the indexer reads no price inscription for a genesis without `sale_commitment` (PINS-6 §5.1). The tool holds no price value. `price_bits`, `price_sources`, and `price_time` come from the file given with `--price`, and the tool and the indexer check only that they are well formed.
+A price is optional, and it belongs to a sale. A collection with no sale has none: `price` refuses a profile with `"sale": false`, and the indexer reads no price P2MR Inscription for a genesis without `sale_commitment` (PINS-6 §5.1). The tool holds no price value. `price_bits`, `price_sources`, and `price_time` come from the file given with `--price`, and the tool and the indexer check only that they are well formed.
 
-The indexer takes `--collection` when you want `reserveMode` `configured`. Without it, the indexer still marks an inscription authentic when the leaf matches. It does not invent a collection.
+The indexer takes `--collection` when you want `reserveMode` `configured`. Without it, the indexer still marks a P2MR Inscription authentic when the leaf matches. It does not invent a collection.
 
 Command lines are in [the inscriber guide](../inscriber/README.md) and in the repository [README](../../README.md).
 

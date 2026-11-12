@@ -334,20 +334,20 @@ export function signedBodyChecks(unsigned: MintPlan, signed: MintPlan): Check[] 
 }
 
 /**
- * Rows for a single inscription. The signed plan must declare itself single, with one reveal named `inscription`,
+ * Rows for a single P2MR Inscription. The signed plan must declare itself single, with one reveal named `inscription`,
  * and its reveal leaf must be the leaf rebuilt from the body, content type and metadata files with the issuer key
  * of the public file. A leaf for any other content fails here, before anything is broadcast.
  */
 export function singleChecks(unsigned: MintPlan, signed: MintPlan, content: SingleContent, issuerPublicHex: string): Check[] {
   const problems: string[] = [];
-  if (unsigned.single !== true || signed.single !== true) problems.push("the plan is not a single inscription");
+  if (unsigned.single !== true || signed.single !== true) problems.push("the plan is not a single P2MR Inscription");
   if (signed.noSale !== true || signed.root !== "" || signed.holder !== undefined) problems.push("the plan carries a sale, a holder, or a collection root");
-  if (signed.reveals.length !== 1 || signed.reveals[0]?.name !== "inscription") problems.push("the plan is not one reveal named inscription");
+  if (signed.reveals.length !== 1 || signed.reveals[0]?.name !== "inscription") problems.push("the plan is not one reveal named `inscription`");
   if (signed.issuerPublic !== issuerPublicHex) problems.push("issuer key differs from the public file");
   const rows: Check[] = [{
-    name: "single inscription",
+    name: "single P2MR Inscription",
     pass: problems.length === 0,
-    detail: problems.length === 0 ? "one inscription, no collection, no sale" : problems.join(", "),
+    detail: problems.length === 0 ? "one P2MR Inscription, no collection, no sale" : problems.join(", "),
   }];
   let match: boolean;
   let detail: string;
@@ -363,7 +363,7 @@ export function singleChecks(unsigned: MintPlan, signed: MintPlan, content: Sing
     match = false;
     detail = error instanceof Error ? error.message : "could not rebuild the leaf";
   }
-  rows.push({ name: "inscription content", pass: match, detail });
+  rows.push({ name: "P2MR Inscription content", pass: match, detail });
   return rows;
 }
 
@@ -415,7 +415,7 @@ export async function encodeGenesisField(input: Omit<GenesisProfile, "sale"> & {
 }
 
 /**
- * Field 5 of a price inscription. `schema` defaults to the launch text.
+ * Field 5 of a price P2MR Inscription. `schema` defaults to the launch text.
  * A rehearsal passes the derived stand-in (`p/1` for collection schema `c/1`).
  * Key order is the order in PINS-6 §5.1.
  */
@@ -558,7 +558,7 @@ const PRICE_FIELD_KEYS = "schema,genesis,price_bits,price_sources,price_time";
 
 /**
  * The price record of a plan that inscribes only a price (PINS-6 §5.1), or null for any other plan.
- * Such a plan has one reveal, `genesis`, with one inscription and the change output, and no numbered item.
+ * Such a plan has one reveal, `genesis`, with one P2MR Inscription and the change output, and no numbered item.
  * Its field 5 is not a collection genesis. It has no `sale_commitment` and no reserve, so the seed checks
  * made for a mint do not apply to it. A plan of any other shape returns null and is checked as a mint.
  */
@@ -571,7 +571,7 @@ export function pricePlanField(plan: Pick<MintPlan, "marker" | "reveals">): Reco
 }
 
 /**
- * What a price plan must contain, rebuilt from its own price record: one inscription with the price text
+ * What a price plan must contain, rebuilt from its own price record: one P2MR Inscription with the price text
  * of the record's schema as a plain text body, the record as field 5, no leaf list, and no item. `sign`
  * compares the leaf of the plan with the leaf this makes, so the issuer key signs nothing else. Null for
  * a plan that is not a price plan.

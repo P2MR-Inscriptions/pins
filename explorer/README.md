@@ -58,7 +58,7 @@ The genesis id is read from the file that `MANIFEST` names. Without `MANIFEST` t
 
 ## Limits
 
-Explorer 1.0.1 is this package only. It does not change the indexer and it is not a production release. The page was checked with the mock indexer. A separate mainnet run of an earlier build reached height 165925 and 10002 inscriptions; this build does not repeat that check, and it does not decide whether every item of a collection is authentic. While the indexer is catching up, each RPC call is a blocking `spawnSync`, so its own HTTP server does not answer during that call. This is not a production release.
+Explorer 1.0.1 is this package only. It does not change the indexer and it is not a production release. The page was checked with the mock indexer. A separate mainnet run of an earlier build reached height 165925 and 10002 P2MR Inscriptions; this build does not repeat that check, and it does not decide whether every item of a collection is authentic. While the indexer is catching up, each RPC call is a blocking `spawnSync`, so its own HTTP server does not answer during that call. This is not a production release.
 
 The explorer reads the list of P2MR Inscriptions from the indexer in pages of 1000, and this process keeps that snapshot in memory. The browser asks for one page of images, not the whole collection. One indexer process follows one genesis id.
 

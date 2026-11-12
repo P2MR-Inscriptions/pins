@@ -85,7 +85,7 @@ function summary(item: Inscription) {
   };
 }
 
-/** Display hint only. It does not mark the inscription authentic or invalid. */
+/** Display hint only. It does not mark the P2MR Inscription authentic or invalid. */
 function contentRole(item: Inscription): "leaf-list" | null {
   const collection = cache.collection;
   if (!collection || collection.status !== "present") return null;
@@ -108,7 +108,7 @@ export function authenticityState(piece: { authentic?: unknown } | null | undefi
 const TIP_HASH = /^[0-9a-f]{64}$/;
 
 /**
- * On-chain means this inscription's creating height is inside the indexed tip.
+ * On-chain means this P2MR Inscription's creating height is inside the indexed tip.
  * Mock data, a stale snapshot, a missing tip hash, or a height past the tip are not confirmed.
  * Collection authenticity and content bytes are not used.
  */
@@ -128,7 +128,7 @@ export function chainInclusion(input: {
   return "confirmed";
 }
 
-/** Previous and next existing inscription numbers. Gaps are skipped. The scan uses the snapshot's number list only. */
+/** Previous and next existing P2MR Inscription numbers. Gaps are skipped. The scan uses the snapshot's number list only. */
 export function inscriptionNeighbors(order: readonly number[], byNumber: ReadonlyMap<number, { id: string }>, number: number): { prev: { number: number; id: string } | null; next: { number: number; id: string } | null } {
   let prevN: number | null = null;
   let nextN: number | null = null;
@@ -456,11 +456,11 @@ async function fullBody(req: IncomingMessage, item: Inscription): Promise<Buffer
 }
 
 /**
- * Inscription bytes are untrusted.
+ * P2MR Inscription bytes are untrusted.
  * Raster images and SVG paint as images. Text preview is plain and short.
  * Audio and video keep their media type so the browser can play them.
  * HTML runs only for ?frame=1, and only under HTML_CSP.
- * The cache key is the inscription id plus its body hash, never the type alone.
+ * The cache key is the P2MR Inscription id plus its body hash, never the type alone.
  */
 async function content(req: IncomingMessage, res: ServerResponse, item: Inscription, url: URL): Promise<void> {
   const type = normalizeType(item.contentType);

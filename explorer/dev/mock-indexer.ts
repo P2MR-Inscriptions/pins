@@ -65,11 +65,11 @@ const genesis = add(0, "mock-genesis", "application/json", text(JSON.stringify({
 add(1, "mock-leaves", "application/octet-stream", Buffer.alloc(SUPPLY * 32), null, owners[0], BASE);
 const traits = ["Sky", "Moss", "Ember", "Frost"];
 const pieces = Array.from({ length: SUPPLY }, (_, i) => i + 1).map((n) => {
-  if (n > MINTED) return { number: n, inscriptionId: null, authentic: false, reason: "no authentic inscription", status: "unassigned", location: null, ownerAddress: "", ownerScript: "", confirmations: 0, final: false, attributes: [] };
+  if (n > MINTED) return { number: n, inscriptionId: null, authentic: false, reason: "no authentic P2MR Inscription", status: "unassigned", location: null, ownerAddress: "", ownerScript: "", confirmations: 0, final: false, attributes: [] };
   const it = add(n + 1, `mock-piece-${n}`, "image/png", sprite(n), metaCbor(mockBrand.pieceTitle(n), "Mood", traits[n % 4]), owners[n % owners.length], BASE + 1 + (n % 7));
   return { number: n, inscriptionId: it.id, authentic: true, reason: "ok", status: "sale", location: it.location, ownerAddress: it.ownerAddress, ownerScript: it.ownerScript, confirmations: 20, final: true, attributes: [{ trait_type: "Mood", value: traits[n % 4] }] };
 });
-add(items.length, "mock-note", "text/plain", text("hello from a mock text inscription <b>not html</b>"), null, owners[2], BASE + 9);
+add(items.length, "mock-note", "text/plain", text("hello from a mock text P2MR Inscription <b>not html</b>"), null, owners[2], BASE + 9);
 const strip = ({ body: _b, ...rest }: Item) => rest;
 
 export function startMock(port = 8787): Promise<{ url: string; close: () => Promise<void> }> {

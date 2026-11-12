@@ -12,4 +12,4 @@ title: ""
 
 ## Protocol impact
 
-<!-- Say whether inscription bytes, the marker, or a hash rule would change. A byte change needs a new marker, not a silent edit. -->
+<!-- Say whether P2MR Inscription bytes, the marker, or a hash rule would change. A byte change needs a new marker, not a silent edit. -->

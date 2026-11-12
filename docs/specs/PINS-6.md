@@ -14,7 +14,7 @@
 
 ## 1. Abstract
 
-PINS-6 defines a trustless sale: the buyer pays and receives the inscription in the same Qbit
+PINS-6 defines a trustless sale: the buyer pays and receives the P2MR Inscription in the same Qbit
 transaction, or nothing happens. The seller pre-signs one input with
 `SIGHASH_SINGLE | SIGHASH_ANYONECANPAY` (`0x83`); the buyer completes the transaction.
 
@@ -54,7 +54,7 @@ it. Padding inputs move it into the buyer's output.
 | Index | Inputs | Outputs |
 |---|---|---|
 | 0 | buyer padding `a` | buyer padding return, value `a + b` |
-| 1 | buyer padding `b` | **buyer receives the inscription**, value `v_U` |
+| 1 | buyer padding `b` | **buyer receives the P2MR Inscription**, value `v_U` |
 | 2 | seller `U` (signed `0x83`) | seller payment `P + v_U` (primary sale: `price_bits`, §6) |
 | 3.. | buyer funding | marketplace fee (optional), buyer change |
 
@@ -69,7 +69,7 @@ it. Padding inputs move it into the buyer's output.
 
 | Index | Inputs | Outputs |
 |---|---|---|
-| 0 | buyer padding `a` | **buyer receives the inscription**, value `a + v_U` |
+| 0 | buyer padding `a` | **buyer receives the P2MR Inscription**, value `a + v_U` |
 | 1 | seller `U` (signed `0x83`, `s = 1`) | seller payment `P + v_U` |
 | 2.. | buyer funding | fee, change |
 
@@ -102,10 +102,10 @@ Paying a receive address other than the signing wallet changes neither rule.
 
 ### 4.4 Checks before signing (buyer side, REQUIRED)
 
-1. Using an indexer, confirm that `U` holds the expected inscription at offset 0, and nothing else
+1. Using an indexer, confirm that `U` holds the expected P2MR Inscription at offset 0, and nothing else
    unexpected.
 2. Recompute FIFO for the whole transaction and confirm the inscribed bit lands in the buyer-chosen receive output.
-3. Confirm that none of the buyer's own inputs carries an inscription (padding inputs MUST be plain).
+3. Confirm that none of the buyer's own inputs carries a P2MR Inscription (padding inputs MUST be plain).
 4. Confirm every output is P2MR, `OP_RETURN` or PayToAnchor (restricted-output mode) and not dust.
 
 ## 5. Fees and sizes
@@ -115,15 +115,15 @@ at most 3,763 bytes, sighash-type byte included (`P2MR_V1_SINGLE_KEY_SPEND_SIZE`
 `src/script/p2mr_sizing.h:15-41`). A clean-template sale with one funding input has 4 inputs, about 15.1 kB. At the
 minimum relay fee (250 bits/kvB) that is about 3,800 bits. TODO-regtest: exact sizes.
 
-### 5.1 Price inscription
+### 5.1 Price P2MR Inscription
 
-Native QBT has no public market price that a genesis inscription can freeze. `qbit.org` lists none,
+Native QBT has no public market price that a genesis P2MR Inscription can freeze. `qbit.org` lists none,
 and a ticker search is not a price for this asset. The genesis map MUST NOT carry `price_bits`,
 `price_sources`, or `price_time`.
 
-The issuer publishes one price inscription when the sale opens. It is authenticated the same way as
+The issuer publishes one price P2MR Inscription when the sale opens. It is authenticated the same way as
 the sale-secret reveal: the reveal leaf starts with `<K_iss> OP_CHECKSIGPQC`, and `leafIssuer` MUST
-equal the genesis `issuer`. A price inscription signed by any other key is ignored.
+equal the genesis `issuer`. A price P2MR Inscription signed by any other key is ignored.
 
 - Body: the UTF-8 text `pins-price/1` and one trailing newline. `content_type` `text/plain`.
 - Field 5 is one CBOR map, keys in this order:
@@ -131,7 +131,7 @@ equal the genesis `issuer`. A price inscription signed by any other key is ignor
 | Key | Type | Meaning |
 |---|---|---|
 | `schema` | text | `pins-price/1` |
-| `genesis` | text | genesis inscription id `G` (`<txid>i<n>`) |
+| `genesis` | text | genesis P2MR Inscription id `G` (`<txid>i<n>`) |
 | `price_bits` | uint | price of one sale item, in bits, as the issuer declares it |
 | `price_sources` | array of text | the issuer's record of where the price comes from, one non-empty entry per source |
 | `price_time` | text | UTC timestamp `YYYY-MM-DDTHH:MM:SSZ` of the price |
@@ -144,27 +144,27 @@ That rule is not part of this specification.
 No tool and no indexer computes a price or checks `price_bits` against `price_sources`. The issuer
 fills the three fields, and a reader checks only that they are well formed (below).
 
-A price inscription belongs to a sale, so it counts only for a genesis that declares one, that is, one
+A price P2MR Inscription belongs to a sale, so it counts only for a genesis that declares one, that is, one
 that carries `sale_commitment` (PINS-5 §3). For a genesis without it, indexers read no price
-inscription, and `/collection` reports `priceStatus` `none`.
+P2MR Inscription, and `/collection` reports `priceStatus` `none`.
 
-Indexers MUST NOT treat a sale as open until a valid price inscription exists. Validity is: body
+Indexers MUST NOT treat a sale as open until a valid price P2MR Inscription exists. Validity is: body
 `pins-price/1` plus one trailing newline, `content_type` `text/plain`, schema `pins-price/1`,
 `genesis` equal to this collection's genesis id, `leafIssuer` equal to the genesis issuer, the
 three price fields well formed, and creation strictly after the genesis. The earliest valid
-inscription wins. Order is creation height, then the creating transaction's index in that block,
-then the inscription index `n`. Every later price inscription is ignored, including one from the
+P2MR Inscription wins. Order is creation height, then the creating transaction's index in that block,
+then the P2MR Inscription index `n`. Every later price P2MR Inscription is ignored, including one from the
 same issuer. The first one is immutable. A genesis whose map contains any price key is not a
 valid genesis. For a genesis that declares a sale, `/collection` exposes `priceStatus` `pending` until
-that inscription exists and `ready` after it, plus `priceBits`, `priceSources`, `priceTime`, and `priceId` of the winner.
+that P2MR Inscription exists and `ready` after it, plus `priceBits`, `priceSources`, `priceTime`, and `priceId` of the winner.
 
 ## 6. Primary sale of a collection
 
 1. The whole collection is inscribed at launch. Sale items (those not in the creator reserve, PINS-5 §8.1) go to `K_sale`.
    Reserve items go directly to the creator's wallet and are never listed in the primary sale.
 2. Price: the creator revenue per item is the issuer's `price_bits`, paid in QBT, plus network fees paid by the buyer.
-   The protocol fixes no amount. `price_bits` is fixed by the first valid price inscription
-   and never changed during the sale. There is no re-pricing. A later price inscription is ignored.
+   The protocol fixes no amount. `price_bits` is fixed by the first valid price P2MR Inscription
+   and never changed during the sale. There is no re-pricing. A later price P2MR Inscription is ignored.
 3. Primary listings use `seller_payment = price_bits` (the creator gives the 10,000-bit postage to the
    buyer with the item), so the buyer pays `price_bits` + network fees and receives an output worth
    `v_U`. The buyer's funding inputs cover `price_bits`, the fee and the padding.
@@ -174,7 +174,7 @@ that inscription exists and `ready` after it, plus `priceBits`, `priceSources`, 
 5. A sale is final after 6 confirmations (PINS-2 §4.3). Until then the server MUST NOT release the
    next listing of the order to someone else if the pending sale might be reorged out; if a sale
    disappears in a reorg, the same item is offered again before the next one in the order.
-6. The collection decides how long the sale lasts (PINS-5 §8.5). At close, `sale_secret` is published in its own inscription
+6. The collection decides how long the sale lasts (PINS-5 §8.5). At close, `sale_secret` is published in its own P2MR Inscription
    so anyone can check the order. Unsold items go to the address committed before close.
 
 ## 7. Qbit Wallet compatibility (as of `v1.0.7`, 2026-11-02)
@@ -187,7 +187,7 @@ Verified in `Qbit-Org/qbit-wallet` at `eb9f77941a`:
 | `signPsbt` signs every input the active account can sign; `toSignInputs` is rejected | buyer side works if the buyer's PSBT contains only the buyer's inputs plus the seller's pre-signed input | `docs/api/sign-transaction.md` |
 | A PSBT whose input already carries another signer's final witness keeps it unchanged | the seller's `0x83` witness survives the buyer's signing | `docs/api/sign-transaction.md`; wallet `CHANGELOG` (#272) |
 | Flags `SIGHASH_NONE` inputs as a risk; `SINGLE` is not flagged | no warning expected for `0x83` | `packages/tx-helpers/src/decode-psbt.ts:5-9` |
-| Classifies plain P2MR outputs as asset-free, may consolidate them | inscriptions at risk in an ordinary Qbit Wallet account | `packages/wallet-background/src/utils/qbit-api.ts:2684-2702` |
+| Classifies plain P2MR outputs as asset-free, may consolidate them | P2MR Inscriptions at risk in an ordinary Qbit Wallet account | `packages/wallet-background/src/utils/qbit-api.ts:2684-2702` |
 | A website `signPsbt` may pay a P2MR output the wallet does not own. `statedRecipients` is empty for that call | The approval shows the address, a warning badge **Unrecognised**, and the line "Outputs to addresses this wallet does not recognise: N, paying X QBT". It does not raise the danger titled **Unrecognised output**, and signing stays available. That danger is for a script with no address, or for an extra output beside a recipient the request named | `packages/wallet-background/src/utils/qbit-psbt-spend-summary.ts` (`summarizeQbitPsbtSpend`); `apps/extension/src/ui/pages/Approval/components/SignPsbt/components/InputItem.tsx`; `apps/extension/src/_locales/en/messages.json` keys `unrecognised_output` and `unrecognised_outputs_summary`; test "shows the large unfamiliar output a dapp PSBT hides beside a small merchant output" |
 
 The reference sale does not start until Qbit Wallet can complete a pre-signed `0x83` offer. No sale key is kept online. The interactive fallback
@@ -215,7 +215,7 @@ Consequences:
   changed, only cancelled by spending `U`.
 - The seller's signature commits to `U`'s amount and script, so a buyer cannot substitute another
   input value.
-- Buyers MUST re-check the inscription location at signing time; a reorg or a cancelled listing can
+- Buyers MUST re-check the P2MR Inscription location at signing time; a reorg or a cancelled listing can
   change it.
 - Marketplaces MUST NOT ask sellers for private keys or seed phrases.
 

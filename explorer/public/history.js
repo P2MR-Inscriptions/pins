@@ -15,12 +15,12 @@ export function isDetailHash(hash) {
   return DETAIL.test(normalizeHash(hash));
 }
 
-/** Number and piece routes replace themselves with an inscription. They are not a place to return to. */
+/** Number and piece routes replace themselves with a P2MR Inscription. They are not a place to return to. */
 export function isTransientHash(hash) {
   return TRANSIENT.test(normalizeHash(hash));
 }
 
-/** Any explorer page that is not an inscription detail. */
+/** Any explorer page that is not a P2MR Inscription detail. */
 export function isListHash(hash) {
   const value = normalizeHash(hash);
   if (isDetailHash(value)) return false;

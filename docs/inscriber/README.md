@@ -87,6 +87,8 @@ The funding address is the issuer address from `address`. These addresses are al
 The passphrase is read from the terminal with echo off. Tests may set `PINS_KEY_PASSPHRASE`. Do not set
 that variable for a real key: other processes of the same user can see it. The tool does not print the passphrase or the secret bytes. A new key file is created with mode 0600 and is not overwritten if that path already exists.
 
+The keyfile is JSON: scrypt parameters (`n`, `r`, `p`), a salt, and an AES-256-GCM envelope around the issuer secret, the recovery secret, and, unless `keygen --no-sale` was used, the sale secret. `keygen` writes `n = 16384`, `r = 8`, `p = 1`, as every earlier version did, and the two keys each come from their own random draw. Older keyfiles, whose recovery key was derived from the issuer draw, open unchanged; their keys are not touched. Before the passphrase is stretched, the tool checks the parameters in the file. It refuses a file with a version or key derivation other than `1` and `scrypt`, with `n` that is not a power of two, with a cost below what `keygen` writes (`n` below 16384, `r` below 8), or with a cost far above it (`n` above 2^20, `r` above 16, `p` above 16, more than 2^26 for `n*r*p`, or more than 1 GiB of memory), and it says which value is out of range. The ceiling is well above the default so that a stronger setting chosen later still opens. A wrong passphrase still fails at the authentication check.
+
 `utxo.json` is one object: `txid`, `vout`, `value` (bits, as a decimal string), and
 `script` (hex). The output must be the issuer key's own P2MR address.
 

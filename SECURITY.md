@@ -21,6 +21,7 @@ Do not open a public issue for a secret, a key, a seed, or an RPC password. Do n
 ## Operator notes
 
 - Keep two encrypted copies of a keyfile, in two places, and do not store the passphrase with either copy.
+- The keyfile's scrypt parameters are read from the file, so they are checked before use: a cost below what `keygen` writes, or a cost far above it, is refused with a message. The issuer and recovery keys of a new keyfile come from separate random draws. Keyfiles made earlier open unchanged.
 - The funding address from `address` receives one QBT payment. Do not spend it with a wallet that does not understand the commit. Do not reuse it as Reserve, Sale, Change, or Revenue.
 - Qbit Wallet v1.0.7 can pay that address. It cannot sign a reveal leaf. It cannot yet create a `0x83` listing (PINS-6 §7). An ordinary wallet may treat a plain P2MR output as asset-free and may consolidate it.
 - A marketplace must not ask a seller for a private key or a seed phrase.

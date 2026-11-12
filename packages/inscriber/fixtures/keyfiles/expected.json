@@ -1,0 +1,26 @@
+{
+  "v1.0.0": {
+    "issuerPublic": "e7a31f04fb1b210000c07f2bfe9c7262a64ad1f2d7c22e29fc572fa286ac6da3",
+    "recoveryPublic": "fbb327e67204d41ba582ea339b52ed8e6fe8fd4a111ee3964317586ef544e324",
+    "hasSale": true,
+    "saleSecretHex": "f48fac27d5340fdf1c586a27fa23eeec7b12e365ac6cb1d2004297d2b3fb42c2",
+    "issuerSecretSha": "67d2cd1b3188de683a0a8a96945a783b4b61335366d74a537b64eb313cd03cba",
+    "recoverySecretSha": "c5e00024882ab6c03340f652bebff28a478dbf581c4b8f9da37040d1953d852f"
+  },
+  "main-with-sale": {
+    "issuerPublic": "e7a31f04fb1b210000c07f2bfe9c7262a64ad1f2d7c22e29fc572fa286ac6da3",
+    "recoveryPublic": "fbb327e67204d41ba582ea339b52ed8e6fe8fd4a111ee3964317586ef544e324",
+    "hasSale": true,
+    "saleSecretHex": "a950028f64d6bf71092f8209bc68a0d9906781b9a45b0c196df0fe4f7f038d12",
+    "issuerSecretSha": "67d2cd1b3188de683a0a8a96945a783b4b61335366d74a537b64eb313cd03cba",
+    "recoverySecretSha": "c5e00024882ab6c03340f652bebff28a478dbf581c4b8f9da37040d1953d852f"
+  },
+  "main-no-sale": {
+    "issuerPublic": "e7a31f04fb1b210000c07f2bfe9c7262a64ad1f2d7c22e29fc572fa286ac6da3",
+    "recoveryPublic": "fbb327e67204d41ba582ea339b52ed8e6fe8fd4a111ee3964317586ef544e324",
+    "hasSale": false,
+    "saleSecretHex": null,
+    "issuerSecretSha": "67d2cd1b3188de683a0a8a96945a783b4b61335366d74a537b64eb313cd03cba",
+    "recoverySecretSha": "c5e00024882ab6c03340f652bebff28a478dbf581c4b8f9da37040d1953d852f"
+  }
+}

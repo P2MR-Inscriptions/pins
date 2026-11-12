@@ -122,7 +122,9 @@ type Fixture = {
 
 async function fixture(entropy?: Uint8Array): Promise<Fixture> {
   await init();
-  const made = createKeyfile(Buffer.from("disposable-passphrase"), entropy);
+  // The recovery key used to be derived from the issuer draw. The recorded plan hash below needs that same key, so it is given explicitly.
+  const recoveryEntropy = entropy?.map((byte, index) => (byte + index + 1) & 0xff);
+  const made = createKeyfile(Buffer.from("disposable-passphrase"), entropy, true, recoveryEntropy);
   const issuer = Buffer.from(made.secrets.issuerPublic, "hex");
   const recovery = Buffer.from(made.secrets.recoveryPublic, "hex");
   return {

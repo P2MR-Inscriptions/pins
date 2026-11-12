@@ -1,0 +1,80 @@
+{
+  "description": "Leaf of one item, PINS-5 §5.1: SHA256(u32be(number) || SHA256(body) || SHA256(metadata)). The body and the metadata are the exact inscribed bytes. A number outside 0 to 4294967295 has no leaf.",
+  "spec": "PINS-5 §5.1",
+  "cases": [
+    {
+      "name": "one-byte body, empty metadata",
+      "number": 1,
+      "body_hex": "42",
+      "metadata_hex": "",
+      "body_sha256": "df7e70e5021544f4834bbee64a9e3789febc4be81470df629cad6ddb03320a5c",
+      "metadata_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preimage_hex": "00000001df7e70e5021544f4834bbee64a9e3789febc4be81470df629cad6ddb03320a5ce3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "leaf": "760d6b8000a08bf8479e045051be67318b8fe99b250c5e2f5dcb1d1d23323f5f"
+    },
+    {
+      "name": "empty body, empty metadata",
+      "number": 1,
+      "body_hex": "",
+      "metadata_hex": "",
+      "body_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "metadata_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "preimage_hex": "00000001e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "leaf": "248607898151cc80d9e34b54bb3c969ed1b3221ad17062227b7050cb27a408c3"
+    },
+    {
+      "name": "text body, canonical metadata of one item",
+      "number": 1,
+      "body_hex": "626f6479206f6e65",
+      "metadata_hex": "a1646d657461a2646e616d65664974656d23316a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656130",
+      "body_sha256": "0e260cb8cd2cc3399320fc70aaddf9b87aa58ef03e9d8f6ebcc2b563f1eb6672",
+      "metadata_sha256": "2f2aa9881977e5c6bc30b41ad1e97f431b437af420eebcfe3f6b8cc2e484a0ef",
+      "preimage_hex": "000000010e260cb8cd2cc3399320fc70aaddf9b87aa58ef03e9d8f6ebcc2b563f1eb66722f2aa9881977e5c6bc30b41ad1e97f431b437af420eebcfe3f6b8cc2e484a0ef",
+      "leaf": "6b5a41437756f8b1e28f655f7dd00ed892edc1e0b735eba122eb884cd40f2a7c"
+    },
+    {
+      "name": "number 0",
+      "number": 0,
+      "body_hex": "626f6479207a65726f",
+      "metadata_hex": "a1646d657461a2646e616d65664974656d23316a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656130",
+      "body_sha256": "4d6b094d76708ac7ad34928a80f4e59e1097e419e9f58116dc85906580adcf30",
+      "metadata_sha256": "2f2aa9881977e5c6bc30b41ad1e97f431b437af420eebcfe3f6b8cc2e484a0ef",
+      "preimage_hex": "000000004d6b094d76708ac7ad34928a80f4e59e1097e419e9f58116dc85906580adcf302f2aa9881977e5c6bc30b41ad1e97f431b437af420eebcfe3f6b8cc2e484a0ef",
+      "leaf": "96ef7de85813a70dc6a1a3727d005567380939478cde3d6e3a01b2c56799bfb2"
+    },
+    {
+      "name": "number 7",
+      "number": 7,
+      "body_hex": "626f647920736576656e",
+      "metadata_hex": "a1646d657461a2646e616d65664974656d23316a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656130",
+      "body_sha256": "46dba45b9987947022167c2967e6a649b2667e115ba1e3ec7bc940e5a4dc9c99",
+      "metadata_sha256": "2f2aa9881977e5c6bc30b41ad1e97f431b437af420eebcfe3f6b8cc2e484a0ef",
+      "preimage_hex": "0000000746dba45b9987947022167c2967e6a649b2667e115ba1e3ec7bc940e5a4dc9c992f2aa9881977e5c6bc30b41ad1e97f431b437af420eebcfe3f6b8cc2e484a0ef",
+      "leaf": "801c96c49b236dcbe138e2f070696e8c840778cdaa1d332093eb8a2af3778559"
+    },
+    {
+      "name": "largest number",
+      "number": 4294967295,
+      "body_hex": "626f6479",
+      "metadata_hex": "a1646d657461a2646e616d65664974656d23316a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656130",
+      "body_sha256": "230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb5",
+      "metadata_sha256": "2f2aa9881977e5c6bc30b41ad1e97f431b437af420eebcfe3f6b8cc2e484a0ef",
+      "preimage_hex": "ffffffff230d8358dc8e8890b4c58deeb62912ee2f20357ae92a5cc861b98e68fe31acb52f2aa9881977e5c6bc30b41ad1e97f431b437af420eebcfe3f6b8cc2e484a0ef",
+      "leaf": "7a6a94eaed65997f2b913b226d68f55add8b88680298bec17e3f5078d5d0d27c"
+    },
+    {
+      "name": "number below 0",
+      "number": -1,
+      "body_hex": "",
+      "metadata_hex": "",
+      "error": true
+    },
+    {
+      "name": "number above the largest",
+      "number": 4294967296,
+      "body_hex": "",
+      "metadata_hex": "",
+      "error": true
+    }
+  ]
+}

@@ -25,6 +25,7 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { crc32, deflateSync, inflateSync } from "node:zlib";
+import { leafFromDigests, merkleRoot as merkleRootOf } from "../protocol/merkle.mjs";
 
 const PNG_SIG = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 
@@ -403,23 +404,8 @@ export function canonicalCollectionJson(source) {
 }
 
 function merkleRoot(items) {
-  let level = items.map((item) => {
-    const body = Buffer.alloc(4 + 32 + 32);
-    body.writeUInt32BE(item.id, 0);
-    Buffer.from(item.canonicalImageSha256, "hex").copy(body, 4);
-    Buffer.from(item.canonicalMetadataSha256, "hex").copy(body, 36);
-    return createHash("sha256").update(body).digest();
-  });
-  if (!level.length) throw new Error("Empty edition.");
-  while (level.length > 1) {
-    if (level.length % 2 === 1) level.push(level[level.length - 1]);
-    const next = [];
-    for (let i = 0; i < level.length; i += 2) {
-      next.push(createHash("sha256").update(Buffer.concat([level[i], level[i + 1]])).digest());
-    }
-    level = next;
-  }
-  return level[0].toString("hex");
+  if (!items.length) throw new Error("Empty edition.");
+  return merkleRootOf(items.map((item) => leafFromDigests(item.id, Buffer.from(item.canonicalImageSha256, "hex"), Buffer.from(item.canonicalMetadataSha256, "hex"))));
 }
 
 function unzip(zip, dest) {

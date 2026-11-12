@@ -8,6 +8,7 @@
 import { createHash } from "node:crypto";
 import { LAUNCH_PRICE_SCHEMA, priceBody } from "../inscriber/price.ts";
 import { parsePrice, type PriceRecord } from "../inscriber/preflight.ts";
+import { leafHash, leafListRoot } from "../protocol/merkle.mjs";
 import { decodeCbor } from "./cbor.ts";
 
 type ReserveModule = {
@@ -236,22 +237,6 @@ function chainOrder(left: Inscription, right: Inscription): number {
   return left.createdHeight - right.createdHeight || left.createdIndex - right.createdIndex || left.n - right.n;
 }
 
-/** Fold 32-byte leaves the way PINS-5 §5.1 folds them. The body is the leaf list, not the tree. */
-function merkleOfLeafList(body: Uint8Array): string | null {
-  if (body.length === 0 || body.length % 32 !== 0) return null;
-  let level: Uint8Array[] = [];
-  for (let offset = 0; offset < body.length; offset += 32) level.push(body.subarray(offset, offset + 32));
-  while (level.length > 1) {
-    if (level.length % 2 === 1) level.push(level[level.length - 1]);
-    const next: Uint8Array[] = [];
-    for (let index = 0; index < level.length; index += 2) {
-      next.push(createHash("sha256").update(level[index]).update(level[index + 1]).digest());
-    }
-    level = next;
-  }
-  return Buffer.from(level[0]).toString("hex");
-}
-
 /**
  * Genesis parameters come only from field 5. A JSON body, earlier or not, is not a source.
  * The eight base keys come first, in order. `sale_commitment` is optional, and so is `reserve`,
@@ -348,7 +333,7 @@ function leafListOf(indexer: Indexer, genesis: Genesis): Inscription | undefined
       const root = decoded.root;
       if (!(root instanceof Uint8Array) || root.length !== 32 || Buffer.from(root).toString("hex") !== genesis.root) continue;
     }
-    if (merkleOfLeafList(item.body) !== genesis.root) continue;
+    if (leafListRoot(item.body) !== genesis.root) continue;
     return item;
   }
   return undefined;
@@ -443,14 +428,6 @@ function metaOf(item: Inscription): { name?: string; attributes?: { trait_type: 
     name: typeof meta.name === "string" ? meta.name : undefined,
     attributes: Array.isArray(meta.attributes) && meta.attributes.every(isTrait) ? meta.attributes : undefined,
   };
-}
-
-function leafOf(number: number, body: Uint8Array, metadata: Uint8Array): Buffer {
-  const preimage = Buffer.alloc(4 + 32 + 32);
-  preimage.writeUInt32BE(number, 0);
-  sha256(body).copy(preimage, 4);
-  sha256(metadata).copy(preimage, 36);
-  return sha256(preimage);
 }
 
 export async function collectionView(indexer: Indexer, cursor: ChainCursor, profile?: CollectionProfile | null): Promise<CollectionView> {
@@ -603,7 +580,7 @@ function authentic(genesis: Genesis, leafList: Uint8Array | undefined, item: Ins
   const meta = metaOf(item);
   if (!meta || meta.name !== `${genesis.namePrefix}${number}`) return false;
   if (!item.metadata || !leafList) return false;
-  const leaf = leafOf(number, item.body, item.metadata);
+  const leaf = leafHash(number, item.body, item.metadata);
   const offset = (number - genesis.first) * 32;
   if (offset < 0 || offset + 32 > leafList.length) return false;
   return Buffer.from(leafList.subarray(offset, offset + 32)).equals(leaf);

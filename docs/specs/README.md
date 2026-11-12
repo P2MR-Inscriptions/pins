@@ -30,6 +30,10 @@ transactions, bound to individual bits, tracked and transferred with ordinary Qb
 | [PINS-5](PINS-5.md) | Collections and Provenance | issuer key, Merkle root, genesis, leaf list, closing, authenticity, committed sale order |
 | [PINS-6](PINS-6.md) | PSBT Trades | atomic swap templates, Qbit Wallet constraints |
 
+## Test vectors
+
+[vectors/](vectors/README.md) holds JSON test vectors that another implementation can check itself against: the Merkle leaf, root and proof, the leaf list, the field 5 reader, canonical metadata, the genesis, reveal leaf envelopes, and the reserve and sale order. They were produced by the reference code, and a test of the repository recomputes them. They are examples of the rules above, not rules.
+
 Later candidates: recursion endpoints, delegation details, parent/child (tag 3, reserved),
 trustless mint with `OP_CHECKTEMPLATEVERIFY`.
 

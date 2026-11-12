@@ -8,6 +8,9 @@ Dates are the day the change was recorded. The documents stay CC0-1.0.
 Clarifications. They describe the deployed format and the reference indexer. No inscription that is valid
 today becomes invalid.
 
+- New [vectors/](vectors/README.md): JSON test vectors for the Merkle leaf, root and proof (PINS-5 §5.1), the leaf list (PINS-5 §6), the field 5 reader (PINS-4 §2.1), canonical metadata (PINS-4 §2), the genesis (PINS-5 §3), reveal leaf envelopes (PINS-1 §4), and the reserve and sale order (PINS-5 §8). A test of the repository recomputes them.
+- PINS-5 §5.1. The reference code has one implementation of the leaf, the root and the proof, `packages/protocol/merkle.mjs`. The sentence that the tree is folded in a private function is replaced.
+- TV1-1, TV1-3, TV1-4, TV4-1, TV5-1 and TV5-6 point to the vectors. The regtest runs of TV1-1, TV1-3 and TV1-4 are not done.
 - PINS-5 §2 and §6.1. The reveal count is stated for any `supply` and `batch` (`1 + ceil(supply / batch)`). The 10,000-item figures are labeled as the worked example.
 - PINS-5 §6.2. The mainnet record names its collection, the public example of [docs/examples/flatbits.md](../examples/flatbits.md).
 - PINS-1 §9.5.1. The recommended batching is labeled as the one for that example.

@@ -157,7 +157,7 @@ newline. PINS data about the collection
 
 | Vector | Content | Status |
 |---|---|---|
-| TV4-1 | Canonical CBOR of one item, hashed as PINS-5 §5.1 | TODO-spec |
+| TV4-1 | Canonical CBOR of one item, hashed as PINS-5 §5.1 | `vectors/metadata.json`, `vectors/merkle-leaf.json` |
 | TV4-2 | Canonical PNG of one item, hashed as PINS-5 §5.1 | TODO-spec |
 | TV4-3 | Re-encoded metadata (keys reordered) fails the PINS-5 leaf check | TODO-regtest |
 

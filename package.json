@@ -11,7 +11,8 @@
     "indexer:serve": "node --experimental-strip-types scripts/indexer-run.ts",
     "indexer:run": "node --experimental-strip-types scripts/indexer-run.ts",
     "inscribe": "node --experimental-strip-types packages/inscriber/cli.ts",
-    "mainnet:preflight": "node --experimental-strip-types packages/inscriber/cli.ts preflight"
+    "mainnet:preflight": "node --experimental-strip-types packages/inscriber/cli.ts preflight",
+    "check:terminology": "node scripts/check-terminology.mjs"
   },
   "dependencies": {
     "@qbit-oss/pqc": "^0.1.1",
@@ -39,7 +40,7 @@
     "qbit",
     "p2mr",
     "pins",
-    "inscriptions"
+    "p2mr-inscriptions"
   ],
   "engines": {
     "node": ">=22.13 <25"

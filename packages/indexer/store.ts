@@ -299,7 +299,7 @@ export class Store {
   }
 
   /**
-   * Drop the tip block and restore the inscriptions it changed.
+   * Drop the tip block and restore the P2MR Inscriptions it changed.
    * Throws when the tip is older than the retained undo. Call `resync()` and
    * follow again from the activation height.
    */

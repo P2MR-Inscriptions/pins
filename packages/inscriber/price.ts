@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * Price inscription schema.
+ * Price P2MR Inscription schema.
  *
  * A price is optional. It belongs to a collection that declares a sale, and it is how that sale opens
  * (PINS-6 §5.1). A collection with no sale has none. This module holds no price, no price source and
@@ -20,7 +20,7 @@
  */
 export const LAUNCH_COLLECTION_SCHEMA = "pins-collection/1";
 
-/** Body text and field-5 schema of a mainnet price inscription. PINS-6 §5.1. */
+/** Body text and field-5 schema of a mainnet price P2MR Inscription. PINS-6 §5.1. */
 export const LAUNCH_PRICE_SCHEMA = "pins-price/1";
 
 /**
@@ -31,7 +31,7 @@ export function priceSchemaFor(collectionSchema: string): string {
   if (collectionSchema === LAUNCH_COLLECTION_SCHEMA) return LAUNCH_PRICE_SCHEMA;
   const version = /\/(\d+)$/.exec(collectionSchema);
   // Digits only. The source text is not copied, so a rehearsal schema cannot
-  // leak the launch token into the price inscription.
+  // leak the launch token into the price P2MR Inscription.
   return `p/${version?.[1] ?? "1"}`;
 }
 

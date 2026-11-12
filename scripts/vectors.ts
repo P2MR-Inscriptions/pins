@@ -314,7 +314,7 @@ async function genesisVectors(): Promise<Json> {
   const toInput = { schema: "pins-collection/1", name: "Example", supply: 3, first: 1, namePrefix: "Item#", itemType: "image/png", root: ROOT, issuer: ISSUER };
   const reserve = { groups: [{ trait_type: "Tone", value: "0", count: 1 }], extra: 1 };
   return {
-    description: "Genesis of a collection, PINS-5 §3. Field 5 is a CBOR map with these keys in this order: schema, name, supply, first, name_prefix, root, issuer, item_type, then sale_commitment when the collection declares a sale, then reserve when it declares one. `genesis` says whether the reference indexer takes the inscription as the genesis of a collection. The issuer text must equal the key that signs the reveal (`reveal_key`). The content type must be `application/json`.",
+    description: "Genesis of a collection, PINS-5 §3. Field 5 is a CBOR map with these keys in this order: schema, name, supply, first, name_prefix, root, issuer, item_type, then sale_commitment when the collection declares a sale, then reserve when it declares one. `genesis` says whether the reference indexer takes the P2MR Inscription as the genesis of a collection. The issuer text must equal the key that signs the reveal (`reveal_key`). The content type must be `application/json`.",
     spec: "PINS-5 §3",
     encode: [
       { name: "with a sale", input: { ...toInput, saleCommitment: COMMITMENT }, field5_hex: await encoded({ ...toInput, saleCommitment: COMMITMENT }) },

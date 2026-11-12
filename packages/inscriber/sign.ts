@@ -142,11 +142,11 @@ function assertRaw(plan: MintPlan, reveal: RevealPlan, reserve: Set<number>, fan
 function assertContent(plan: MintPlan, content: PlanContent | SingleContent, marker: Uint8Array, reserve: Set<number>): void {
   const groups = revealGroups(content);
   if (groups.length !== plan.reveals.length) {
-    throw new Error(`plan has ${plan.reveals.length} reveals, the ${isSingleContent(content) ? "inscription files make" : "canonical zip makes"} ${groups.length}`);
+    throw new Error(`plan has ${plan.reveals.length} reveals, the ${isSingleContent(content) ? "P2MR Inscription files make" : "canonical zip makes"} ${groups.length}`);
   }
   const issuer = bytes(plan.issuerPublic);
   const destinations = destinationsOf(plan, reserve);
-  const source = isSingleContent(content) ? "inscription files" : "canonical zip";
+  const source = isSingleContent(content) ? "P2MR Inscription files" : "canonical zip";
   groups.forEach((group, index) => {
     const reveal = plan.reveals[index];
     if (reveal.name !== group.name) throw new Error(`reveal ${index} is named ${reveal.name}, the ${source} make${isSingleContent(content) ? "" : "s"} ${group.name}`);
@@ -195,17 +195,17 @@ export function verifyPlan(plan: MintPlan, reserve: Set<number>, expected: SignE
   const marker = parseMarker(plan.marker);
   assertMarkerForNetwork(marker, plan.network);
   const rebuilt = priceContentOf(plan) ?? content;
-  // The operator decides whether this is a single inscription, by passing its body. The plan must agree, so a
+  // The operator decides whether this is a single P2MR Inscription, by passing its body. The plan must agree, so a
   // plan cannot move itself into the path that has no collection root by claiming to be single.
   const singleContent = content !== undefined && isSingleContent(content);
   if (plan.single !== undefined && plan.single !== true) throw new Error("plan single flag is not true");
-  if (plan.single === true && !singleContent) throw new Error("this plan is a single inscription: sign needs its body and content type (--single)");
-  if (plan.single !== true && singleContent) throw new Error("this plan is not a single inscription");
+  if (plan.single === true && !singleContent) throw new Error("this plan is a single P2MR Inscription: sign needs its body and content type (--single)");
+  if (plan.single !== true && singleContent) throw new Error("this plan is not a single P2MR Inscription");
   if (plan.single === true) {
-    if (!plan.noSale) throw new Error("a single inscription has no sale");
-    if (plan.root !== "") throw new Error("a single inscription has no collection root");
-    if (expectedRoot) throw new Error("a single inscription has no collection root to check");
-    if (plan.holder !== undefined) throw new Error("a single inscription has no holder: it goes to the creator address");
+    if (!plan.noSale) throw new Error("a single P2MR Inscription has no sale");
+    if (plan.root !== "") throw new Error("a single P2MR Inscription has no collection root");
+    if (expectedRoot) throw new Error("a single P2MR Inscription has no collection root to check");
+    if (plan.holder !== undefined) throw new Error("a single P2MR Inscription has no holder: it goes to the creator address");
   } else if (isPinsMarker(marker)) {
     if (!expectedRoot) throw new Error("a pins plan needs the collection profile root");
     if (!rebuilt) throw new Error("a pins plan needs the canonical zip to rebuild its reveals");

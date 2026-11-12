@@ -1,10 +1,10 @@
 <!-- SPDX-License-Identifier: CC0-1.0 -->
-# PINS-1: Core Inscription
+# PINS-1: Core P2MR Inscription
 
 | Field | Value |
 |---|---|
 | Standard | PINS-1 |
-| Title | Core Inscription |
+| Title | Core P2MR Inscription |
 | Status | Draft. Regtest measurements are recorded. Vectors marked TODO-regtest are open, and so are the regtest runs of TV1-1, TV1-3 and TV1-4 (§11). |
 | Type | Protocol, normative |
 | License | CC0-1.0 |
@@ -19,7 +19,7 @@
 ## 1. Abstract
 
 PINS-1 defines how arbitrary content (images, text, JSON, media) is written into a Qbit
-transaction so that every conforming indexer recognizes the same inscriptions, assigns them the
+transaction so that every conforming indexer recognizes the same P2MR Inscriptions, assigns them the
 same identifiers and numbers, and binds each one to the same initial bit. Content is carried in an
 unexecuted branch (an "envelope") of a revealed P2MR leaf script with leaf version `0xc0`.
 
@@ -69,7 +69,7 @@ Line numbers refer to `1.x.x`; `v1.0.0` numbers are given where they differ.
 | F15 | Restricted-output mode (consensus): every output MUST be P2MR v2/32, `OP_RETURN`, or PayToAnchor | `src/consensus/restricted_outputs.h:18-45`; `src/kernel/chainparams.cpp:159` |
 | F16 | Annexes are non-standard | `src/policy/policy.cpp:360-363` |
 | F17 | OP_SUCCESS opcodes cause immediate success and are non-standard | `p2mr-v1.md` §8; `src/script/interpreter.cpp:2168-2194` |
-| F18 | Qbit Core contains no inscription detection or filtering code | grep of `src/` at both revisions |
+| F18 | Qbit Core contains no P2MR Inscription detection or filtering code | grep of `src/` at both revisions |
 
 ## 4. Envelope
 
@@ -103,7 +103,7 @@ Rules:
    is a body push.
 6. If, before the separator (or before `OP_ENDIF` when there is no separator), the number of
    pushes after the marker is odd, the final tag has no value. The envelope is still an
-   inscription and gets the `incomplete_field` flag (section 7.2); the dangling tag is ignored.
+   P2MR Inscription and gets the `incomplete_field` flag (section 7.2); the dangling tag is ignored.
 
 ### 4.2 Location of envelopes
 
@@ -116,13 +116,13 @@ A conforming indexer MUST look for envelopes only in:
 - inside the leaf script (the second-to-last item after annex removal).
 
 Envelopes in a reserved leaf version, in initial stack items, in the annex, in a coinbase, in an
-`OP_RETURN` output or in any non-P2MR input are NOT inscriptions. In restricted-output mode (F15) the
+`OP_RETURN` output or in any non-P2MR input are NOT P2MR Inscriptions. In restricted-output mode (F15) the
 only spendable output that is not P2MR is PayToAnchor, which anyone can spend with any witness.
 
 ### 4.3 Scanning
 
 The indexer decodes the leaf script into instructions from the start. If the script cannot be
-fully decoded (a truncated push), the input yields no inscriptions. Otherwise, the indexer walks
+fully decoded (a truncated push), the input yields no P2MR Inscriptions. Otherwise, the indexer walks
 the instruction list; at each index `j` where a candidate begins (rule 4.1.1 and 4.1.2), it parses
 the candidate. A complete envelope ending at index `e` is recorded and scanning resumes at `e + 1`;
 a failed candidate resumes scanning at `j + 1`. Any number of envelopes MAY appear in one leaf
@@ -140,7 +140,7 @@ A leaf script is decoded with the standard push opcodes and these exact bounds:
 - the reader sets no limit of its own on the length of a push. The 520-byte limit (F4) is a
   consensus rule on the script, not a check the indexer repeats.
 
-Inscriptions are recognized regardless of whether the leaf script also contains other code,
+P2MR Inscriptions are recognized regardless of whether the leaf script also contains other code,
 including OP_SUCCESS opcodes: consensus has already decided the spend is valid.
 
 ### 4.4 Why this location
@@ -176,7 +176,7 @@ same, so existing parsers and renderers can be reused. Only the fields below are
 | 5 | `metadata` | odd | CBOR data item (RFC 8949) | yes | PINS-4 |
 | 7 | `metaprotocol` | odd | UTF-8 string | no | PINS-1 |
 | 9 | `content_encoding` | odd | ASCII, `br` or `gzip` (HTTP `Content-Encoding`) | no | PINS-1 |
-| 11 | `delegate` | odd | binary inscription ID (section 6.1) | no | PINS-1 |
+| 11 | `delegate` | odd | binary P2MR Inscription ID (section 6.1) | no | PINS-1 |
 
 Reserved with their Ordinals meaning, NOT defined by PINS-1 and treated as unknown fields
 (section 5.4) until a later PINS standard defines them: 3 (`parent`), 13, 15 (`note`, no-op),
@@ -188,27 +188,27 @@ MUST NOT assign a different meaning to any of these numbers.
 - A **chunked** field MAY appear several times; its value is the concatenation of all its values in
   envelope order. Writers MUST split values longer than 520 bytes (F4) into chunks of 520 bytes,
   except the last.
-- A **non-chunked** field that appears more than once: the first value is used and the inscription
+- A **non-chunked** field that appears more than once: the first value is used and the P2MR Inscription
   gets the `duplicate_field` flag.
 
 ### 5.4 Unknown fields
 
 - Unknown **odd** tags MUST be ignored.
-- An unknown **even** tag makes the inscription **opaque**: it is still recognized, identified,
+- An unknown **even** tag makes the P2MR Inscription **opaque**: it is still recognized, identified,
   numbered and tracked (PINS-2, PINS-3), but its content and fields MUST NOT be interpreted or
   rendered, because the writer signalled a rule this reader does not know.
 
 ### 5.5 Frozen location rule
 
-In PINS-1 the only field that affects where an inscription lands is `pointer`. A future field that
+In PINS-1 the only field that affects where a P2MR Inscription lands is `pointer`. A future field that
 changes initial location, numbering or ownership MUST NOT be introduced as a new tag. It requires a
 new protocol marker, so that every indexer version keeps agreeing on numbers and owners.
 
 ## 6. Identity
 
-### 6.1 Inscription ID
+### 6.1 P2MR Inscription ID
 
-The ID of an inscription is `<txid>i<n>`:
+The ID of a P2MR Inscription is `<txid>i<n>`:
 
 - `txid` is the reveal transaction ID, lowercase hex, displayed in the usual reversed byte order;
 - `n` is the zero-based index of the envelope among all PINS envelopes of that transaction,
@@ -218,15 +218,15 @@ The **binary** form (used by `delegate` and PINS-4/5 references) is the 32-byte 
 byte order followed by `n` as a 4-byte little-endian integer with trailing `0x00` bytes removed
 (so `n = 0` is exactly 32 bytes).
 
-### 6.2 Inscription number
+### 6.2 P2MR Inscription number
 
-Inscription numbers are defined in PINS-2. They start at 0 and never go negative.
+P2MR Inscription numbers are defined in PINS-2. They start at 0 and never go negative.
 
 ## 7. Validity
 
-### 7.1 Not an inscription
+### 7.1 Not a P2MR Inscription
 
-A byte sequence is not an inscription, gets no ID and no number, when any of these holds:
+A byte sequence is not a P2MR Inscription, gets no ID and no number, when any of these holds:
 
 - the location rules of section 4.2 are not met;
 - the marker push data is not exactly `70696e73`;
@@ -235,9 +235,9 @@ A byte sequence is not an inscription, gets no ID and no number, when any of the
 - the leaf script cannot be fully decoded;
 - the containing block is below the activation height (PINS-2).
 
-### 7.2 Inscription flags
+### 7.2 P2MR Inscription flags
 
-Every other envelope is an inscription. These flags are informational and NEVER change its ID,
+Every other envelope is a P2MR Inscription. These flags are informational and NEVER change its ID,
 number or initial location, except `bad_pointer` as stated:
 
 | Flag | Condition | Effect |
@@ -246,11 +246,11 @@ number or initial location, except `bad_pointer` as stated:
 | `duplicate_field` | a non-chunked field repeats | first value used |
 | `incomplete_field` | dangling tag without value | dangling tag ignored |
 | `bad_pointer` | pointer is longer than 8 bytes, or its value ≥ total output value of the reveal | pointer ignored, default location used (PINS-3) |
-| `reinscription` | the initial bit already carries an inscription | allowed; PINS-5 excludes it from collection authenticity |
+| `reinscription` | the initial bit already carries a P2MR Inscription | allowed; PINS-5 excludes it from collection authenticity |
 | `unbound` | no bit exists for the initial location (PINS-3) | numbered, no owner |
 | `no_body` | no body separator | content is empty |
 
-There are no "cursed" inscriptions and no negative numbers in PINS.
+There are no "cursed" P2MR Inscriptions and no negative numbers in PINS.
 
 ## 8. Content
 
@@ -260,8 +260,8 @@ There are no "cursed" inscriptions and no negative numbers in PINS.
   is part of the text and is not removed, so such a value does not equal the type without it.
 - When `content_encoding` is present, the body is encoded; readers decode it before use. PINS-5
   collection items MUST NOT use `content_encoding`.
-- Delegation: when `delegate` names an existing inscription, readers SHOULD serve the delegate's
-  content and content type instead of this inscription's body. Delegation chains and loops are
+- Delegation: when `delegate` names an existing P2MR Inscription, readers SHOULD serve the delegate's
+  content and content type instead of this P2MR Inscription's body. Delegation chains and loops are
   resolved by reading only one level: the delegate's own `delegate` field is ignored.
 
 ## 9. Reveal construction (writer rules)
@@ -304,7 +304,7 @@ Writers:
 3. **Commit transaction:** fund that output with the sum of all postage values plus the reveal fee.
    On chain it is indistinguishable from any other P2MR output.
 4. **Reveal transaction:** spend the commit output through `L1` with control block
-   `c1 || h2` (33 bytes). Outputs: one postage output per inscription (default 10,000 bits, at least
+   `c1 || h2` (33 bytes). Outputs: one postage output per P2MR Inscription (default 10,000 bits, at least
    the dust threshold of 2,855 bits, F14), then optional change.
 5. **Abort:** spend the commit output through `L2` (control block `c1 || h1`). Nothing is revealed.
 
@@ -317,7 +317,7 @@ One PQC signature (3,683 bytes with its push) is larger than a 24×24 PNG. Write
 envelopes under one signature. In a batch:
 
 - envelope `k` (0-based) SHOULD carry `pointer = k × postage` (omitted for `k = 0`), so that each
-  inscription lands on the first bit of its own output `k`;
+  P2MR Inscription lands on the first bit of its own output `k`;
 - outputs `0..N-1` carry `postage` each; change, if any, comes after them.
 
 ### 9.5 Size and weight

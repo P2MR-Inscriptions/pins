@@ -45,7 +45,7 @@ export type MintPlan = {
   noSale?: true;
   /** Present only in a plan with no sale, when its items go to an address other than `creator`. */
   holder?: string;
-  /** Present, and true, only in a plan for one stand-alone inscription: no genesis, no collection, no item number. It has `noSale` too. */
+  /** Present, and true, only in a plan for one stand-alone P2MR Inscription: no genesis, no collection, no item number. It has `noSale` too. */
   single?: true;
   /** Plain mint change. It is its own address: not the creator, not the sale address, and not the holder. */
   change: string;
@@ -67,10 +67,10 @@ export type PlanContent = {
   batches: { name: string; items: (RevealItem & { number: number })[] }[];
 };
 
-/** What a single inscription is: one body with its content type, and optional metadata (field 5). Nothing else. */
+/** What a single P2MR Inscription is: one body with its content type, and optional metadata (field 5). Nothing else. */
 export type SingleInscription = { body: Uint8Array; contentType: string; metadata?: Uint8Array };
 
-/** The content of a plan for one stand-alone inscription. It has one reveal, named `inscription`. */
+/** The content of a plan for one stand-alone P2MR Inscription. It has one reveal, named `inscription`. */
 export type SingleContent = { single: SingleInscription };
 
 export function isSingleContent(content: PlanContent | SingleContent): content is SingleContent {
@@ -80,7 +80,7 @@ export function isSingleContent(content: PlanContent | SingleContent): content i
 /**
  * The reveal groups of a mint. `buildPlan` and `sign` both call this, so the leaf that is planned and
  * the leaf that is checked before signing come from one definition.
- * A single inscription is one group of one inscription that carries no item number.
+ * A single P2MR Inscription is one group of one P2MR Inscription that carries no item number.
  */
 export function revealGroups(content: PlanContent | SingleContent): PlanGroup[] {
   if (isSingleContent(content)) {
@@ -152,8 +152,8 @@ export function buildPlan(input: AssembleInput & {
 }
 
 /**
- * The plan for one stand-alone inscription: one fan-out output, one reveal with one inscription and the change
- * output. There is no genesis, no collection, no root, no reserve, and no sale. The inscription goes to
+ * The plan for one stand-alone P2MR Inscription: one fan-out output, one reveal with one P2MR Inscription and the change
+ * output. There is no genesis, no collection, no root, no reserve, and no sale. The P2MR Inscription goes to
  * `creator`, the same address the destination rule gives a genesis. Mint change is its own address.
  */
 export function buildSinglePlan(input: {

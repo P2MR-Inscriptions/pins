@@ -12,7 +12,7 @@
 - With `TRUST_PROXY=1` the rate limit uses the last element of `X-Forwarded-For`, which the proxy appended, not the first, which a client can set.
 - The version in `/api/status` is read from `package.json`.
 - A manifest file that is not JSON (or not an object) stops the explorer with a message. A missing manifest still means no featured collection.
-- The text about the page of an inscription that is HTML says what the response blocks, and that a frame can still navigate itself. The policy is unchanged.
+- The text about the page of a P2MR Inscription that is HTML says what the response blocks, and that a frame can still navigate itself. The policy is unchanged.
 - `package.json` names the repository, homepage and issue tracker. The explorer sources, tests and documents carry an SPDX licence line.
 - The page no longer carries the name of one collection. The collection menu entry reads "Collection", search and the item number box say "item", and an item page is `#/item/12` instead of a collection-specific path. The theme preference is stored under `pins-theme` only. The package is named `pins-explorer`.
 - No manifest is a default any more. `config/manifest.flatbits.json` moved to `config/examples/flatbits.json`, and `.env.example` names it as an example. Without `MANIFEST` the explorer reads `config/manifest.json` and features no collection if that file is absent. The official PINS avatar is unchanged.

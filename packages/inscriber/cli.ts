@@ -4,7 +4,7 @@
  * Mint CLI. `broadcast` and `preflight` talk to a node through `--rpc`. `plan`, `sign`, `assign`,
  * `address`, `keygen` and `price` are offline and refuse a node URL where they would otherwise use it.
  * The default network is regtest. `plan`, `sign` and `preflight` take `--single` for one stand-alone
- * inscription (a body file and its content type) instead of a collection.
+ * P2MR Inscription (a body file and its content type) instead of a collection.
  */
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -90,19 +90,19 @@ function summary(plan: MintPlan, showMarker = false): string {
   return lines.join("\n");
 }
 
-/** The summary of a single inscription: its id is the txid of the reveal and index 0. */
+/** The summary of a single P2MR Inscription: its id is the txid of the reveal and index 0. */
 function singleSummary(plan: MintPlan, showMarker: boolean): string {
   const reveal = plan.reveals[0];
   const total = BigInt(plan.fanout.fee) + BigInt(reveal.fee);
   return [
     `network ${plan.network}`,
     `fee rate ${plan.feeRate} bit/vB`,
-    "single inscription (no collection, no genesis, no number)",
+    "single P2MR Inscription (no collection, no genesis, no number)",
     `fan-out ${plan.fanout.txid} fee ${plan.fanout.fee} bits`,
     `${reveal.name} ${reveal.txid} weight ${reveal.weight} fee ${reveal.fee} bits`,
-    `inscription id ${reveal.txid}i0`,
+    `P2MR Inscription id ${reveal.txid}i0`,
     `total fee ${total} bits`,
-    "postage 10000 bits on the inscription output",
+    "postage 10000 bits on the P2MR Inscription output",
     `owner ${plan.creator}`,
     `change ${plan.change}`,
     formatMarkerLine(plan.marker, showMarker),
@@ -186,7 +186,7 @@ function assertNoSaleAssignment(assignment: { reserve?: number[]; sale?: number[
 
 type FundingFile = { txid: string; vout: number; value: string; script: string };
 
-/** `plan` and `sign` of one stand-alone inscription. Offline. The files, not the plan, decide what is signed. */
+/** `plan` and `sign` of one stand-alone P2MR Inscription. Offline. The files, not the plan, decide what is signed. */
 async function runSingle(command: "plan" | "sign", flag: Record<string, string | boolean>): Promise<void> {
   const content = await readSingleContent(flag);
   const network = parseNetwork(typeof flag.network === "string" ? flag.network : undefined);
@@ -647,10 +647,10 @@ async function main(): Promise<void> {
     }
     const price = parsePrice(JSON.parse(readFileSync(text(flag, "price"), "utf8")));
     const genesis = text(flag, "genesis");
-    if (!/^[0-9a-f]{64}i[0-9]+$/.test(genesis)) throw new Error("--genesis must be an inscription id");
+    if (!/^[0-9a-f]{64}i[0-9]+$/.test(genesis)) throw new Error("--genesis must be a P2MR Inscription id");
     const profile = await readProfile(flag, false);
     // A price opens a sale (PINS-6 §5.1). A collection that declares no sale has none to open.
-    if (profile && !profile.sale) throw new Error("the collection profile declares no sale, so there is no price inscription to build");
+    if (profile && !profile.sale) throw new Error("the collection profile declares no sale, so there is no price P2MR Inscription to build");
     const root = profile?.root ?? text(flag, "root");
     if (!/^[0-9a-f]{64}$/.test(root)) throw new Error("--root must be 64 hex characters");
     const field5 = await encodePriceField({ genesis, price, schema });
@@ -672,7 +672,7 @@ async function main(): Promise<void> {
     process.stdout.write(`${summary(plan, flag["show-marker"] === true)}\nprice schema ${schema}\n`);
     if (flag["dry-run"]) return;
     writeFileSync(text(flag, "out"), `${JSON.stringify(plan)}\n`);
-    process.stdout.write("Wrote the price plan. It is not a mint. Sign it, then broadcast it when the sale opens. The first confirmed valid price inscription is the one indexers keep.\n");
+    process.stdout.write("Wrote the price plan. It is not a mint. Sign it, then broadcast it when the sale opens. The first confirmed valid price P2MR Inscription is the one indexers keep.\n");
     return;
   }
   throw new Error("commands: keygen, address, assign, plan, sign, broadcast, preflight, price");

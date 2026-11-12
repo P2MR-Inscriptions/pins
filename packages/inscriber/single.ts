@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * Input of a single inscription for the command line: the body file, its content type, and optional metadata.
+ * Input of a single P2MR Inscription for the command line: the body file, its content type, and optional metadata.
  * `plan`, `sign` and `preflight` all read the files through this module, so the three agree on the bytes.
  */
 import { readFileSync } from "node:fs";
@@ -10,9 +10,9 @@ import type { SingleContent } from "./plan.ts";
 /** One content type is a short ASCII MIME type (PINS-1 §4). */
 export const MAX_CONTENT_TYPE_LENGTH = 255;
 
-/** Flags of a collection mint. A single inscription has none of them. */
+/** Flags of a collection mint. A single P2MR Inscription has none of them. */
 const COLLECTION_FLAGS = ["collection", "zip", "assignment", "sale", "holder", "root"] as const;
-/** Flags that only a single inscription takes. */
+/** Flags that only a single P2MR Inscription takes. */
 const SINGLE_ONLY_FLAGS = ["body", "content-type", "metadata"] as const;
 
 export function assertContentType(value: string): string {
@@ -30,12 +30,12 @@ export function assertSingleFlags(command: string, flag: Record<string, string |
   if (flag.single !== undefined && !single) throw new Error("--single takes no value");
   if (!single) {
     for (const name of SINGLE_ONLY_FLAGS) {
-      if (flag[name] !== undefined) throw new Error(`--${name} is for a single inscription: add --single`);
+      if (flag[name] !== undefined) throw new Error(`--${name} is for a single P2MR Inscription: add --single`);
     }
     return false;
   }
   if (command !== "plan" && command !== "sign" && command !== "preflight") {
-    throw new Error(`--single applies to plan, sign and preflight, not ${command}. A single inscription has no assignment or reserve`);
+    throw new Error(`--single applies to plan, sign and preflight, not ${command}. A single P2MR Inscription has no assignment or reserve`);
   }
   for (const name of COLLECTION_FLAGS) {
     if (flag[name] !== undefined) throw new Error(`--${name} belongs to a collection and cannot be used with --single`);

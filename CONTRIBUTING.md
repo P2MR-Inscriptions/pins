@@ -2,7 +2,7 @@
 
 # Contributing
 
-PINS is the inscription protocol in `docs/specs/` and the reference indexer and inscriber next to it.
+PINS is the P2MR Inscription protocol in `docs/specs/` and the reference indexer and inscriber next to it.
 
 ## Setup
 
@@ -34,6 +34,10 @@ Everything below lives in `.github/` and is plain configuration. You can read it
 CI runs once per change: on a pull request, and on `main` after a merge. It uses the Node version in `.nvmrc`. Every action is pinned by commit SHA with its version in a comment, and the workflow token is read-only. `.github/dependabot.yml` opens weekly pull requests for newer actions and npm packages. When you add an action, pin it by SHA the same way, and give a job only the permissions it needs.
 
 **Major updates of npm packages are made on purpose, not by the bot.** Dependabot opens pull requests for minor and patch updates (grouped) and for actions. It does not open one for a new major version of an npm package, in the root or in `explorer/`, because a major can break the build, and the two trees are linked: the explorer imports and typechecks the root indexer sources, so a major in one can fail the other. To take a major update, open one pull request that changes the root and `explorer/` together: update both `package.json` and both lock files, and make lint, typecheck, build and the tests of both pass (`npm run lint`, `npm run typecheck`, `npm run build`, `npm test`, then the same in `explorer/`). Say in the description why the major is wanted. Security updates are not held back by this rule: Dependabot still opens a pull request when a published advisory has a fix, even a major one.
+
+## Wording
+
+In any text a person reads (documents, specifications, comments, messages, labels, the explorer), write "P2MR Inscription" and never the bare word `inscription`, because an `ord` port exists on Qbit and the bare word does not say which one is meant. Code names, API paths (`/inscription`, `/inscriptions`), JSON keys, protocol field names, file names, flags and tests keep their names. `npm run check:terminology` lists every bare occurrence with the reason it is allowed and fails on any it cannot place. It also runs with `npm test`, and so does a test that every relative link in the Markdown files resolves, to a file and to a heading.
 
 ## What not to change
 

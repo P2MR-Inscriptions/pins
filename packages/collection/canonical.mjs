@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * Canonical inscription bytes derived from the collection zip passed by the caller.
+ * Canonical P2MR Inscription bytes derived from the collection zip passed by the caller.
  * The zip is read only. Nothing in this module writes the source images or metadata files.
  *
  * PNG: lossless. Ancillary chunks, including bKGD, are not copied. The encoder keeps

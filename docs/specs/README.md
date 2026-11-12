@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: CC0-1.0 -->
 # P2MR Inscriptions (PINS)
 
-An independent, open protocol for inscriptions on Qbit: content written directly into Qbit
+An independent, open protocol for P2MR Inscriptions on Qbit: content written directly into Qbit
 transactions, bound to individual bits, tracked and transferred with ordinary Qbit transactions.
 
 > P2MR Inscriptions is not affiliated with, endorsed by, or an official proposal of the Qbit project
@@ -23,8 +23,8 @@ transactions, bound to individual bits, tracked and transferred with ordinary Qb
 
 | Standard | Title | Scope |
 |---|---|---|
-| [PINS-1](PINS-1.md) | Core Inscription | envelope, marker, fields, content, IDs, validity, size limits, commit/reveal, batching, recovery key |
-| [PINS-2](PINS-2.md) | Indexing | inscription numbering, activation height, reorgs, witness-pruning requirements, optional bit-numbering overlay |
+| [PINS-1](PINS-1.md) | Core P2MR Inscription | envelope, marker, fields, content, IDs, validity, size limits, commit/reveal, batching, recovery key |
+| [PINS-2](PINS-2.md) | Indexing | P2MR Inscription numbering, activation height, reorgs, witness-pruning requirements, optional bit-numbering overlay |
 | [PINS-3](PINS-3.md) | Transfer and Ownership | first-bit binding, FIFO, fees and coinbase, burns, wallet rules |
 | [PINS-4](PINS-4.md) | Metadata | CBOR in field 5, item schema, traits |
 | [PINS-5](PINS-5.md) | Collections and Provenance | issuer key, Merkle root, genesis, leaf list, closing, authenticity, committed sale order |
@@ -39,11 +39,11 @@ trustless mint with `OP_CHECKTEMPLATEVERIFY`.
 
 ## Two dimensions
 
-1. **Inscription (data).** PINS-1: content lives in an unexecuted `OP_FALSE OP_IF … OP_ENDIF`
+1. **P2MR Inscription (data).** PINS-1: content lives in an unexecuted `OP_FALSE OP_IF … OP_ENDIF`
    envelope of a revealed `0xc0` leaf script. It is committed by the P2MR root, never placed on
    the stack, and batched so that one post-quantum signature carries hundreds of items.
-2. **Attribution to bits (ownership).** PINS-3: each inscription is bound to one bit, and that bit
-   moves by FIFO. Owners are derived from chain data alone. PINS-2 numbers inscriptions and, as an
+2. **Attribution to bits (ownership).** PINS-3: each P2MR Inscription is bound to one bit, and that bit
+   moves by FIFO. Owners are derived from chain data alone. PINS-2 numbers P2MR Inscriptions and, as an
    optional overlay, every bit from Qbit's real subsidy schedule.
 
 ## What a collection supplies
@@ -57,9 +57,9 @@ These are inputs. This specification does not publish a name, a root, a supply, 
 | Merkle root | PINS-5 §5.1, written in the genesis. The inscriber checks it against the profile |
 | Postage | 10,000 bits per item in the reference inscriber (dust threshold 2,855, PINS-1 F14) |
 | Regtest size measurement | one 10,000-item image run: 16 reveals of 625 (345,083–372,817 bytes) plus 1 genesis reveal (326,064 bytes), funded by one confirmed fan-out (PINS-5 §6.1). 6,174,719 bytes with that fan-out, which is 0.06174719 QBT at 1 bit/vB on that measurement. That run is not a mainnet record (PINS-5 §6.2 has the mainnet figures) and it does not fix a supply |
-| Provenance | issuer key + Merkle root + leaf list + closing inscription (PINS-5) |
+| Provenance | issuer key + Merkle root + leaf list + closing P2MR Inscription (PINS-5) |
 | Creator reserve | groups fixed before mint, selected by PINS-5 §8.3. Not a numeric id range. The groups are not listed here |
-| Sale | the items that are not reserved, permutation in PINS-5 §8.4, a length and a price per item that the collection decides (the protocol fixes neither), the price published later as a `pins-price/1` inscription when the sale opens, final after 6 confirmations |
+| Sale | the items that are not reserved, permutation in PINS-5 §8.4, a length and a price per item that the collection decides (the protocol fixes neither), the price published later as a `pins-price/1` P2MR Inscription when the sale opens, final after 6 confirmations |
 
 ## Open questions only regtest can settle
 
@@ -108,7 +108,7 @@ A vector that points to a file in `vectors/` is a check of the reference code ag
 1. Marker `pins`: fixed. This fixes the marker only. The specifications are Draft.
 2. A creator reserve is selected by PINS-5 §8 from groups fixed before mint. Not a numeric id range. The groups are collection configuration and are not listed here.
 3. The protocol fixes no sale length (PINS-5 §8.5). The collection decides it and tells its buyers. Unsold items go to an address committed before close.
-4. Price: the protocol fixes no price. The issuer declares `price_bits`, the price of one sale item in bits, in a separate `pins-price/1` inscription, not the genesis (PINS-6 §5.1). The first valid one wins. No re-pricing.
+4. Price: the protocol fixes no price. The issuer declares `price_bits`, the price of one sale item in bits, in a separate `pins-price/1` P2MR Inscription, not the genesis (PINS-6 §5.1). The first valid one wins. No re-pricing.
 5. `CONFIRMATIONS_FINAL` = 6 for the marketplace.
 6. The protocol repository is https://github.com/P2MR-Inscriptions/pins. That URL is not a consensus constant.
 7. A collection's Merkle root is fixed in its genesis. This specification does not publish one.

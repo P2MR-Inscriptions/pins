@@ -15,8 +15,8 @@
 ## 1. Abstract
 
 PINS-4 defines the content of the `metadata` field (tag 5, PINS-1 §5.2): one CBOR data item that
-describes the inscription. The body stays the content itself (for example the PNG); attributes live
-next to it, in the same envelope, and are immutable like the rest of the inscription.
+describes the P2MR Inscription. The body stays the content itself (for example the PNG); attributes live
+next to it, in the same envelope, and are immutable like the rest of the P2MR Inscription.
 
 ## 2. Encoding
 
@@ -29,13 +29,13 @@ next to it, in the same envelope, and are immutable like the rest of the inscrip
    re-encode metadata before hashing: every hash in PINS is computed over the exact inscribed bytes.
 4. Allowed CBOR types: unsigned and negative integers, byte strings, UTF-8 text strings, arrays,
    maps, `true`, `false`, `null`. Floats, tags and undefined MUST NOT be used.
-5. A field 5 value that is not well-formed CBOR is ignored by readers; the inscription stays valid.
+5. A field 5 value that is not well-formed CBOR is ignored by readers; the P2MR Inscription stays valid.
 
 ### 2.1 Reader rules
 
-A reader MUST decode field 5 with the rules below. Whether an inscription is a genesis, a leaf list, an
+A reader MUST decode field 5 with the rules below. Whether a P2MR Inscription is a genesis, a leaf list, an
 item or a price record depends on them, so every reader MUST apply them in the same way. A value that
-breaks any rule is handled as in rule 5 above: it is ignored and the inscription stays valid.
+breaks any rule is handled as in rule 5 above: it is ignored and the P2MR Inscription stays valid.
 
 1. The value is exactly one data item. Bytes after it, or an item that is cut short, are an error.
 2. The additional information values 28, 29 and 30 are an error, and so is 31, which stands for an
@@ -81,7 +81,7 @@ A map with one key:
 - Attribute order is the order of the source metadata file and is part of the hashed bytes.
 - The item carries no reference to its collection and no separate index field. Collection membership
   and the item number are established by PINS-5 (issuer key, name prefix and Merkle leaf), which also
-  avoids any circular dependency between items and the genesis inscription.
+  avoids any circular dependency between items and the genesis P2MR Inscription.
 - Unknown keys MUST be ignored by readers. Keys starting with `x-` are reserved for private use.
 
 ## 4. Worked mapping

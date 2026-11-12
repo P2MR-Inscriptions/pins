@@ -14,10 +14,10 @@
 
 ## 1. Abstract
 
-PINS-5 lets anyone verify, from chain data alone, that an inscription is an authentic item of a
-fixed-supply collection. It does not use parent/child inscriptions. Authenticity rests on on-chain
-commitments made by one **issuer key**: a genesis inscription with a Merkle root over all items, a
-leaf-list inscription and a closing inscription. An optional committed random sale order (section 8)
+PINS-5 lets anyone verify, from chain data alone, that a P2MR Inscription is an authentic item of a
+fixed-supply collection. It does not use parent/child P2MR Inscriptions. Authenticity rests on on-chain
+commitments made by one **issuer key**: a genesis P2MR Inscription with a Merkle root over all items, a
+leaf-list P2MR Inscription and a closing P2MR Inscription. An optional committed random sale order (section 8)
 proves that buyers received items in an order fixed before the sale. A collection that has no sale
 declares none, and is as authentic as one that does. Everything is final and immutable.
 
@@ -25,7 +25,7 @@ declares none, and is as authentic as one that does. Everything is final and imm
 
 | Key | Role | Custody |
 |---|---|---|
-| Issuer key `K_iss` | signs the reveals of the genesis, the leaf list, every item, the closing, the price inscription (PINS-6 §5.1), and the sale-reveal inscriptions | SLH-DSA (PINS-1 F9), generated offline on a dedicated machine that never connects to a network; two encrypted backups in two separate physical places; never on a server; signature count tracked |
+| Issuer key `K_iss` | signs the reveals of the genesis, the leaf list, every item, the closing, the price P2MR Inscription (PINS-6 §5.1), and the sale-reveal P2MR Inscriptions | SLH-DSA (PINS-1 F9), generated offline on a dedicated machine that never connects to a network; two encrypted backups in two separate physical places; never on a server; signature count tracked |
 | Recovery key `K_rec` | recovery leaf of every commit (PINS-1 §9.3) | same custody as `K_iss`, different key |
 | Sale key `K_sale` | owns the items offered in the primary sale and signs listings (PINS-6) | separate from `K_iss`; MAY be kept on a signing machine used only for listings |
 | Creator wallet | receives the creator's fixed items (section 8.1) | creator's own P2MR wallet, separate from `K_iss` and `K_sale` |
@@ -34,7 +34,7 @@ declares none, and is as authentic as one that does. Everything is final and imm
 plan of §6.1 a mint of `supply` items with `batch` items per reveal is `1 + ceil(supply / batch)` reveals, which is 17 for the 10,000-item example. The count follows the batching. It is not a
 separate consensus limit, and it stays far under the 2^30 limit of SLH-DSA bounded30.
 
-## 3. Genesis inscription
+## 3. Genesis P2MR Inscription
 
 - Body: the canonical `collection.json` (PINS-4 §6); `content_type` `application/json`.
 - Field 5 (PINS-4): a `pins-collection/1` map, keys in this order:
@@ -55,12 +55,12 @@ separate consensus limit, and it stays far under the 2^30 limit of SLH-DSA bound
 `root`, `issuer`, and `sale_commitment` are text. Each is 64 lowercase hexadecimal characters (the 32-byte value written in hex). The reference encoder does not wrap them as CBOR byte strings. Readers compare the text.
 
 - The genesis reveal leaf MUST start with `<K_iss> OP_CHECKSIGPQC` (PINS-1 §9.1).
-- Its inscription ID `G` identifies the collection.
+- Its P2MR Inscription ID `G` identifies the collection.
 - A reader accepts the map only when its keys are the eight keys from `schema` to `item_type`, in
   that order, then `sale_commitment` if the genesis declares a sale, then `reserve` if it declares
-  one. A different key set, another order, or `reserve` in any other position makes the inscription
+  one. A different key set, another order, or `reserve` in any other position makes the P2MR Inscription
   not a genesis. `sale_commitment`, when present, MUST be 64 lowercase hexadecimal characters of text,
-  or the inscription is not a genesis. `issuer` MUST equal the key at the start of the
+  or the P2MR Inscription is not a genesis. `issuer` MUST equal the key at the start of the
   reveal leaf. `name` MUST be non-empty, `supply` a positive integer, `first` a non-negative integer,
   and `item_type` non-empty.
 - `reserve`, when present, is `{ "groups": [ { "trait_type": text, "value": text, "count": uint }, ... ],
@@ -68,21 +68,21 @@ separate consensus limit, and it stays far under the 2^30 limit of SLH-DSA bound
   in that order. The reference reader checks only that `reserve` is a map whose `groups` is an array
   of maps with text `trait_type`, text `value` and numeric `count`, and that `extra` is numeric. It
   does not check key order inside `reserve`, ignores other keys inside it, and does not check that
-  the counts can be met. A `reserve` that fails those checks makes the inscription not a genesis.
+  the counts can be met. A `reserve` that fails those checks makes the P2MR Inscription not a genesis.
   A reserve that cannot be met leaves the genesis and every item's authenticity unchanged. Only the
   reserve and sale-order checks of section 8 fail. The reference inscriber writes no `reserve` key.
 - More than one valid genesis can exist, because anyone can inscribe a map of this shape under their own
   key. Authenticity (section 9) is always judged against one chosen `G`. An indexer follows the genesis
-  its operator names. The reference indexer takes that from `--genesis <inscription id>`. Without it,
+  its operator names. The reference indexer takes that from `--genesis <P2MR Inscription id>`. Without it,
   the reference collection view uses the first valid genesis in chain order. Items signed by another
   issuer are not items of `G` either way (section 9, rule 3).
 - The genesis map MUST NOT contain `price_bits`, `price_sources`, or `price_time`. There is no public
-  market price for native QBT to freeze at mint. The price is a separate inscription (PINS-6 §5.1),
+  market price for native QBT to freeze at mint. The price is a separate P2MR Inscription (PINS-6 §5.1),
   published when the sale opens. A genesis that includes any of those three keys is not valid.
 
 ## 4. Items
 
-Item `n` (`first ≤ n < first + supply`) is one inscription whose:
+Item `n` (`first ≤ n < first + supply`) is one P2MR Inscription whose:
 
 - body is the canonical image (PINS-4 §5), `content_type` = `item_type`;
 - field 5 is a `pins-item/1` map (PINS-4 §3) whose `meta.name` is `name_prefix` followed by the
@@ -130,7 +130,7 @@ depends on the genesis commit, which commits to `root`). The canonical data remo
 items contain no collection reference, so the leaf hashes the whole inscribed metadata and body.
 Indexers link an item to its collection through the issuer key and the leaf, not through a field.
 
-## 6. Leaf-list inscription
+## 6. Leaf-list P2MR Inscription
 
 - Body: `leaf_first || … || leaf_last` (32 × supply bytes; 320,000 bytes for 10,000 items, inside one
   standard reveal); `content_type` `application/octet-stream`.
@@ -143,7 +143,7 @@ Indexers link an item to its collection through the issuer key and the leaf, not
   genesis, after it (genesis first). On mainnet the genesis is `i0` and the leaf list is `i1`.
 - Lets anyone check any item with one lookup (offset `32 × (n - first)`), without Merkle proofs.
 
-The reference indexer takes as the leaf list of `G` the first inscription, in chain order, that is not
+The reference indexer takes as the leaf list of `G` the first P2MR Inscription, in chain order, that is not
 `G` and that:
 
 1. is in the same transaction as `G`, and its reveal leaf starts with `<issuer> OP_CHECKSIGPQC`
@@ -153,7 +153,7 @@ The reference indexer takes as the leaf list of `G` the first inscription, in ch
 4. has no field 5, or a field 5 that meets the form above, and
 5. has a body whose 32-byte leaves fold, by section 5.1, to the `root` of `G`.
 
-The reference indexer does not check the order of the two inscriptions inside the transaction. It
+The reference indexer does not check the order of the two P2MR Inscriptions inside the transaction. It
 looks for the leaf list only in the transaction of `G`. A leaf list inscribed elsewhere is not found.
 A wrong field 5 excludes that candidate, and an absent one does not.
 
@@ -216,26 +216,26 @@ has the same size as in the regtest run, and the 16 item reveals have the same r
 fee of the fan-out is 77 bits above its size. The 17 reveals were not mined together: they took 17
 blocks in a span of 24 (161948 to 161971).
 
-## 7. Closing inscription
+## 7. Closing P2MR Inscription
 
 - Body: empty or a short text; field 5: `{ "schema": "pins-close/1", "root": bytes(32), "count": supply }`.
 - Reveal leaf starts with `<K_iss> OP_CHECKSIGPQC`.
 - SHOULD be inscribed right after the last item batch is confirmed. After it is confirmed, no new
-  inscription can become an authentic item, even one signed by `K_iss`.
+  P2MR Inscription can become an authentic item, even one signed by `K_iss`.
 - It MUST NOT contain `sale_secret` (that would reveal the sale order before the sale; see §8).
 
-The reference indexer takes as the closing of `G` the first inscription, in chain order (PINS-2 §4.1),
+The reference indexer takes as the closing of `G` the first P2MR Inscription, in chain order (PINS-2 §4.1),
 that comes after `G`, whose reveal leaf starts with `<issuer> OP_CHECKSIGPQC`, that is not a
 `reinscription` and not `opaque`, and whose field 5 has exactly the keys `schema`, `root` and `count`,
 in that order. `schema` is `pins-close/1`, `root` is a 32-byte byte string equal to the `root` of `G`,
 and `count` is an unsigned integer equal to `supply`. It sets no condition on the content type or the
-body. An inscription that comes after the closing in chain order is not an item of `G`.
+body. A P2MR Inscription that comes after the closing in chain order is not an item of `G`.
 
 ## 8. Creator reserve and sale order
 
 This section applies to a genesis that carries `sale_commitment`. A genesis without it declares no
 sale. For it there is no sale secret, no sale reveal, no sale order and no price (PINS-6 §5.1). An
-inscription that looks like a sale reveal or a price inscription for such a genesis is not read, and
+P2MR Inscription that looks like a sale reveal or a price P2MR Inscription for such a genesis is not read, and
 no check of this section runs. A `reserve` key on such a genesis is accepted, and no selection is run
 for it. Authenticity (section 9) does not depend on any of it.
 
@@ -274,7 +274,7 @@ the sale set, held by `K_sale`. What the creator later does with the reserve is 
    byte order (the header hash, not the reversed display hex). This mixed seed is used only for the
    sale permutation (§8.4). The issuer cannot choose the block hash and cannot change `sale_secret`.
 
-`sale_secret` MUST stay secret until the sale-reveal inscription (§8.5). The issuer knows it from
+`sale_secret` MUST stay secret until the sale-reveal P2MR Inscription (§8.5). The issuer knows it from
 the moment it is drawn. Buyers MUST be told that. Anyone who learns it before close can compute the
 sale order once `H_seed` is known and can time purchases.
 
@@ -328,26 +328,26 @@ The k-th primary sale, in chain order of the sale transactions, MUST deliver `or
 ### 8.5 Sale reveal, unsold items
 
 The protocol fixes no sale length. A collection with a sale decides how long it lasts and tells its
-buyers. No field of the genesis or of any inscription declares a length, and no indexer measures one.
+buyers. No field of the genesis or of any P2MR Inscription declares a length, and no indexer measures one.
 The sale ends when the issuer closes it, and the sale reveal below is the public mark of that close.
 
-At close the issuer publishes a separate inscription. Field 5 is
+At close the issuer publishes a separate P2MR Inscription. Field 5 is
 `{ "schema": "pins-sale-reveal/1", "root": bytes(32), "sale_secret": bytes(32) }`.
 The reveal leaf starts with `<K_iss> OP_CHECKSIGPQC`. Anyone checks `SHA256(sale_secret)` against
 `sale_commitment`, rebuilds the reserve and `order`, and compares `order` with the sale transactions.
 
-The reference indexer takes as the sale reveal of `G` the first inscription, in chain order, that
+The reference indexer takes as the sale reveal of `G` the first P2MR Inscription, in chain order, that
 comes after `G`, whose reveal leaf starts with `<issuer> OP_CHECKSIGPQC`, that is not a `reinscription`
 and not `opaque`, and whose field 5 has exactly the keys `schema`, `root` and `sale_secret`, in that
 order. `schema` is `pins-sale-reveal/1`, `root` is a 32-byte byte string equal to the `root` of `G`, and
-`sale_secret` is a 32-byte byte string whose SHA-256 equals `sale_commitment`. An inscription whose
+`sale_secret` is a 32-byte byte string whose SHA-256 equals `sale_commitment`. A P2MR Inscription whose
 body is the bare secret is not a sale reveal. It sets no condition on the content type or the body.
 
 Unsold sale items are then transferred to `unsold_address`, a P2MR address used only for that.
 The concrete address is not chosen in this revision. Before close, the issuer MUST commit it in
-another inscription, field 5
+another P2MR Inscription, field 5
 `{ "schema": "pins-unsold-address/1", "root": bytes(32), "address": text }`,
-where `address` is the bech32m text of a witness-v2 P2MR address. That inscription is the
+where `address` is the bech32m text of a witness-v2 P2MR address. That P2MR Inscription is the
 commitment. It MUST exist before close and MUST NOT be replaced afterward. Reserve items already
 in the creator's wallet are not part of this transfer.
 
@@ -356,11 +356,11 @@ sale transactions with `order`. Both checks are left to the reader of the chain.
 
 ## 9. Authenticity rule
 
-An inscription `I` is the authentic item `n` of collection `G` if and only if all hold:
+A P2MR Inscription `I` is the authentic item `n` of collection `G` if and only if all hold:
 
-1. `G` is a genesis inscription as in section 3, not `opaque`, with a well-formed `pins-collection/1`
+1. `G` is a genesis P2MR Inscription as in section 3, not `opaque`, with a well-formed `pins-collection/1`
    map;
-2. `I` is confirmed after `G` in chain order (PINS-2 §4.1) and before the closing inscription of `G`,
+2. `I` is confirmed after `G` in chain order (PINS-2 §4.1) and before the closing P2MR Inscription of `G`,
    if one exists (section 7);
 3. `I`'s reveal leaf starts with `<issuer> OP_CHECKSIGPQC`, `issuer` taken from `G`;
 4. `I`'s `content_type` equals `item_type`, and `meta.name` is `name_prefix` + decimal `n` with
@@ -368,13 +368,13 @@ An inscription `I` is the authentic item `n` of collection `G` if and only if al
 5. `leaf_n` computed from `I` (section 5.1) equals leaf `n` of `root` (via the leaf list or a Merkle
    proof);
 6. `I` is not a `reinscription` and not `opaque`;
-7. `I` is the first inscription in chain order satisfying 1–6 for this `n`.
+7. `I` is the first P2MR Inscription in chain order satisfying 1–6 for this `n`.
 
-Copies of the images inscribed by anyone else fail rule 3. Re-inscriptions of the same item by the
-issuer fail rule 7. The closing inscription freezes the set.
+Copies of the images inscribed by anyone else fail rule 3. Further P2MR Inscriptions of the same item by the
+issuer fail rule 7. The closing P2MR Inscription freezes the set.
 
 The reference indexer checks rule 5 against the leaf list (section 6) only. This revision defines no
-inscription that carries a Merkle proof.
+P2MR Inscription that carries a Merkle proof.
 
 ## 10. Security considerations
 

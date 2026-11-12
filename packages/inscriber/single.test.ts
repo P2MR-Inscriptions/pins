@@ -81,10 +81,10 @@ test("a single inscription without metadata has no field 5, and the same files g
 test("sign refuses a body, content type, or metadata that is not the one in the plan", async () => {
   const f = await setup();
   const sign = (made: SingleContent | undefined, plan: MintPlan = f.plan) => signPlan(plan, f.secret, new Set(), f.expected, undefined, undefined, made);
-  assert.throws(() => sign(content({ body: text("another body") })), /leaf does not match the inscription files/);
-  assert.throws(() => sign(content({ contentType: "text/plain" })), /leaf does not match the inscription files/);
-  assert.throws(() => sign(content({ metadata: null })), /leaf does not match the inscription files/);
-  assert.throws(() => sign(content({ metadata: encodeCbor({ meta: { name: "Other", attributes: [] } }) })), /leaf does not match the inscription files/);
+  assert.throws(() => sign(content({ body: text("another body") })), /leaf does not match the P2MR Inscription files/);
+  assert.throws(() => sign(content({ contentType: "text/plain" })), /leaf does not match the P2MR Inscription files/);
+  assert.throws(() => sign(content({ metadata: null })), /leaf does not match the P2MR Inscription files/);
+  assert.throws(() => sign(content({ metadata: encodeCbor({ meta: { name: "Other", attributes: [] } }) })), /leaf does not match the P2MR Inscription files/);
   // A plan of another issuer key is not signed with this key, and its leaf is not the leaf of this key.
   const other = await setup();
   const foreign = { ...f.plan, issuerPublic: other.keys.secrets.issuerPublic, reveals: other.plan.reveals };
@@ -96,12 +96,12 @@ test("sign refuses a body, content type, or metadata that is not the one in the 
 test("a single plan and the single flag must agree, and a single plan has no root, sale, or holder", async () => {
   const f = await setup();
   // A single plan signed without its files, or with a collection's.
-  assert.throws(() => signPlan(f.plan, f.secret, new Set(), f.expected), /single inscription/);
+  assert.throws(() => signPlan(f.plan, f.secret, new Set(), f.expected), /single P2MR Inscription/);
   // A plan that is not single cannot be signed as one, and cannot move itself into the single path by a flag.
   const collection = (await oneItemCollection(f)).plan;
-  assert.throws(() => signPlan(collection, f.secret, new Set(), { ...f.expected }, undefined, undefined, content()), /not a single inscription/);
+  assert.throws(() => signPlan(collection, f.secret, new Set(), { ...f.expected }, undefined, undefined, content()), /not a single P2MR Inscription/);
   const { single: _single, ...stripped } = f.plan;
-  assert.throws(() => signPlan(stripped as MintPlan, f.secret, new Set(), f.expected, undefined, undefined, content()), /not a single inscription/);
+  assert.throws(() => signPlan(stripped as MintPlan, f.secret, new Set(), f.expected, undefined, undefined, content()), /not a single P2MR Inscription/);
   assert.throws(() => signPlan({ ...f.plan, single: false as unknown as true }, f.secret, new Set(), f.expected, undefined, undefined, content()), /single flag/);
   assert.throws(() => signPlan({ ...f.plan, root: "ab".repeat(32) }, f.secret, new Set(), f.expected, undefined, undefined, content()), /no collection root/);
   assert.throws(() => signPlan(f.plan, f.secret, new Set(), f.expected, "ab".repeat(32), undefined, content()), /no collection root/);
@@ -197,9 +197,9 @@ test("the command line plans and signs a single inscription offline, and refuses
   const planPath = join(dir, "plan.json");
   const made = cli(["plan", "--single", ...files, ...common, "--pub", pub, "--fee-rate", "1", "--out", planPath]);
   assert.equal(made.status, 0, made.out);
-  assert.match(made.out, /single inscription/);
+  assert.match(made.out, /single P2MR Inscription/);
   const plan = JSON.parse(readFileSync(planPath, "utf8")) as MintPlan;
-  assert.match(made.out, new RegExp(`inscription id ${plan.reveals[0].txid}i0`));
+  assert.match(made.out, new RegExp(`P2MR Inscription id ${plan.reveals[0].txid}i0`));
   // The same files give the same plan bytes as the library.
   assert.equal(plan.reveals[0].leaf, f.plan.reveals[0].leaf);
 
@@ -213,7 +213,7 @@ test("the command line plans and signs a single inscription offline, and refuses
   const refusedPath = join(dir, "refused.json");
   const refused = cli([...signArgs, "--body", other, "--content-type", "text/plain;charset=utf-8", "--metadata", meta, "--out", refusedPath]);
   assert.notEqual(refused.status, 0);
-  assert.match(refused.out, /leaf does not match the inscription files/);
+  assert.match(refused.out, /leaf does not match the P2MR Inscription files/);
   assert.equal(existsSync(refusedPath), false);
 
   // Collection flags and a missing file are refused with a clear message.

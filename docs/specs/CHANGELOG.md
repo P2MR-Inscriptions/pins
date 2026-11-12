@@ -5,9 +5,10 @@ Dates are the day the change was recorded. The documents stay CC0-1.0.
 
 ## 2026-11-12
 
-Clarifications. They describe the deployed format and the reference indexer. No inscription that is valid
+Clarifications. They describe the deployed format and the reference indexer. No P2MR Inscription that is valid
 today becomes invalid.
 
+- Editorial. Wording only: the specifications and this index say "P2MR Inscription" where they said `inscription`, because an `ord` port exists on Qbit. The two collision-check lines that quote other projects' words or a search query, as typed, are unchanged. Nothing normative changes.
 - Editorial. The status line of PINS-2 says Draft, and the status lines of PINS-1 to PINS-6 name their open vectors. The index lists every open vector. "Final" is no longer used for the marker (it is fixed, because it is in use on mainnet). PINS-6 §5.1 is a level-3 heading, three rules of PINS-4 §5 are back in their list, PINS-1 §9.2 points to open question Q7, and the two entries of 2026-11-04 have distinct headings. Nothing normative changes.
 - `collision-check.md` records the scan of blocks 160,951 to 161,947 as open.
 - New [vectors/](vectors/README.md): JSON test vectors for the Merkle leaf, root and proof (PINS-5 §5.1), the leaf list (PINS-5 §6), the field 5 reader (PINS-4 §2.1), canonical metadata (PINS-4 §2), the genesis (PINS-5 §3), reveal leaf envelopes (PINS-1 §4), and the reserve and sale order (PINS-5 §8). A test of the repository recomputes them.
@@ -17,15 +18,15 @@ today becomes invalid.
 - PINS-5 §2 and §6.1. The reveal count is stated for any `supply` and `batch` (`1 + ceil(supply / batch)`). The 10,000-item figures are labeled as the worked example.
 - PINS-5 §6.2. The mainnet record names its collection, the public example of [docs/examples/flatbits.md](../examples/flatbits.md).
 - PINS-1 §9.5.1. The recommended batching is labeled as the one for that example.
-- PINS-5 §8.5, PINS-6 §5.1 and §6, and the index. The 30-day sale length and the 1 USD creator revenue are removed. They were terms of one collection. No tool or indexer enforced either: no code measures a sale length, and the checks on a price inscription are only that its three fields are well formed. The protocol now fixes no sale length and no price. `price_bits` is the price of one sale item in bits as the issuer declares it, `price_sources` the issuer's record of where the price comes from, `price_time` its UTC timestamp. The median rule is no longer part of the specification. No field was added, and no inscription that is valid today becomes invalid.
+- PINS-5 §8.5, PINS-6 §5.1 and §6, and the index. The 30-day sale length and the 1 USD creator revenue are removed. They were terms of one collection. No tool or indexer enforced either: no code measures a sale length, and the checks on a price P2MR Inscription are only that its three fields are well formed. The protocol now fixes no sale length and no price. `price_bits` is the price of one sale item in bits as the issuer declares it, `price_sources` the issuer's record of where the price comes from, `price_time` its UTC timestamp. The median rule is no longer part of the specification. No field was added, and no P2MR Inscription that is valid today becomes invalid.
 - PINS-5 §6. Field 5 of the leaf list is optional. The leaf list on mainnet has none. When present it
-  is `pins-leaflist/1` with `root` as a byte string. The section now states which inscription the
+  is `pins-leaflist/1` with `root` as a byte string. The section now states which P2MR Inscription the
   reference indexer takes as the leaf list: it is in the transaction of the genesis, and its leaves
   fold to the genesis root. It is no longer described as optionally sharing that transaction.
 - PINS-5 §3. The genesis map has exactly the nine listed keys in order. `reserve` is an optional last
   key, and its shape and the checks on it are specified. The checks on `name`, `supply`, `first`,
   `item_type`, and `issuer` are stated. Genesis choice is described, including the indexer option
-  `--genesis <inscription id>`.
+  `--genesis <P2MR Inscription id>`.
 - PINS-5 §8.1. Where an indexer gets the reserve groups: the `reserve` key, a collection profile, or
   nowhere.
 - PINS-5 §8.1. The protocol fixes no reserve size. It is the sum of the collection's group counts and
@@ -43,7 +44,7 @@ today becomes invalid.
   6,175,124 bits in all.
 - PINS-1 §4.1, §5.1 and §8. An empty push in a value position is a value, and only an empty push in a
   tag position is the body separator. A tag of more than one byte is unknown, and one whose first byte
-  is even makes the inscription opaque. A leading U+FEFF in `content_type` is kept.
+  is even makes the P2MR Inscription opaque. A leading U+FEFF in `content_type` is kept.
 - PINS-1 §4.2. In restricted-output mode the only spendable output that is not P2MR is PayToAnchor, so
   the spent-output rule excludes only that spend.
 - PINS-2 §2. An input that spends a P2MR output with no witness items is a gap in the witness data,
@@ -51,16 +52,16 @@ today becomes invalid.
 - PINS-2 §5 and PINS-3 §6. The subsidy schedule of PINS-2 §5.1 applies to every indexer, because it
   fixes where fee bits sit in the coinbase. The text gives the stepdown interval of testnet4 and
   regtest, and says the subsidy is never read from the coinbase.
-- PINS-5 §7, §8.5 and §9. The checks of the reference indexer for the closing inscription and for the
+- PINS-5 §7, §8.5 and §9. The checks of the reference indexer for the closing P2MR Inscription and for the
   sale reveal are stated: signer, position after the genesis, exact keys in order, and the values
   of `root`, `count` and `sale_secret`. An item inscribed after the closing is not authentic. A bare
-  secret as an inscription body is not a sale reveal. The reference indexer does not read the unsold
+  secret as a P2MR Inscription body is not a sale reveal. The reference indexer does not read the unsold
   address commitment, does not compare sale transactions with the sale order, and checks rule 5 with
   the leaf list only.
 - PINS-4 §2.1. A leading U+FEFF in a text string is kept, and a map key named `__proto__` is an
   ordinary key.
 
-Relaxation. No inscription that is valid today becomes invalid, and a genesis that carries
+Relaxation. No P2MR Inscription that is valid today becomes invalid, and a genesis that carries
 `sale_commitment` reads exactly as before.
 
 - PINS-5 §3. `sale_commitment` is optional. The genesis map is the eight keys from `schema` to
@@ -69,7 +70,7 @@ Relaxation. No inscription that is valid today becomes invalid, and a genesis th
   accepted, with the same fields. The rule is the same for the launch schema and a rehearsal schema.
 - PINS-5 §8. The sale secret, sale reveal, sale order and reserve selection apply only to a genesis
   that carries `sale_commitment`. A collection without a sale is authentic by section 9 alone.
-- PINS-6 §5.1. A price inscription counts only for a genesis that carries `sale_commitment`. For
+- PINS-6 §5.1. A price P2MR Inscription counts only for a genesis that carries `sale_commitment`. For
   one without it, `/collection` reports `orderStatus` `none` and `priceStatus` `none`.
 
 ## 2026-11-06

@@ -6,7 +6,7 @@ PINS is the inscription protocol in `docs/specs/` and the reference indexer and 
 
 ## Setup
 
-Node.js 22 is required. `node -v` must start with `v22`.
+Node.js 22.13 or newer, up to Node 24 (the `engines` range is `>=22.13 <25`). Node 22.12 and older lack `node:sqlite` without a flag, which the indexer needs. `.nvmrc` names Node 22, the version that continuous integration runs. The tests also pass on Node 24.
 
 ```text
 npm ci
@@ -19,6 +19,19 @@ npm test
 `npm run build` and `npm run typecheck` both run `tsc --noEmit`. The programs run with `node --experimental-strip-types`. There is no compiler emit.
 
 The package is marked `private`. Do not publish it to npm. The name `pins` is already an unrelated package.
+
+## Continuous integration and automation
+
+Everything below lives in `.github/` and is plain configuration. You can read it, and you can run each check yourself with the commands above.
+
+| Check | File | What it runs | Run it locally |
+|---|---|---|---|
+| `Typecheck and test` | `.github/workflows/ci.yml` | `npm ci`, `npm run lint`, `npm run typecheck`, `npm test` in the repository root | the four commands in Setup |
+| `Explorer typecheck and test` | `.github/workflows/ci.yml` | `npm ci` in the root and in `explorer/`, then `npm run typecheck` and `npm run test` in `explorer/` | the same, from `explorer/` |
+| `Dependency audit` | `.github/workflows/ci.yml` | `npm audit --audit-level=high` for the root and for `explorer/`. It reads the lock files and installs nothing | `npm audit --audit-level=high` in each folder |
+| `Analyze (javascript-typescript)` | `.github/workflows/codeql.yml` | CodeQL code scanning on pull requests to `main`, on pushes to `main`, and weekly | no local command. Results are in the Security tab |
+
+CI runs once per change: on a pull request, and on `main` after a merge. It uses the Node version in `.nvmrc`. Every action is pinned by commit SHA with its version in a comment, and the workflow token is read-only. `.github/dependabot.yml` opens weekly pull requests for newer actions and npm packages. When you add an action, pin it by SHA the same way, and give a job only the permissions it needs.
 
 ## What not to change
 

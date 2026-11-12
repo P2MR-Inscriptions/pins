@@ -10,6 +10,19 @@ Report a vulnerability through [GitHub security advisories](https://github.com/P
 
 Do not open a public issue for a secret, a key, a seed, or an RPC password. Do not paste those into a report.
 
+## Supported versions
+
+Security fixes go to the latest release and to `main`. There is no earlier release.
+
+| Version | Supported |
+|---|---|
+| `main` | Yes |
+| Reference tools `1.0.x` (tag `v1.0.0`) | Yes |
+| Explorer `1.0.x` (tag `explorer-v1.0.1`) | Yes |
+| Anything older | No such release exists |
+
+The specifications PINS-1 to PINS-6 are Draft and are not versioned this way. A report about them is handled like any other report.
+
 ## What this tree will not do
 
 - There is no rollback command. `broadcast` does not withdraw a transaction. A second run skips a transaction the node already considers confirmed.

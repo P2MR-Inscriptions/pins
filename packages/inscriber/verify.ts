@@ -43,7 +43,7 @@ export function assertPostage(value: bigint, name: string): void {
   if (value !== POSTAGE_BITS) throw new Error(`${name} postage is ${value}, not ${POSTAGE_BITS}`);
 }
 
-/** Reserve, sale, and mint change are three addresses. Change is plain QBT. */
-export function assertSeparateChange(creator: string, sale: string, change: string): void {
+/** Reserve, sale, and mint change are three addresses. Change is plain QBT. A collection with no sale has no sale address (`null`). */
+export function assertSeparateChange(creator: string, sale: string | null, change: string): void {
   if (!change || change === creator || change === sale) throw new Error("mint change must be its own address");
 }

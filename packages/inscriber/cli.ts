@@ -75,7 +75,7 @@ function summary(plan: MintPlan, showMarker = false): string {
     `total fee ${total} bits`,
     `postage 10000 bits on every item output`,
     `creator ${plan.creator}`,
-    `sale holding ${plan.sale}`,
+    plan.noSale ? "no sale: every item goes to the creator" : `sale holding ${plan.sale}`,
     `change ${plan.change}`,
     formatMarkerLine(plan.marker, showMarker),
   ];
@@ -90,6 +90,8 @@ type CollectionProfile = {
   schema: string;
   itemType: string;
   root: string;
+  /** False when the profile declares no sale. It then has no reserve. */
+  sale: boolean;
   reserveGroups: { trait_type: string; value: string; count: number }[];
   reserveExtra: number;
   reserveCount: number;
@@ -114,6 +116,19 @@ async function attributesOf(metadata: Uint8Array): Promise<{ trait_type: string;
   return decoded.meta?.attributes ?? [];
 }
 
+/** The sale secret of the keyfile. A keyfile made with `keygen --no-sale` has none. */
+function saleSecretOf(secrets: { saleSecret: Uint8Array | null }): Uint8Array {
+  if (!secrets.saleSecret) throw new Error("this keyfile has no sale secret (it was made with --no-sale), but the collection declares a sale");
+  return secrets.saleSecret;
+}
+
+/** A collection with no sale has no reserve and no commitment. An assignment file that says otherwise is refused. */
+function assertNoSaleAssignment(assignment: { reserve?: number[]; sale?: number[]; saleCommitment?: string }): void {
+  if ((assignment.reserve?.length ?? 0) > 0 || (assignment.sale?.length ?? 0) > 0 || assignment.saleCommitment !== undefined) {
+    throw new Error("the assignment has a reserve, sale ids, or a sale commitment, but the collection profile declares no sale");
+  }
+}
+
 async function main(): Promise<void> {
   const [command, ...rest] = process.argv.slice(2);
   const flag = flags(rest);
@@ -131,10 +146,11 @@ async function main(): Promise<void> {
     await init();
     const passphrase = await readPassphrase("Keyfile passphrase: ");
     try {
-      const created = createKeyfile(passphrase);
+      const created = createKeyfile(passphrase, undefined, flag["no-sale"] !== true);
       writeKeyfile(text(flag, "out"), created.body, { issuerPublic: created.secrets.issuerPublic, recoveryPublic: created.secrets.recoveryPublic });
       zeroSecrets(created.secrets);
       process.stdout.write("Wrote the encrypted keyfile and a public JSON file.\nKeep two encrypted copies in two places. Do not store the passphrase with them.\nRun the address command with the public JSON file to get the funding address.\n");
+      if (flag["no-sale"] === true) process.stdout.write("This keyfile has no sale secret. Use it only for a collection that declares no sale.\n");
     } finally {
       passphrase.fill(0);
     }
@@ -152,6 +168,13 @@ async function main(): Promise<void> {
     if (profile && canonical) assertRoot(root, profile.root);
     if (command === "assign") {
       if (!canonical) throw new Error("missing --zip");
+      if (profile && !profile.sale) {
+        // No sale: nothing to draw and nothing to commit to, so no keyfile is read.
+        if (flag.key !== undefined) throw new Error("the collection profile declares no sale, so assign takes no --key");
+        writeFileSync(text(flag, "out"), `${JSON.stringify({ reserve: [], sale: [] }, null, 2)}\n`);
+        process.stdout.write("The collection declares no sale. Wrote an empty assignment: no reserve, no sale ids, no sale commitment.\n");
+        return;
+      }
       await init();
       const passphrase = await readPassphrase("Keyfile passphrase: ");
       const secrets = openKeyfile(text(flag, "key"), passphrase);
@@ -164,8 +187,9 @@ async function main(): Promise<void> {
           pieces.push({ id: i + 1, attributes: await attributesOf(canonical.items[i].metadata ?? new Uint8Array()) });
         }
         if (!profile) throw new Error("missing --collection");
-        const selected = reserve.selectReserve(pieces, Buffer.from(secrets.saleSecret), { groups: profile.reserveGroups, extra: profile.reserveExtra });
-        const saleCommitment = createHash("sha256").update(secrets.saleSecret).digest("hex");
+        const saleSecret = saleSecretOf(secrets);
+        const selected = reserve.selectReserve(pieces, Buffer.from(saleSecret), { groups: profile.reserveGroups, extra: profile.reserveExtra });
+        const saleCommitment = createHash("sha256").update(saleSecret).digest("hex");
         writeFileSync(text(flag, "out"), `${JSON.stringify({ reserve: selected.reserve, sale: selected.sale, saleCommitment }, null, 2)}\n`);
         process.stdout.write(`Wrote ${selected.reserve.length} reserve ids and ${selected.sale.length} sale ids.\nWrote the sale commitment. The secret was not written.\n`);
       } finally {
@@ -181,6 +205,11 @@ async function main(): Promise<void> {
       const network = parseNetwork(typeof flag.network === "string" ? flag.network : undefined);
       const marker = parseMarker(typeof flag.marker === "string" ? flag.marker : undefined);
       assertMarkerForNetwork(marker, network);
+      const noSale = Boolean(profile && !profile.sale);
+      if (noSale) {
+        if (flag.sale !== undefined) throw new Error("the collection profile declares no sale, so plan takes no --sale");
+        assertNoSaleAssignment(assignment);
+      }
       const plan = buildPlan({
         network,
         marker,
@@ -188,7 +217,7 @@ async function main(): Promise<void> {
         issuerPublic: Buffer.from(pubs.issuerPublic, "hex"),
         recoveryPublic: Buffer.from(pubs.recoveryPublic, "hex"),
         creator: text(flag, "creator"),
-        sale: text(flag, "sale"),
+        sale: noSale ? null : text(flag, "sale"),
         change: text(flag, "change"),
         root,
         utxo: { txid: utxo.txid, vout: utxo.vout, value: BigInt(utxo.value), script: Buffer.from(utxo.script, "hex") },
@@ -213,6 +242,9 @@ async function main(): Promise<void> {
     passphrase.fill(0);
     try {
       const plan = JSON.parse(readFileSync(text(flag, "plan"), "utf8")) as MintPlan;
+      const noSale = plan.noSale === true;
+      if (profile && profile.sale === noSale) throw new Error("the plan and the collection profile disagree about the sale");
+      if (noSale && flag.sale !== undefined) throw new Error("this plan has no sale, so sign takes no --sale");
       let reserveIds: number[];
       let saleIds: number[] = [];
       const traitPieces: { id: number; attributes: { trait_type: string; value: string }[] }[] = [];
@@ -221,7 +253,10 @@ async function main(): Promise<void> {
           traitPieces.push({ id: i + 1, attributes: await attributesOf(canonical.items[i].metadata ?? new Uint8Array()) });
         }
       }
-      if (typeof flag.assignment === "string") {
+      if (noSale) {
+        if (typeof flag.assignment === "string") assertNoSaleAssignment(JSON.parse(readFileSync(flag.assignment, "utf8")) as { reserve?: number[]; sale?: number[]; saleCommitment?: string });
+        reserveIds = [];
+      } else if (typeof flag.assignment === "string") {
         const parsed = JSON.parse(readFileSync(flag.assignment, "utf8")) as { reserve: number[]; sale?: number[] };
         reserveIds = parsed.reserve;
         saleIds = parsed.sale ?? [];
@@ -230,17 +265,17 @@ async function main(): Promise<void> {
         const reserve = await import(reserveSpecifier) as { selectReserve: (pieces: { id: number; attributes: { trait_type: string; value: string }[] }[], seed: Buffer, options: { groups: CollectionProfile["reserveGroups"]; extra: number }) => { reserve: number[]; sale: number[] } };
         if (!canonical) throw new Error("missing --zip");
         if (!profile) throw new Error("missing --collection");
-        const selected = reserve.selectReserve(traitPieces, Buffer.from(secrets.saleSecret), { groups: profile.reserveGroups, extra: profile.reserveExtra });
+        const selected = reserve.selectReserve(traitPieces, Buffer.from(saleSecretOf(secrets)), { groups: profile.reserveGroups, extra: profile.reserveExtra });
         reserveIds = selected.reserve;
         saleIds = selected.sale;
       }
       // The indexer repeats this selection after the seed is revealed. Refuse to
       // sign a reserve it would not reproduce. Rehearsal plans have no zip; their
       // builders already ran the same check.
-      if (canonical && profile) {
+      if (canonical && profile && !noSale) {
         const genesisReveal = plan.reveals.find((reveal) => reveal.name === "genesis");
         const field = genesisReveal ? genesisFieldFromLeaf(genesisReveal.leaf, plan.marker) : null;
-        const seed = Buffer.from(secrets.saleSecret);
+        const seed = Buffer.from(saleSecretOf(secrets));
         try {
           const reproduction = await reserveReproductionChecks({
             seed,
@@ -263,7 +298,7 @@ async function main(): Promise<void> {
         fundingTxid: utxo.txid,
         fundingVout: utxo.vout,
         creator: text(flag, "creator"),
-        sale: text(flag, "sale"),
+        sale: noSale ? null : text(flag, "sale"),
         change: text(flag, "change"),
       }, profile?.root, profile?.reserveCount);
       process.stdout.write(`${summary(signed, flag["show-marker"] === true)}\n`);
@@ -326,7 +361,16 @@ async function main(): Promise<void> {
     checks.push(rootCheck(root, profile.root));
     checks.push(...quotaChecks(assignment.reserve, pieces, profile.reserveGroups, profile.reserveExtra));
     const funding = fundingAddress(Buffer.from(pubs.issuerPublic, "hex"), network);
-    checks.push(...addressChecks(network, signed.creator, signed.sale, signed.change, funding));
+    const noSale = !profile.sale;
+    if (noSale || signed.noSale === true) {
+      const agree = noSale === (signed.noSale === true);
+      checks.push({
+        name: "sale declaration",
+        pass: agree,
+        detail: agree ? "the profile and the plan declare no sale" : "the plan and the collection profile disagree about the sale",
+      });
+    }
+    checks.push(...addressChecks(network, signed.creator, signed.noSale ? null : signed.sale, signed.change, funding));
     let found = false;
     let confirmations = 0;
     let valueBits: bigint | null = null;
@@ -370,10 +414,13 @@ async function main(): Promise<void> {
       namePrefix: profile.namePrefix,
       itemType: profile.itemType,
       root: profile.root,
+      sale: profile.sale,
     }));
     // Same selection the indexer runs at seed reveal. The sale secret is read
     // and wiped. Without --key the rows fail, so a mismatch cannot be skipped.
-    if (typeof flag.key !== "string") {
+    if (noSale) {
+      // Nothing to reproduce: no sale secret, no reserve, no sale list. The rows above and the quota rows cover it.
+    } else if (typeof flag.key !== "string") {
       checks.push({ name: "seed hash", pass: false, detail: "pass --key so preflight can hash the sale secret" });
       checks.push({ name: "reserve reproduction", pass: false, detail: "sale secret was not provided" });
       checks.push({ name: "sale complement", pass: false, detail: "sale secret was not provided" });
@@ -381,7 +428,7 @@ async function main(): Promise<void> {
       const passphrase = await readPassphrase("Keyfile passphrase: ");
       const secrets = openKeyfile(flag.key, passphrase);
       passphrase.fill(0);
-      const seed = Buffer.from(secrets.saleSecret);
+      const seed = Buffer.from(saleSecretOf(secrets));
       try {
         if (secrets.issuerPublic !== pubs.issuerPublic) throw new Error("keyfile does not match the public file");
         checks.push(...await reserveReproductionChecks({
@@ -459,6 +506,20 @@ async function mainnetOrCollectionField(
   profile: CollectionProfile | null,
 ): Promise<Uint8Array> {
   if (!profile) throw new Error("missing --collection");
+  if (!profile.sale) {
+    // The genesis of a collection with no sale has the eight base keys, on every network.
+    if (saleCommitment !== undefined) throw new Error("the collection profile declares no sale, but the assignment has a saleCommitment");
+    return encodeGenesisField({
+      schema: profile.schema,
+      name: profile.name,
+      supply: profile.supply,
+      first: profile.first,
+      namePrefix: profile.namePrefix,
+      itemType: profile.itemType,
+      root,
+      issuer,
+    });
+  }
   if (network === "mainnet") {
     if (!saleCommitment || !/^[0-9a-f]{64}$/.test(saleCommitment)) throw new Error("assignment is missing saleCommitment; run assign again");
     return encodeGenesisField({

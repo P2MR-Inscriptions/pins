@@ -22,7 +22,8 @@ export type SignExpectations = {
   fundingTxid: string;
   fundingVout: number;
   creator: string;
-  sale: string;
+  /** `null` when the plan has no sale. */
+  sale: string | null;
   change: string;
 };
 
@@ -121,7 +122,7 @@ function assertRaw(plan: MintPlan, reveal: RevealPlan, reserve: Set<number>, fan
     if (last && meta.item !== null) throw new Error(`${reveal.name} change is not the change address`);
     const expectedAddress = last || meta.item === null
       ? (last ? plan.change : plan.creator)
-      : reserve.has(meta.item) ? plan.creator : plan.sale;
+      : reserve.has(meta.item) || plan.noSale ? plan.creator : plan.sale;
     if (!sameBytes(output.script, addressToScriptPubKey(expectedAddress, plan.network))) {
       throw new Error(`${reveal.name} output ${i} is not ${expectedAddress}`);
     }
@@ -129,7 +130,7 @@ function assertRaw(plan: MintPlan, reveal: RevealPlan, reserve: Set<number>, fan
 }
 
 function assertExpectations(plan: MintPlan, expected: SignExpectations): void {
-  if (plan.creator !== expected.creator || plan.sale !== expected.sale || plan.change !== expected.change) {
+  if (plan.creator !== expected.creator || (plan.noSale ? null : plan.sale) !== expected.sale || plan.change !== expected.change) {
     throw new Error("plan addresses do not match the addresses supplied to sign");
   }
   if (!/^[0-9a-f]{64}$/.test(expected.fundingTxid) || !Number.isInteger(expected.fundingVout) || expected.fundingVout < 0) {
@@ -142,8 +143,14 @@ function assertExpectations(plan: MintPlan, expected: SignExpectations): void {
   }
 }
 
-export function verifyPlan(plan: MintPlan, reserve: Set<number>, expected: SignExpectations, expectedRoot?: string, reserveCount = 500): void {
+/**
+ * `reserveCount` is the size the reserve must have. Left out, it is 500 for a plan with a sale, as before,
+ * and 0 for a plan with no sale. A plan with no sale never takes a reserve.
+ */
+export function verifyPlan(plan: MintPlan, reserve: Set<number>, expected: SignExpectations, expectedRoot?: string, reserveCount?: number): void {
   assertExpectations(plan, expected);
+  if (plan.noSale && (reserve.size > 0 || (reserveCount ?? 0) > 0)) throw new Error("a plan with no sale has no reserve");
+  reserveCount ??= plan.noSale ? 0 : 500;
   const marker = parseMarker(plan.marker);
   if (isPinsMarker(marker)) {
     if (!expectedRoot) throw new Error("a pins plan needs the collection profile root");
@@ -152,7 +159,7 @@ export function verifyPlan(plan: MintPlan, reserve: Set<number>, expected: SignE
   } else if (expectedRoot && plan.root === expectedRoot) {
     throw new Error("a rehearsal plan must not carry the collection root");
   }
-  assertSeparateChange(plan.creator, plan.sale, plan.change);
+  assertSeparateChange(plan.creator, plan.noSale ? null : plan.sale, plan.change);
   const fanRaw = bytes(plan.fanout.raw);
   const fanHeader = headerOf(fanRaw);
   if (fanHeader.version !== 2 || fanHeader.locktime !== 0) throw new Error("fan-out version or locktime is not the unsigned plan");
@@ -191,7 +198,7 @@ export function verifyPlan(plan: MintPlan, reserve: Set<number>, expected: SignE
 }
 
 /** Returns a signed copy. The caller zeros the secret. */
-export function signPlan(plan: MintPlan, issuerSecret: Uint8Array, reserve: Set<number>, expected: SignExpectations, expectedRoot?: string, reserveCount = 500): MintPlan {
+export function signPlan(plan: MintPlan, issuerSecret: Uint8Array, reserve: Set<number>, expected: SignExpectations, expectedRoot?: string, reserveCount?: number): MintPlan {
   verifyPlan(plan, reserve, expected, expectedRoot, reserveCount);
   const signed: MintPlan = { ...plan, reveals: plan.reveals.map((reveal) => ({ ...reveal })), signed: true };
   signed.fanout = { ...plan.fanout };

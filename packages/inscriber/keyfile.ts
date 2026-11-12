@@ -11,7 +11,8 @@ import { keygen } from "@qbit-oss/pqc";
 
 export type PublicKeys = { issuerPublic: string; recoveryPublic: string };
 
-type Secrets = PublicKeys & { issuerSecret: Uint8Array; recoverySecret: Uint8Array; saleSecret: Uint8Array };
+/** `saleSecret` is null in a keyfile made with `keygen --no-sale`. */
+type Secrets = PublicKeys & { issuerSecret: Uint8Array; recoverySecret: Uint8Array; saleSecret: Uint8Array | null };
 
 type FileBody = {
   version: 1;
@@ -102,7 +103,8 @@ export async function readPassphrase(prompt: string): Promise<Buffer> {
   }
 }
 
-export function createKeyfile(passphrase: Buffer, entropy: Uint8Array = randomBytes(128)): { secrets: Secrets; body: FileBody } {
+/** `withSale` false leaves the sale secret out. It is for a collection that declares no sale. */
+export function createKeyfile(passphrase: Buffer, entropy: Uint8Array = randomBytes(128), withSale = true): { secrets: Secrets; body: FileBody } {
   const issuer = keygen(entropy);
   const recovery = keygen(entropy.map((byte, index) => (byte + index + 1) & 0xff));
   const secrets: Secrets = {
@@ -110,7 +112,7 @@ export function createKeyfile(passphrase: Buffer, entropy: Uint8Array = randomBy
     recoveryPublic: Buffer.from(recovery.publicKey).toString("hex"),
     issuerSecret: issuer.secretKey,
     recoverySecret: recovery.secretKey,
-    saleSecret: randomBytes(32),
+    saleSecret: withSale ? randomBytes(32) : null,
   };
   const salt = randomBytes(16);
   const iv = randomBytes(12);
@@ -121,7 +123,7 @@ export function createKeyfile(passphrase: Buffer, entropy: Uint8Array = randomBy
     recoveryPublic: secrets.recoveryPublic,
     issuerSecret: Buffer.from(secrets.issuerSecret).toString("hex"),
     recoverySecret: Buffer.from(secrets.recoverySecret).toString("hex"),
-    saleSecret: Buffer.from(secrets.saleSecret).toString("hex"),
+    ...(secrets.saleSecret ? { saleSecret: Buffer.from(secrets.saleSecret).toString("hex") } : {}),
   }));
   const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);
   plaintext.fill(0);
@@ -164,7 +166,7 @@ export function openKeyfile(path: string, passphrase: Buffer): Secrets {
     recoveryPublic: string;
     issuerSecret: string;
     recoverySecret: string;
-    saleSecret: string;
+    saleSecret?: string;
   };
   plaintext.fill(0);
   return {
@@ -172,12 +174,12 @@ export function openKeyfile(path: string, passphrase: Buffer): Secrets {
     recoveryPublic: parsed.recoveryPublic,
     issuerSecret: Buffer.from(parsed.issuerSecret, "hex"),
     recoverySecret: Buffer.from(parsed.recoverySecret, "hex"),
-    saleSecret: Buffer.from(parsed.saleSecret, "hex"),
+    saleSecret: typeof parsed.saleSecret === "string" ? Buffer.from(parsed.saleSecret, "hex") : null,
   };
 }
 
 export function zeroSecrets(secrets: Secrets): void {
   secrets.issuerSecret.fill(0);
   secrets.recoverySecret.fill(0);
-  secrets.saleSecret.fill(0);
+  secrets.saleSecret?.fill(0);
 }

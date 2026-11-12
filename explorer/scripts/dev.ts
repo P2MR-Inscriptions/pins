@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // Development only. Starts the synthetic mock, then the explorer, on loopback.
 import { type ChildProcess, spawn } from "node:child_process";
 import { createConnection, createServer } from "node:net";

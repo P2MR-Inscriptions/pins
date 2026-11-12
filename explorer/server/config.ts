@@ -46,12 +46,30 @@ function int(env: NodeJS.ProcessEnv, name: string, fallback: number, min: number
   return value;
 }
 
-function loadManifest(path: string): Manifest | null {
+/** The manifest is optional: no file means no featured collection. A file that is not JSON is an error, not a missing file. */
+export function loadManifest(path: string): Manifest | null {
+  let text: string;
   try {
-    return JSON.parse(readFileSync(resolve(path), "utf8")) as Manifest;
-  } catch {
-    return null;
+    text = readFileSync(resolve(path), "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw error;
   }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch (error) {
+    throw new Error(`the manifest ${path} is not valid JSON: ${error instanceof Error ? error.message : "parse error"}`);
+  }
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error(`the manifest ${path} must be a JSON object`);
+  return parsed as Manifest;
+}
+
+/** The version of this package, read from package.json so that it is written once. */
+export function packageVersion(): string {
+  const parsed = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version?: unknown };
+  if (typeof parsed.version !== "string") throw new Error("package.json has no version");
+  return parsed.version;
 }
 
 function rpcFrom(env: NodeJS.ProcessEnv): RpcConfig | null {
@@ -101,7 +119,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ExplorerConfig
     ratePerMinute: int(env, "RATE_PER_MINUTE", 240, 1, 100_000),
     maxConcurrency: int(env, "MAX_CONCURRENCY", 8, 1, 1000),
     maxInscriptions: int(env, "MAX_INSCRIPTIONS", 200_000, 1, 5_000_000),
-    version: "1.0.1",
+    version: packageVersion(),
   };
 }
 

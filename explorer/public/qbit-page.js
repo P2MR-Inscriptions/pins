@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // Qbit sentences are taken from pages fetched on 8 Nov 2026:
 // https://qbit.org/architecture
 // https://qbit.org/consensus

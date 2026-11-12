@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 try {
   var saved = localStorage.getItem("pins-theme");
   var dark = saved !== "light";

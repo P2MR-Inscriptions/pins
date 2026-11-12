@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # Explorer 1.0.1 validation notes
 
 Checked on 8 Nov 2026 with Node 22.23.4. The pages were also opened in Chrome 156 against the mock indexer. This package does not change the PINS protocol. It runs the indexer in `packages/` of this repository. Explorer 1.0.1 is not a production release. The page checks below are from 1.0.0. Version 1.0.1 changes development startup only.
@@ -44,7 +46,7 @@ PINS-3 is marked Draft. Its transfer test vectors are still TODO-regtest. The ex
 | Latest order is block height, transaction position in the block, then envelope index. | `server/index-cache.ts` `latestFirst`; PINS-1 §6 defines `n` |
 | Collection piece reads are 100 at a time. | `server/index-cache.ts` |
 | Text in a frame stops at 2,048 bytes. | `public/content-view.js` |
-| An HTML page runs only after a click, with `sandbox="allow-scripts"` and `connect-src 'none'`. | `public/app.js`, `server/api.ts` |
+| An HTML page runs only after a click, with `sandbox="allow-scripts"` and `connect-src 'none'`. The policy does not stop the frame from navigating itself. | `public/app.js`, `server/api.ts` |
 | Authentic is shown only when the indexer boolean is true and the snapshot is not stale. | `public/app.js` |
 | Green in the footer means the snapshot height equals the indexer tip. It is not a collection result. | `public/status-tone.js` |
 

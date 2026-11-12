@@ -5,7 +5,7 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { decodeCbor } from "../server/cbor.ts";
+import { decodeCbor } from "../../packages/indexer/cbor.ts";
 
 test("false, true, and null stay distinct", () => {
   const decoded = decodeCbor(Uint8Array.of(0xa1, 0x61, 0x61, 0xf4)) as { a: boolean };
@@ -18,7 +18,7 @@ test("a declared array of twenty million items does not exhaust a small heap", a
   const dir = mkdtempSync(join(tmpdir(), "pins-cbor-"));
   const file = join(dir, "child.mts");
   writeFileSync(file, `
-    import { decodeCbor } from ${JSON.stringify(join(process.cwd(), "server/cbor.ts"))};
+    import { decodeCbor } from ${JSON.stringify(join(process.cwd(), "../packages/indexer/cbor.ts"))};
     const header = Uint8Array.of(0x9b, 0x00, 0x00, 0x00, 0x00, 0x01, 0x31, 0x2d, 0x00);
     try { decodeCbor(header); console.log("RETURNED"); }
     catch { console.log("THREW"); }

@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # PINS Explorer
 
 A local, read-only explorer for PINS. It listens on loopback. It does not sign, broadcast, or open a public port. A manifest can feature one collection. `config/examples/flatbits.json` is a real public example of one, not a separate protocol and not a default.
@@ -60,11 +62,13 @@ Explorer 1.0.1 is this package only. It does not change the indexer and it is no
 
 The indexer still returns every inscription in one response, and this process keeps that snapshot in memory. The browser asks for one page of images, not the whole collection. One indexer process follows one genesis id.
 
+The explorer answers only a `Host` header that names loopback, plus the names in `TRUSTED_HOSTS` (comma separated). Behind a reverse proxy on the same machine, set `TRUST_PROXY=1`: the explorer then reads `X-Forwarded-Host`, and it rate-limits by the last address in `X-Forwarded-For`, the one the proxy appended. A proxy that does not set that header leaves the limit per proxy connection, not per client. `INDEXER_URL` must stay on loopback, which is also what the indexer's own Host check allows.
+
 ## What a frame can show
 
 The card, the home feature, and the detail frame keep their size. PNG, JPEG, GIF, and WebP are drawn inside that frame. A broken image stays in the frame and says the preview is unavailable. Text and JSON are shown as plain text, cut off after 2048 bytes. SVG is drawn as an image. Its scripts do not run.
 
-Audio and video use the browser’s own controls in that frame. Nothing plays until a click, and a grid does not request those bytes before the click. A `text/html` page runs only after a click, in an iframe whose sandbox is `allow-scripts` and whose response forbids network, forms, and the parent origin. Stop closes it. The sandbox does not cap processor time. Pages that need other files, a wallet, or the network are not loaded. SVG is not treated as a page.
+Audio and video use the browser’s own controls in that frame. Nothing plays until a click, and a grid does not request those bytes before the click. A `text/html` page runs only after a click, in an iframe whose sandbox is `allow-scripts` and whose response blocks fetch, outside files, nested frames, and form posts. The sandbox keeps it off the parent origin. A policy cannot stop a frame from navigating itself, so such a page can still send its own frame to another address. Stop closes it. The sandbox does not cap processor time. Pages that need other files, a wallet, or the network are not loaded. SVG is not treated as a page.
 
 Other types, including PDF and arbitrary bytes, stay in the same frame with the content type and a download. A leaf list is named as a leaf list. It is not marked authentic or invalid because of that. The detail frame has a fullscreen control for that frame only. The inscribed page cannot request fullscreen itself.
 

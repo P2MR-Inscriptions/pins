@@ -5,6 +5,15 @@
   "type": "module",
   "description": "Read-only loopback explorer for PINS.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/P2MR-Inscriptions/pins.git",
+    "directory": "explorer"
+  },
+  "homepage": "https://github.com/P2MR-Inscriptions/pins/tree/main/explorer#readme",
+  "bugs": {
+    "url": "https://github.com/P2MR-Inscriptions/pins/issues"
+  },
   "engines": {
     "node": ">=22.12 <23"
   },

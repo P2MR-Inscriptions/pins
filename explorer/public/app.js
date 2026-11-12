@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // PINS explorer front end. Plain ES module, no dependencies and no remote scripts.
 // API text is untrusted: it is inserted only with textContent / createTextNode.
 import { brand } from "./brand.js";

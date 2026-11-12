@@ -9,7 +9,7 @@ import { collectionView } from "../indexer/collection.ts";
 import { Indexer } from "../indexer/pins.ts";
 import { destinationsOf, itemAddress } from "./destination.ts";
 import { createKeyfile } from "./keyfile.ts";
-import { buildPlan, type MintPlan } from "./plan.ts";
+import { buildPlan, type MintPlan, type PlanContent } from "./plan.ts";
 import { addressChecks, encodeGenesisField, signedBodyChecks } from "./preflight.ts";
 import { recoveryFor } from "./reveal.ts";
 import { signPlan, verifyPlan, type SignExpectations } from "./sign.ts";
@@ -41,6 +41,12 @@ async function fixture() {
 }
 type Fixture = Awaited<ReturnType<typeof fixture>>;
 
+const GENESIS_BODY = new TextEncoder().encode("{\"name\":\"Example\"}");
+/** What the zip makes, for `sign` to rebuild and compare. */
+function content(field5?: Uint8Array): PlanContent {
+  return { genesis: { body: GENESIS_BODY, leafList: Buffer.concat(LEAVES), field5 }, batches: [{ name: "batch-0", items: ITEMS }] };
+}
+
 function build(f: Fixture, over: { sale: string | null; holder?: string; reserve?: number[]; field5?: Uint8Array }): MintPlan {
   return buildPlan({
     network: "regtest",
@@ -53,8 +59,7 @@ function build(f: Fixture, over: { sale: string | null; holder?: string; reserve
     change: f.change,
     root: ROOT,
     utxo: { txid: "11".repeat(32), vout: 0, value: 50_000_000_000n, script: f.funding },
-    genesis: { body: new TextEncoder().encode("{\"name\":\"Example\"}"), leafList: Buffer.concat(LEAVES), field5: over.field5 },
-    batches: [{ name: "batch-0", items: ITEMS }],
+    ...content(over.field5),
     reserve: new Set(over.reserve ?? []),
   });
 }
@@ -110,23 +115,23 @@ test("sign takes the holder from the operator, and a plan whose holder was moved
   const f = await fixture();
   const held = build(f, { sale: null, holder: f.holder });
   const plain = build(f, { sale: null });
-  assert.doesNotThrow(() => verifyPlan(held, new Set(), expects(f, null, f.holder), ROOT, 0));
-  assert.doesNotThrow(() => verifyPlan(plain, new Set(), expects(f, null), ROOT, 0));
-  assert.doesNotThrow(() => verifyPlan(plain, new Set(), expects(f, null, null), ROOT, 0));
+  assert.doesNotThrow(() => verifyPlan(held, new Set(), expects(f, null, f.holder), ROOT, 0, content()));
+  assert.doesNotThrow(() => verifyPlan(plain, new Set(), expects(f, null), ROOT, 0, content()));
+  assert.doesNotThrow(() => verifyPlan(plain, new Set(), expects(f, null, null), ROOT, 0, content()));
   // The operator names no holder and the plan has one, or the reverse, or another one.
-  assert.throws(() => verifyPlan(held, new Set(), expects(f, null), ROOT, 0), /addresses do not match/);
-  assert.throws(() => verifyPlan(plain, new Set(), expects(f, null, f.holder), ROOT, 0), /addresses do not match/);
-  assert.throws(() => verifyPlan(held, new Set(), expects(f, null, f.sale), ROOT, 0), /addresses do not match/);
+  assert.throws(() => verifyPlan(held, new Set(), expects(f, null), ROOT, 0, content()), /addresses do not match/);
+  assert.throws(() => verifyPlan(plain, new Set(), expects(f, null, f.holder), ROOT, 0, content()), /addresses do not match/);
+  assert.throws(() => verifyPlan(held, new Set(), expects(f, null, f.sale), ROOT, 0, content()), /addresses do not match/);
   // A rewritten holder in the plan does not move the outputs.
-  assert.throws(() => verifyPlan({ ...held, holder: f.sale }, new Set(), expects(f, null, f.sale), ROOT, 0), /is not/);
+  assert.throws(() => verifyPlan({ ...held, holder: f.sale }, new Set(), expects(f, null, f.sale), ROOT, 0, content()), /is not/);
   // Dropping the holder from the plan while the outputs go to it.
   const dropped: Partial<MintPlan> = { ...held };
   delete dropped.holder;
-  assert.throws(() => verifyPlan(dropped as MintPlan, new Set(), expects(f, null), ROOT, 0), /is not/);
+  assert.throws(() => verifyPlan(dropped as MintPlan, new Set(), expects(f, null), ROOT, 0, content()), /is not/);
   // A holder on a plan with a sale.
   const sale = build(f, { sale: f.sale, reserve: [2] });
-  assert.throws(() => verifyPlan({ ...sale, holder: f.holder }, new Set([2]), expects(f, f.sale, f.holder), ROOT, 1), /holder is for a collection with no sale/);
-  assert.throws(() => verifyPlan({ ...sale, holder: f.holder }, new Set([2]), expects(f, f.sale), ROOT, 1), /addresses do not match/);
+  assert.throws(() => verifyPlan({ ...sale, holder: f.holder }, new Set([2]), expects(f, f.sale, f.holder), ROOT, 1, content()), /holder is for a collection with no sale/);
+  assert.throws(() => verifyPlan({ ...sale, holder: f.holder }, new Set([2]), expects(f, f.sale), ROOT, 1, content()), /addresses do not match/);
   f.secret.fill(0);
 });
 
@@ -146,7 +151,7 @@ test("the signed plan with a holder is read by the indexer, and the holder owns 
   const f = await fixture();
   const field5 = await encodeGenesisField({ schema: "pins-collection/1", name: "Example", supply: 3, first: 1, namePrefix: "Item#", itemType: "image/png", root: ROOT, issuer: f.issuer.toString("hex") });
   const plan = build(f, { sale: null, holder: f.holder, field5 });
-  const signed = signPlan(plan, f.secret, new Set(), expects(f, null, f.holder), ROOT);
+  const signed = signPlan(plan, f.secret, new Set(), expects(f, null, f.holder), ROOT, undefined, content(field5));
   f.secret.fill(0);
   assert.equal(signed.holder, f.holder);
   assert.equal(signedBodyChecks(plan, signed)[0].pass, true);

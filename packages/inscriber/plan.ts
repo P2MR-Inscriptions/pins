@@ -55,6 +55,44 @@ export type MintPlan = {
   signed: boolean;
 };
 
+export type PlanItem = { number: number | null; body: Uint8Array; contentType: string; metadata?: Uint8Array };
+
+export type PlanGroup = { name: string; items: PlanItem[] };
+
+/** What goes into the reveals: the genesis group first, then one group per batch. */
+export type PlanContent = {
+  genesis: { body: Uint8Array; leafList: Uint8Array; field5?: Uint8Array; bodyType?: string };
+  batches: { name: string; items: (RevealItem & { number: number })[] }[];
+};
+
+/**
+ * The reveal groups of a mint. `buildPlan` and `sign` both call this, so the leaf that is planned and
+ * the leaf that is checked before signing come from one definition.
+ */
+export function revealGroups(content: PlanContent): PlanGroup[] {
+  return [
+    {
+      name: "genesis",
+      items: [
+        { number: null, body: content.genesis.body, contentType: content.genesis.bodyType ?? "application/json", metadata: content.genesis.field5 },
+        ...(content.genesis.leafList.length
+          ? [{ number: null, body: content.genesis.leafList, contentType: "application/octet-stream" }]
+          : []),
+      ],
+    },
+    ...content.batches.map((batch) => ({ name: batch.name, items: batch.items as PlanItem[] })),
+  ];
+}
+
+/** The reveal leaf of one group: the envelopes in order, signed by the issuer key. */
+export function groupLeaf(issuerPublic: Uint8Array, group: PlanGroup, marker?: Uint8Array): Uint8Array {
+  return itemsLeaf(issuerPublic, group.items.map((item) => ({
+    body: item.body,
+    contentType: item.contentType,
+    metadata: "metadata" in item ? item.metadata : undefined,
+  })), undefined, undefined, marker);
+}
+
 function txidOf(raw: Uint8Array): string {
   const hash = createHash("sha256").update(createHash("sha256").update(raw).digest()).digest();
   return Buffer.from(hash).reverse().toString("hex");
@@ -105,24 +143,9 @@ export function buildPlan(input: {
   const recovery = recoveryFor(input.recoveryPublic);
   const changeScript = addressToScriptPubKey(input.change, input.network);
   const reveals: { name: string; script: Uint8Array; tree: ReturnType<typeof commitTree>; outputs: { value: bigint; scriptPubKey: Uint8Array; plan: PlanOutput }[]; fee: bigint }[] = [];
-  const groups = [
-    {
-      name: "genesis",
-      items: [
-        { number: null, body: input.genesis.body, contentType: input.genesis.bodyType ?? "application/json", metadata: input.genesis.field5 },
-        ...(input.genesis.leafList.length
-          ? [{ number: null, body: input.genesis.leafList, contentType: "application/octet-stream" }]
-          : []),
-      ] as { number: number | null; body: Uint8Array; contentType: string; metadata?: Uint8Array }[],
-    },
-    ...input.batches.map((batch) => ({ name: batch.name, items: batch.items })),
-  ];
+  const groups = revealGroups(input);
   for (const group of groups) {
-    const script = itemsLeaf(input.issuerPublic, group.items.map((item) => ({
-      body: item.body,
-      contentType: item.contentType,
-      metadata: "metadata" in item ? item.metadata : undefined,
-    })), undefined, undefined, marker);
+    const script = groupLeaf(input.issuerPublic, group, marker);
     const tree = commitTree(script, recovery);
     const outputs = group.items.map((item) => {
       const address = itemAddress({ creator: input.creator, holder: input.sale ?? input.holder ?? input.creator, reserve: input.reserve }, item.number);

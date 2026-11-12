@@ -11,8 +11,8 @@ import { readCompactSize } from "./compact.ts";
 import { parseEnvelopes } from "./script.ts";
 import { parseMarker } from "./marker.ts";
 import { rpcChainName, type MintNetwork } from "./network.ts";
-import type { MintPlan } from "./plan.ts";
-import { LAUNCH_PRICE_SCHEMA, priceSchemaFor } from "./price.ts";
+import type { MintPlan, PlanContent } from "./plan.ts";
+import { LAUNCH_PRICE_SCHEMA, priceBody, priceSchemaFor } from "./price.ts";
 
 export { LAUNCH_COLLECTION_SCHEMA, LAUNCH_PRICE_SCHEMA, PRICE_BODY, priceBody, priceSchemaFor } from "./price.ts";
 
@@ -504,12 +504,18 @@ export async function reserveReproductionChecks(input: {
   return checks;
 }
 
-export function genesisFieldFromLeaf(leafHex: string, markerHex: string): Record<string, unknown> | null {
+/** The bytes of field 5 of the first envelope of a reveal leaf, or null. */
+export function fieldBytesFromLeaf(leafHex: string, markerHex: string): Uint8Array | null {
   const marker = parseMarker(markerHex);
   const envelopes = parseEnvelopes(Buffer.from(leafHex, "hex"), marker);
   const field = envelopes[0]?.fields.find((item) => item.tag === 5);
-  if (!field) return null;
-  const decoded = decodeCbor(field.value);
+  return field ? field.value : null;
+}
+
+export function genesisFieldFromLeaf(leafHex: string, markerHex: string): Record<string, unknown> | null {
+  const value = fieldBytesFromLeaf(leafHex, markerHex);
+  if (!value) return null;
+  const decoded = decodeCbor(value);
   if (!decoded || typeof decoded !== "object" || Array.isArray(decoded)) return null;
   return decoded as Record<string, unknown>;
 }
@@ -528,6 +534,19 @@ export function pricePlanField(plan: Pick<MintPlan, "marker" | "reveals">): Reco
   if (reveal.name !== "genesis" || reveal.outputs.length !== 2 || reveal.outputs.some((output) => output.item !== null)) return null;
   const field = genesisFieldFromLeaf(reveal.leaf, plan.marker);
   return field && Object.keys(field).join(",") === PRICE_FIELD_KEYS ? field : null;
+}
+
+/**
+ * What a price plan must contain, rebuilt from its own price record: one inscription with the price text
+ * of the record's schema as a plain text body, the record as field 5, no leaf list, and no item. `sign`
+ * compares the leaf of the plan with the leaf this makes, so the issuer key signs nothing else. Null for
+ * a plan that is not a price plan.
+ */
+export function priceContentOf(plan: Pick<MintPlan, "marker" | "reveals">): PlanContent | null {
+  const field = pricePlanField(plan);
+  const bytes = field ? fieldBytesFromLeaf(plan.reveals[0].leaf, plan.marker) : null;
+  if (!field || !bytes) return null;
+  return { genesis: { body: priceBody(String(field.schema)), leafList: new Uint8Array(), field5: bytes, bodyType: "text/plain" }, batches: [] };
 }
 
 /**

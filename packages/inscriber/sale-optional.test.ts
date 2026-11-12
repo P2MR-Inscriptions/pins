@@ -13,7 +13,7 @@ import { collectionView } from "../indexer/collection.ts";
 import { Indexer } from "../indexer/pins.ts";
 import { parseCollectionProfile } from "../protocol/profile.mjs";
 import { createKeyfile, openKeyfile, writeKeyfile, zeroSecrets } from "./keyfile.ts";
-import { buildPlan, type MintPlan } from "./plan.ts";
+import { buildPlan, type MintPlan, type PlanContent } from "./plan.ts";
 import { addressChecks, encodeGenesisField, genesisChecks, genesisFieldFromLeaf, quotaChecks, signedBodyChecks } from "./preflight.ts";
 import { recoveryFor } from "./reveal.ts";
 import { signPlan, verifyPlan, type SignExpectations } from "./sign.ts";
@@ -143,6 +143,11 @@ const LEAVES = NAMES.map((n) => leafPreimage(n, BODIES[n - 1], METAS[n - 1]));
 const ROOT = merkleRoot(LEAVES);
 const ITEMS = NAMES.map((n) => ({ number: n, body: BODIES[n - 1], contentType: "image/png", metadata: METAS[n - 1] }));
 
+/** What the zip makes, for `sign` to rebuild and compare. */
+function content(field5?: Uint8Array): PlanContent {
+  return { genesis: { body: new TextEncoder().encode("{\"name\":\"Example\"}"), leafList: Buffer.concat(LEAVES), field5 }, batches: [{ name: "batch-0", items: ITEMS }] };
+}
+
 function build(f: Fixture, over: { sale: string | null; reserve?: number[]; field5?: Uint8Array; leaves?: boolean }): MintPlan {
   return buildPlan({
     network: "regtest",
@@ -154,8 +159,7 @@ function build(f: Fixture, over: { sale: string | null; reserve?: number[]; fiel
     change: f.change,
     root: ROOT,
     utxo: { txid: "11".repeat(32), vout: 0, value: 50_000_000_000n, script: f.funding },
-    genesis: { body: new TextEncoder().encode("{\"name\":\"Example\"}"), leafList: Buffer.concat(LEAVES), field5: over.field5 },
-    batches: [{ name: "batch-0", items: ITEMS }],
+    ...content(over.field5),
     reserve: new Set(over.reserve ?? []),
   });
 }
@@ -209,31 +213,31 @@ test("sign takes the addresses of the operator, and the sale flag of the plan mu
   const withSale = build(f, { sale: f.sale, reserve: [2] });
   // A plan with no sale is signed with no reserve, and no reserve count is invented when it is left out.
   const pinsPlan = { ...none };
-  assert.doesNotThrow(() => verifyPlan(pinsPlan, new Set(), expects(f, null), ROOT));
-  const signed = signPlan(none, f.secret, new Set(), expects(f, null), ROOT);
+  assert.doesNotThrow(() => verifyPlan(pinsPlan, new Set(), expects(f, null), ROOT, undefined, content()));
+  const signed = signPlan(none, f.secret, new Set(), expects(f, null), ROOT, undefined, content());
   assert.equal(signed.signed, true);
   assert.equal(signed.noSale, true);
   assert.deepEqual(signedBodyChecks(none, signed).map((check) => check.pass), [true]);
   // A sale plan left without a reserve count is refused. There is no default count.
-  assert.throws(() => verifyPlan(withSale, new Set([2]), expects(f, f.sale), ROOT), /needs its reserve count/);
-  assert.doesNotThrow(() => verifyPlan(withSale, new Set([2]), expects(f, f.sale), ROOT, 1));
+  assert.throws(() => verifyPlan(withSale, new Set([2]), expects(f, f.sale), ROOT, undefined, content()), /needs its reserve count/);
+  assert.doesNotThrow(() => verifyPlan(withSale, new Set([2]), expects(f, f.sale), ROOT, 1, content()));
   // The operator says "no sale" and the plan has one, or the other way round.
-  assert.throws(() => verifyPlan(withSale, new Set([2]), expects(f, null), ROOT, 1), /addresses do not match/);
-  assert.throws(() => verifyPlan(none, new Set(), expects(f, f.creator), ROOT), /addresses do not match/);
+  assert.throws(() => verifyPlan(withSale, new Set([2]), expects(f, null), ROOT, 1, content()), /addresses do not match/);
+  assert.throws(() => verifyPlan(none, new Set(), expects(f, f.creator), ROOT, undefined, content()), /addresses do not match/);
   // Dropping the flag from a plan with no sale does not turn it into a plan with a sale.
   const flagless: Partial<MintPlan> = { ...none };
   delete flagless.noSale;
-  assert.throws(() => verifyPlan(flagless as MintPlan, new Set(), expects(f, null), ROOT), /addresses do not match/);
+  assert.throws(() => verifyPlan(flagless as MintPlan, new Set(), expects(f, null), ROOT, undefined, content()), /addresses do not match/);
   // Setting the flag on a plan with a sale moves no output.
-  assert.throws(() => verifyPlan({ ...withSale, noSale: true }, new Set(), expects(f, null), ROOT, 0), /addresses do not match|is not/);
-  assert.throws(() => verifyPlan({ ...build(f, { sale: f.sale }), noSale: true, sale: f.creator }, new Set(), expects(f, null), ROOT, 0), /is not/);
+  assert.throws(() => verifyPlan({ ...withSale, noSale: true }, new Set(), expects(f, null), ROOT, 0, content()), /addresses do not match|is not/);
+  assert.throws(() => verifyPlan({ ...build(f, { sale: f.sale }), noSale: true, sale: f.creator }, new Set(), expects(f, null), ROOT, 0, content()), /is not/);
   f.secret.fill(0);
 });
 
 test("preflight sees a plan and a signed plan that differ in the sale flag", async () => {
   const f = await fixture();
   const none = build(f, { sale: null });
-  const signed = signPlan(none, f.secret, new Set(), expects(f, null), ROOT);
+  const signed = signPlan(none, f.secret, new Set(), expects(f, null), ROOT, undefined, content());
   const flagless = { ...signed } as Partial<MintPlan>;
   delete flagless.noSale;
   assert.equal(signedBodyChecks(none, flagless as MintPlan)[0].pass, false);
@@ -245,7 +249,7 @@ test("a small collection with no sale is minted and the indexer reads it as auth
   const f = await fixture();
   const field5 = await encodeGenesisField({ ...GENESIS, root: ROOT, issuer: f.issuer.toString("hex") });
   const plan = build(f, { sale: null, field5 });
-  const signed = signPlan(plan, f.secret, new Set(), expects(f, null), ROOT);
+  const signed = signPlan(plan, f.secret, new Set(), expects(f, null), ROOT, undefined, content(field5));
   f.secret.fill(0);
   const genesis = signed.reveals.find((reveal) => reveal.name === "genesis");
   assert.ok(genesis);

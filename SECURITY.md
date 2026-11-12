@@ -13,7 +13,7 @@ Do not open a public issue for a secret, a key, a seed, or an RPC password. Do n
 ## What this tree will not do
 
 - There is no rollback command. `broadcast` does not withdraw a transaction. A second run skips a transaction the node already considers confirmed.
-- The indexer undoes a block only when the node disconnects that block. The default undo depth is 100 blocks. A deeper reorg throws. The process does not invent a chain and it does not broadcast.
+- The indexer undoes a block only when the node disconnects that block. The default undo depth is 1,000 blocks (PINS-2 §4.3). A deeper reorg throws. The process does not invent a chain and it does not broadcast.
 - `keygen`, `address`, `assign`, `sign`, and `price` refuse an RPC URL. The issuer keyfile stays on the offline machine. The passphrase is read from the terminal. Tests may set `PINS_KEY_PASSPHRASE`. Do not set that variable for a real key.
 - The HTTP API binds to `127.0.0.1` only.
 - The reference indexer leaves a sale at `waiting_for_wallet`. It does not keep a sale key online.

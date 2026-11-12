@@ -188,7 +188,7 @@ export class Indexer {
     }
   }
 
-  /** Replace the in-memory undo log. Used when a store reloads the last 100 blocks. */
+  /** Replace the in-memory undo log. Used when a store reloads its retained undo blocks. */
   installUndo(entries: UndoEntry[]): void {
     this.undo.length = 0;
     this.undo.push(...entries);

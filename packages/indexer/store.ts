@@ -2,14 +2,22 @@
 
 /**
  * SQLite storage for the indexer. Undo is kept for the last `undoDepth` blocks
- * (default 100). A deeper reorg throws and the caller resyncs from the
- * activation height.
+ * (default 1,000, the minimum PINS-2 §4.3 recommends). A deeper reorg throws
+ * and the caller resyncs from the activation height.
+ *
+ * The `meta` table also records what the chain data was built with: network,
+ * envelope marker, collection schema, activation height and the pinned genesis.
+ * A database that is opened with other values is refused, because its rows
+ * would be read under rules they were not built under.
  */
 import { DatabaseSync } from "node:sqlite";
 import { isP2mr } from "./address.ts";
 import type { CollectionProfile } from "./collection.ts";
 import { stateHash } from "./hash.ts";
 import { Indexer, type ChainBlock, type Inscription, type Location, type UndoEntry } from "./pins.ts";
+
+/** PINS-2 §4.3: an indexer SHOULD keep at least 1,000 blocks of undo data. */
+export const DEFAULT_UNDO_DEPTH = 1_000;
 
 const SCHEMA = `
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -112,23 +120,88 @@ export class Store {
   constructor(path: string, options: { undoDepth?: number; network?: "regtest" | "testnet4" | "mainnet"; marker?: Uint8Array; schema?: string; profile?: CollectionProfile | null; genesisId?: string | null } = {}) {
     this.indexer = new Indexer(options.network ?? "regtest", { marker: options.marker, schema: options.schema, genesisId: options.genesisId });
     this.profile = options.profile ?? null;
-    this.undoDepth = options.undoDepth ?? 100;
+    this.undoDepth = options.undoDepth ?? DEFAULT_UNDO_DEPTH;
     if (!Number.isInteger(this.undoDepth) || this.undoDepth < 1) throw new Error("undo depth must be a positive integer");
     this.db = new DatabaseSync(path);
-    this.db.exec("PRAGMA journal_mode = WAL");
-    const ready = this.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'meta'").get() as { name: string } | undefined;
-    if (!ready) {
-      this.db.exec(SCHEMA);
-      this.setMeta("schema", "1");
-    } else if (this.meta("schema") !== "1") {
-      throw new Error(`unknown indexer schema ${this.meta("schema")}`);
+    try {
+      this.db.exec("PRAGMA journal_mode = WAL");
+      const ready = this.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'meta'").get() as { name: string } | undefined;
+      if (!ready) {
+        this.db.exec(SCHEMA);
+        this.setMeta("schema", "1");
+      } else if (this.meta("schema") !== "1") {
+        throw new Error(`unknown indexer schema ${this.meta("schema")}`);
+      }
+      // Databases written before the output type was kept have no such column. Those rows stay NULL: unknown.
+      const columns = this.db.prepare("PRAGMA table_info(outputs)").all() as { name: string }[];
+      if (!columns.some((column) => column.name === "p2mr")) this.db.exec("ALTER TABLE outputs ADD COLUMN p2mr INTEGER");
+      this.bindConfig(options.genesisId ?? null);
+      this.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+      this.indexer.adopt(this.readInscriptions());
+      this.indexer.installUndo(this.readUndo());
+    } catch (error) {
+      this.db.close();
+      throw error;
     }
-    // Databases written before the output type was kept have no such column. Those rows stay NULL: unknown.
-    const columns = this.db.prepare("PRAGMA table_info(outputs)").all() as { name: string }[];
-    if (!columns.some((column) => column.name === "p2mr")) this.db.exec("ALTER TABLE outputs ADD COLUMN p2mr INTEGER");
-    this.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
-    this.indexer.adopt(this.readInscriptions());
-    this.indexer.installUndo(this.readUndo());
+  }
+
+  /**
+   * Record what this database is built with, or check it against what it was
+   * built with. A database from before these rows existed has none: it is
+   * adopted, and the values of this run are written. Nothing is written when
+   * any value differs.
+   */
+  private bindConfig(genesisId: string | null): void {
+    const wanted: { key: string; value: string; label: string; show: boolean }[] = [
+      { key: "network", value: this.indexer.network, label: "network", show: true },
+      // The marker of a rehearsal is not printed. It is public once it is on the chain, not before.
+      { key: "marker", value: Buffer.from(this.indexer.marker).toString("hex"), label: "marker", show: false },
+      { key: "collection_schema", value: this.indexer.collectionSchema, label: "collection schema", show: true },
+    ];
+    const writes: [string, string][] = [];
+    for (const { key, value, label, show } of wanted) {
+      const stored = this.meta(key);
+      if (stored === null) writes.push([key, value]);
+      else if (stored !== value) {
+        throw new Error(show
+          ? `this database was built for ${label} ${stored}, not ${value}. Start with the original option, or use a new database file.`
+          : `this database was built with another ${label} than this run uses. Start with the original option, or use a new database file.`);
+      }
+    }
+    // The pinned genesis only changes what the collection view accepts. A database that had none may gain one.
+    // Another genesis, or none after one was pinned, is refused.
+    const genesis = genesisId ?? "";
+    const storedGenesis = this.meta("genesis_id");
+    if (storedGenesis === null || (storedGenesis === "" && genesis !== "")) writes.push(["genesis_id", genesis]);
+    else if (storedGenesis !== genesis) {
+      throw new Error(storedGenesis === ""
+        ? "this database was built without --genesis. Start without it, or use a new database file."
+        : `this database was built with --genesis ${storedGenesis}${genesis ? `, not ${genesis}` : ""}. Start with the original option, or use a new database file.`);
+    }
+    if (writes.length === 0) return;
+    this.db.exec("BEGIN");
+    try {
+      for (const [key, value] of writes) this.setMeta(key, value);
+      this.db.exec("COMMIT");
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      throw error;
+    }
+  }
+
+  /**
+   * `follow` calls this with the height it starts from. The first call records
+   * it; a database that already holds blocks refuses another height, because
+   * its first block is the one it started from. A database from before this row
+   * existed is adopted. An empty database takes the new height.
+   */
+  bindActivation(height: number): void {
+    const stored = this.meta("activation_height");
+    if (stored === String(height)) return;
+    if (stored !== null && this.tip() !== null) {
+      throw new Error(`this database started at activation height ${stored}, not ${height}. Start with the original option, or call store.resync() first.`);
+    }
+    this.setMeta("activation_height", String(height));
   }
 
   close(): void {
@@ -240,7 +313,7 @@ export class Store {
   resync(): void {
     this.db.exec("BEGIN");
     try {
-      this.db.exec("DELETE FROM inscriptions; DELETE FROM outputs; DELETE FROM undo; DELETE FROM blocks;");
+      this.db.exec("DELETE FROM inscriptions; DELETE FROM outputs; DELETE FROM undo; DELETE FROM blocks; DELETE FROM meta WHERE key = 'activation_height';");
       this.db.exec("COMMIT");
     } catch (error) {
       this.db.exec("ROLLBACK");

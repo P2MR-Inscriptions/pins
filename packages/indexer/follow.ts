@@ -59,9 +59,11 @@ export function httpRpc(url: string, user: string, password: string): Rpc {
  * `network` names them, and the node's `chain` must match (`main` for mainnet).
  */
 export async function follow(store: Store, rpc: Rpc, activationHeight = 0, network: FollowNetwork = "regtest"): Promise<{ height: number; stateHash: string | null; blocks: number }> {
+  if (store.indexer.network !== network) throw new Error(`this store indexes ${store.indexer.network}; it was asked to follow ${network}`);
   const info = await rpc.call<ChainInfo>("getblockchaininfo");
   const expected = rpcChainName(network);
   if (info.chain !== expected) throw new Error(`refusing chain ${info.chain}; this indexer was asked to follow ${network} (node chain ${expected})`);
+  store.bindActivation(activationHeight);
   let disconnects = 0;
   while (true) {
     const height = await rpc.call<number>("getblockcount");

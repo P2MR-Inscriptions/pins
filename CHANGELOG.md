@@ -14,6 +14,8 @@ This file records the reference tools and the repository layout. Specification e
 - Indexer: a P2MR spend without witness items stops the indexer with `witness pruned` (PINS-2 §2). The guard existed but was never called.
 - Indexer: the block subsidy comes from the schedule of PINS-2 §5.1 and the height, not from the coinbase. A coinbase that claims less than the subsidy and the fees now leaves a lost tail, as PINS-3 §6 says, instead of shifting every fee bit.
 - Indexer: the sale reveal is the PINS-5 §8.5 inscription: signed by the issuer key, after the genesis, with field 5 `pins-sale-reveal/1`, the genesis root, and the committed secret. An inscription whose body is the bare secret no longer reveals the sale order. The closing inscription of PINS-5 §7 is read, and an item inscribed after it is not authentic. `/collection` reports it as `closingId`.
+- Indexer: the default undo depth is 1,000 blocks, the minimum PINS-2 §4.3 recommends. It was 100, so a reorg deeper than that stopped the indexer and forced a resync. A database that kept fewer undo rows reaches the new depth as blocks arrive.
+- Indexer: the database records the network, the envelope marker, the collection schema, the activation height and the genesis given with `--genesis`, and refuses to be opened or followed with other values. A database from before this is adopted on its first start and the values of that run are written. `follow` also refuses a store built for another network than the one it is asked to follow.
 - Specifications: clarifications that match the deployed format and the reference indexer. No valid inscription becomes invalid. See [docs/specs/CHANGELOG.md](docs/specs/CHANGELOG.md).
 
 ## 1.0.0

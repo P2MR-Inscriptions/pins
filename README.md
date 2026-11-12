@@ -155,7 +155,7 @@ Postage on every item output is 10,000 bits. A reveal heavier than 400,000 weigh
 ## Security
 
 - There is no rollback command. `broadcast` does not withdraw a transaction. Running it again skips a transaction the node already considers confirmed.
-- The indexer undoes a block only when the node disconnects that block. The undo log covers the last 100 blocks unless you change the store. A deeper reorg throws and names `store.resync()`. The indexer does not invent a chain.
+- The indexer undoes a block only when the node disconnects that block. The undo log covers the last 1,000 blocks unless you change the store (PINS-2 §4.3). A deeper reorg throws and names `store.resync()`. The indexer does not invent a chain.
 - `keygen`, `address`, `assign`, `sign`, and `price` refuse an RPC URL. Sign on a machine that does not have the node's credentials.
 - The indexer listens on `127.0.0.1` only. It does not broadcast.
 - Do not commit a keyfile, a passphrase, an RPC password, or a sale secret. `PINS_KEY_PASSPHRASE` is for tests. Do not set it for a real key.

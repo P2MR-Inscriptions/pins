@@ -61,8 +61,47 @@ test("follow stays on regtest unless another network is named", async () => {
   const store = new Store(join(dir, "index.sqlite"));
   try {
     await assert.rejects(() => follow(store, rpc("main"), 1), /refusing chain main/);
+    await assert.rejects(() => follow(store, rpc("main"), 1, "mainnet"), /this store indexes regtest; it was asked to follow mainnet/);
+  } finally {
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("follow takes mainnet only for a store built for mainnet", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "pins-follow-"));
+  const store = new Store(join(dir, "index.sqlite"), { network: "mainnet" });
+  try {
     const synced = await follow(store, rpc("main"), 1, "mainnet");
     assert.equal(synced.height, -1);
+  } finally {
+    store.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("follow refuses another activation height once the database holds blocks", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "pins-follow-"));
+  const store = new Store(join(dir, "index.sqlite"));
+  const hashes = ["11".repeat(32), "22".repeat(32)];
+  const node: Rpc = {
+    call: async <T>(method: string, params?: unknown[]): Promise<T> => {
+      if (method === "getblockchaininfo") return { chain: "regtest", blocks: 1, bestblockhash: hashes[1] } as T;
+      if (method === "getblockcount") return 1 as T;
+      if (method === "getbestblockhash") return hashes[1] as T;
+      if (method === "getblockhash") return hashes[Number(params?.[0])] as T;
+      if (method === "getblock") {
+        const at = hashes.indexOf(String(params?.[0]));
+        return block(hashes[at], at, at + 1) as T;
+      }
+      throw new Error(method);
+    },
+  };
+  try {
+    await follow(store, node, 0, "regtest");
+    assert.equal(store.tip()?.height, 1);
+    await assert.rejects(() => follow(store, node, 1, "regtest"), /started at activation height 0, not 1/);
+    await follow(store, node, 0, "regtest");
   } finally {
     store.close();
     rmSync(dir, { recursive: true, force: true });

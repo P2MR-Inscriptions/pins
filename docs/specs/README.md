@@ -12,11 +12,11 @@ transactions, bound to individual bits, tracked and transferred with ordinary Qb
 
 | | |
 |---|---|
-| Protocol marker | `pins` = `70 69 6e 73` (4 bytes, final; permanent once used on mainnet; see `collision-check.md`) |
+| Protocol marker | `pins` = `70 69 6e 73` (4 bytes, fixed; permanent now that it is in use on mainnet; see `collision-check.md`) |
 | Output type | P2MR, witness v2, leaf version `0xc0` |
 | Signatures | SLH-DSA-SHA2-128s-bounded30 (`OP_CHECKSIGPQC`) |
 | Specification license | CC0-1.0 |
-| Status | Draft. Regtest measurements from 2026-11-04 are recorded in the documents below. Vectors still marked TODO-regtest are open. |
+| Status | Draft. PINS-1 through PINS-6 are not final. Regtest measurements from 2026-11-04 are recorded in the documents below. The test vectors listed under "Open test vectors" are not done. |
 | Verified against | `Qbit-Org/qbit` `v1.0.0` (`7ebcddb622`) and `1.x.x` (`b27130a7b9`, 2026-11-03); `Qbit-Org/qbit-wallet` `v1.0.7` (`eb9f77941a`); `@qbit-oss/protocol`, `@qbit-oss/pqc`, `@qbit-oss/api` 0.1.1 |
 
 ## Standards
@@ -83,9 +83,29 @@ does not have its vector copied into this index. The raw regtest log is not part
 | Q12 | A `0x83` listing completed end to end, with padding inputs, buyer signing in Qbit Wallet on regtest | PINS-6 |
 | Q13 | Real dust and fee numbers with default `-dustrelayfee` and `-minrelaytxfee` | PINS-1, PINS-6 |
 
+## Open test vectors
+
+Every standard is Draft. These vector rows are not complete. The state of each is copied from the test-vector table of its standard. Nothing here is a result.
+
+| Vector | Standard | State |
+|---|---|---|
+| TV1-1 | PINS-1 §11 | Script-level vector in `vectors/envelope.json`. The regtest run is not done |
+| TV1-2 | PINS-1 §11 | TODO-regtest |
+| TV1-3 | PINS-1 §11 | Script-level vector in `vectors/envelope.json`. The regtest run is not done |
+| TV1-4 | PINS-1 §11 | Script-level vector in `vectors/envelope.json`. The regtest run is not done |
+| TV1-5, TV1-6, TV1-7 | PINS-1 §11 | TODO-regtest |
+| TV2-2, TV2-3, TV2-4 | PINS-2 §6 | TODO-regtest. TV2-1 is computed |
+| TV3-1 to TV3-5 | PINS-3 §10 | TODO-regtest |
+| TV4-2 | PINS-4 §7 | TODO-spec |
+| TV4-3 | PINS-4 §7 | TODO-regtest |
+| TV5-3, TV5-4 | PINS-5 §11 | TODO-regtest |
+| TV6-1 to TV6-4 | PINS-6 §9 | TODO-regtest |
+
+A vector that points to a file in `vectors/` is a check of the reference code against the rule, not a regtest run. TV4-1, TV5-1 and TV5-6 point to such files, TV5-2 is not fixed in PINS-5, and TV5-5 and TV5-7 name functions in `packages/protocol/reserve.mjs`. PINS-6 also carries TODO-regtest lines outside its vector table (§5 and §7).
+
 ## Decisions recorded here
 
-1. Marker `pins`: final.
+1. Marker `pins`: fixed. This fixes the marker only. The specifications are Draft.
 2. A creator reserve is selected by PINS-5 §8 from groups fixed before mint. Not a numeric id range. The groups are collection configuration and are not listed here.
 3. The protocol fixes no sale length (PINS-5 §8.5). The collection decides it and tells its buyers. Unsold items go to an address committed before close.
 4. Price: the protocol fixes no price. The issuer declares `price_bits`, the price of one sale item in bits, in a separate `pins-price/1` inscription, not the genesis (PINS-6 §5.1). The first valid one wins. No re-pricing.

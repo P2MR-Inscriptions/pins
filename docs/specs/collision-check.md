@@ -44,8 +44,8 @@ for it was found on GitHub.
 ## 3. Assessment
 
 - **Marker `pins`: free on the day of the scan.** No envelope with this marker was found on Qbit
-  mainnet through height 160,950, or on testnet4 through height 201,912. Decision
-  (2026-11-04): `pins` is final. This scan did not identify any earlier inscription, and
+  mainnet through height 160,950 (blocks 160,951 to 161,947 are not scanned: section 4), or on testnet4 through height 201,912. Decision
+  (2026-11-04): `pins` is the marker. This scan did not identify any earlier inscription, and
   it is not a claim that none exists after those tips.
 - **Name overlap to know about (not a blocker):**
   - MetaID, on other networks, calls each of its inscriptions a "PIN" (Personal Information Node) and
@@ -57,7 +57,19 @@ for it was found on GitHub.
     namespaces. Separate markers mean separate, non-conflicting indexes; PINS keeps the Ordinals
     field numbers, so content tooling stays compatible.
 - **Fallback markers (not needed, kept for the record):** `pmri` (`70 6d 72 69`, "P2MR inscription", 4 bytes, no known
-  use) or `p2mi` (`70 32 6d 69`). Both were included in no search hit.
+  use) or `p2mi` (`70 32 6d 69`). Neither appeared in any search hit.
+
+## 4. Open: blocks 160,951 to 161,947
+
+**Status: OPEN. Not yet run.**
+
+The mainnet scan in section 1 ends at height 160,950. Mainnet `ACTIVATION_HEIGHT` is 161,948 (PINS-2), so blocks 160,951 to 161,947 inclusive (997 blocks) lie between the end of that scan and the activation height. No scan of that range is recorded in this file. Until one is, this file does not show that those blocks hold no envelope, and the statement in section 3 that no envelope with the marker `pins` was found covers height 160,950 and below only.
+
+What the result decides: an indexer that starts at 161,948 gives the same numbers as one that starts earlier only if the range has no `pins` envelope.
+
+Method, the same as section 1 so that the results compare: for every block in the range that has more than one transaction, decode the revealed leaf script of every P2MR input and record the first push after every `OP_FALSE OP_IF`. Count the envelopes and the ones whose first push is `pins` (`70 69 6e 73`). It needs a synced Qbit mainnet node that serves full blocks with their witness data. The check is read-only.
+
+When the scan has been run, its date, the node version, the range, the counts and the digest of the result are recorded here, and this section is changed from open to closed. If it finds a `pins` envelope, that is a finding for PINS-2 and is recorded here as one.
 
 ## License
 

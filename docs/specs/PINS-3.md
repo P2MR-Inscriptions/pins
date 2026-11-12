@@ -5,7 +5,7 @@
 |---|---|
 | Standard | PINS-3 |
 | Title | Transfer and Ownership |
-| Status | Draft. Regtest measurements are recorded. Vectors still marked TODO-regtest are open. |
+| Status | Draft. Regtest measurements are recorded. TV3-1 through TV3-5 are open (§10). |
 | Type | Protocol, normative |
 | License | CC0-1.0 |
 | Requires | PINS-1 |

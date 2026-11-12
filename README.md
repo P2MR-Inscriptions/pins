@@ -15,9 +15,16 @@ P2MR Inscriptions (PINS) is an application protocol on Qbit. It writes content i
 
 PINS is an independent community project. It is not a consensus change, and it is not affiliated with, endorsed by, or maintained by the Qbit team or Qbit-Org. Qbit Core does not know about inscriptions. Indexers agree by applying these rules to the same chain.
 
-The specification is [PINS-1 through PINS-6](docs/specs/README.md). Those documents are CC0-1.0. The code, tools, and the other documents are [Apache-2.0](LICENSE). See [NOTICE](NOTICE).
+The specification is [PINS-1 through PINS-6](docs/specs/README.md). Those documents are CC0-1.0 and they are **Draft**: they are not final, and some regtest reference tests are still to be written (see below). The code, tools, and the other documents are [Apache-2.0](LICENSE). See [NOTICE](NOTICE).
 
 This repository is the protocol and the reference indexer and inscriber. A collection's name, Merkle root, reserve groups, and zip are not defaults here. Pass them with `--collection` and `--zip`.
+
+## Status
+
+- **The specifications are Draft.** PINS-1 through PINS-6 describe what the reference code does and what has been measured on regtest and mainnet. They can still change, and nothing in this repository calls them final. The marker `pins` is fixed because it is in use on mainnet. The version number of the reference tools (1.0.0) is not a status of the specifications.
+- **Some test vectors are open.** The regtest runs of TV1-1, TV1-3 and TV1-4 are not done. Their script-level vectors exist in [docs/specs/vectors](docs/specs/vectors/README.md). TV1-2, TV1-5, TV1-6, TV1-7, TV2-2 to TV2-4, TV3-1 to TV3-5, TV4-2, TV4-3, TV5-3, TV5-4 and TV6-1 to TV6-4 are not done either. The list, with the state of each, is in [docs/specs/README.md](docs/specs/README.md#open-test-vectors).
+- **One scan is open.** The collision scan for the marker covers mainnet up to height 160,950. Blocks 160,951 to 161,947 have not been scanned ([collision-check.md](docs/specs/collision-check.md#4-open-blocks-160951-to-161947)).
+- **What a collection is, and what is not covered.** The reference inscriber mints collections of images. It does not yet mint a single stand-alone inscription, although the protocol and the indexer handle one (see [Single inscriptions](#single-inscriptions)).
 
 ## Explorer
 
@@ -25,7 +32,7 @@ A local read-only explorer is in [`explorer/`](explorer/README.md). It is Explor
 
 ## Worked example
 
-FlatBits is the first collection inscribed on Qbit mainnet. [docs/examples/flatbits.md](docs/examples/flatbits.md) records it as a public example: its genesis id, Merkle root, heights, and the indexer result for it. It is an example, not a default of any tool here.
+FlatBits is the first collection inscribed on Qbit mainnet. [docs/examples/flatbits.md](docs/examples/flatbits.md) records it as a public example: its genesis id, Merkle root, heights, and the indexer result for it. Use it to verify the example (index the public chain and compare) and to apply the same steps to your own collection. It is not a default of any tool here. This repository holds none of its art, keys, seed, price, profile, or plan, and a copy of its images can never be an authentic FlatBits item: authenticity is bound to the original genesis and issuer key, and the first valid inscription of each number is the only one that counts (PINS-5 §9).
 
 ## Network
 
@@ -127,7 +134,7 @@ The HTTP routes are in [docs/indexer/API.md](docs/indexer/API.md). `/status` inc
 
 ## Inscriber
 
-`npm run inscribe` runs `packages/inscriber/cli.ts`. The commands are `keygen`, `address`, `assign`, `plan`, `sign`, `broadcast`, `preflight`, and `price`.
+`npm run inscribe` runs `packages/inscriber/cli.ts`. The commands are `keygen`, `address`, `assign`, `plan`, `sign`, `broadcast`, `preflight`, and `price`. Two of them, `broadcast` and `preflight`, talk to a node and need `--rpc`. `keygen`, `address`, `assign`, `sign`, and `price` refuse an RPC URL. `plan` reads the funding output from a file (`utxo.json`) and never calls a node.
 
 `assign`, `plan`, and `preflight` require `--collection` and `--zip`. `sign` requires them when the plan uses the `pins` marker, except for the plan `price` writes, which needs `--collection` and `--assignment` and no zip. `keygen`, `address`, `assign`, `sign`, and `price` refuse an RPC URL. `broadcast` and `preflight` on testnet4 or mainnet refuse to run until `--confirm-network` repeats `--network`.
 
@@ -157,6 +164,17 @@ The air gap and the same commands without the npm wrapper are in [docs/inscriber
 6. Point the indexer at the same node. Pass `--collection` when you want the profile's reserve check.
 
 Postage on every item output is 10,000 bits. A reveal heavier than 400,000 weight is refused.
+
+## Single inscriptions
+
+An inscription does not need a collection. PINS-1 defines one inscription as an envelope with a content type and a body in a revealed leaf. A collection (PINS-5) is a layer on top of it: a genesis inscription and the items that match its Merkle root.
+
+- **The indexer** numbers, locates and tracks every inscription with the marker, in or out of a collection. `/inscription/{id}`, `/content/{id}`, `/inscriptions?owner=` and `/output/{outpoint}` answer for any of them. `/collection` and `/pieces` are only about a collection.
+- **The reference inscriber does not mint one on its own yet.** `assign`, `plan` and `preflight` need `--collection` and `--zip`. The loader reads `images/N.png`, `json/N.json` and `collection.json`, so every item is a PNG image, and every mint writes a genesis. No command takes a body file and a content type and writes a stand-alone inscription.
+- **The closest path today** is a collection of one item: a profile with `"supply": 1`, `"batchSize": 1` and `"sale": false`, and a zip with `images/1.png`, `json/1.json` and `collection.json`. `plan` and `sign` accept that profile. The result is a genesis and one image item, which is two inscriptions and not a bare one. The reference tests do not cover this case, and it only holds PNG images.
+- **Below the CLI**, the envelope writer and the plan builder in `packages/inscriber` carry a content type per item (the `price` plan already inscribes one text record), but no command uses them for a single inscription.
+
+A stand-alone inscription command is not in this release. Until it is, use a collection of one item, or write to the library.
 
 ## Security
 

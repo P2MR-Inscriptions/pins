@@ -5,7 +5,7 @@
 |---|---|
 | Standard | PINS-5 |
 | Title | Collections and Provenance |
-| Status | Draft. The construction below is the format. A collection's root, supply, and reserve groups are inputs, not constants of this document. |
+| Status | Draft. The construction below is the format. A collection's root, supply, and reserve groups are inputs, not constants of this document. TV5-3 and TV5-4 are TODO-regtest (§11). |
 | Type | Protocol, normative |
 | License | CC0-1.0 |
 | Requires | PINS-1, PINS-3, PINS-4 |

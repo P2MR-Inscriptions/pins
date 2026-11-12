@@ -2,7 +2,7 @@
 
 # Pinned Qbit versions
 
-One list. Update it when a pin changes. Do not add a package dependency until the roadmap phase that uses it.
+One list of the Qbit and package versions that this repository was written and checked against. Update it when a pin changes. A package is listed as a dependency of this tree only when the code imports it.
 
 | Component | Pin | Role |
 |---|---|---|
@@ -16,9 +16,9 @@ One list. Update it when a pin changes. Do not add a package dependency until th
 
 The Core pin was reviewed on 2 November 2026. No newer Qbit Core release was on the public releases page that day. On 5 November 2026 the npm dependencies in this tree are the 0.1.1 pins above. This note does not record a second review of the Core tree.
 
-## Figures the quote is allowed to use
+## Figures the specifications rely on
 
-From v1.0.0, not from memory:
+These come from Qbit Core v1.0.0, not from memory:
 
 | Item | Value |
 |---|---|
@@ -33,8 +33,8 @@ From v1.0.0, not from memory:
 | Coinbase maturity | 1,000 blocks |
 | Validation budget per non-empty PQC check | **3,683** in `p2mr-v1.md` and `src/script/p2mr_sizing.h` |
 
-`qbit.org/consensus` section 5.10 still says 3,730. The tag and `main` profile say 3,683. Follow the profile. The site quote does not use this number.
+When the Core pin was reviewed, `qbit.org/consensus` section 5.10 said 3,730 while the tag and `main` profile said 3,683. Follow the profile. No specification here uses the 3,730 figure.
 
 `rawmr` outputs are expert-only. Qbit Core's wallet will not sign them. An inscription signer has to be external.
 
-The old pin file named git revisions `c51571a` (qbit-js) and `d4a6a77` (qbit-pqc). Those revisions were not re-checked. This file pins the published 0.1.1 releases instead.
+The npm packages are pinned to their published 0.1.1 releases, not to git revisions.

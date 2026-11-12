@@ -111,10 +111,19 @@ paths:
 
 ## State hash
 
-`/status` returns `stateHash`, the SHA-256 of a canonical text snapshot after the tip block.
-Two indexers that follow the same regtest chain produce the same digest. The snapshot lists
-inscriptions by number and includes the body hash, content type, location, owner address, location
-height, and flags. `/pieces/N` and `/inscription/id` both send `location.script` and `ownerScript` as lowercase hex. A located script is not a JSON object of byte indexes. `ownerAddress` is the address of that same script.
+`/status` returns `stateHash`, the SHA-256 of a canonical text snapshot after the tip block. Two indexers that follow the same chain to the same tip produce the same digest. The digest includes the tip, so it changes with every block, and two digests are comparable only when both indexers are at the same tip. The text starts with one line `block <height> <hash>` for the tip. Then comes one line per inscription, sorted by inscription number, and it is hashed as it is.
+
+**What the digest covers.** For each inscription it covers: the number, the id, the SHA-256 of the body, the content type, the location (`txid:vout:offset`, or `unbound`, `lost`, and the other non-located states), the owner address, the height at which the inscription was last placed, and its flags. The location already includes the effect of a pointer field (field 2), and the flags include a bad pointer. `/pieces/N` and `/inscription/id` both send `location.script` and `ownerScript` as lowercase hex. A located script is not a JSON object of byte indexes. `ownerAddress` is the address of that same script.
+
+**What it does not cover.**
+
+- **Metadata and other field values.** The bytes of field 5 (metadata) and the values of the other fields are not in the digest. Two indexers that read an item's metadata differently can have the same `stateHash`. Metadata is optional in an inscription, and an inscription without it is as valid as one with it.
+- **Where metadata is bound instead.** For an item of a collection, the metadata is part of the item's Merkle leaf (PINS-5 §5.1), which is compared with the collection's Merkle root. So for an authentic item, the metadata is fixed by the root: a different field 5 would not match the leaf and the item would not be authentic. That is a check made by `/collection` and `/pieces`, and its result is not part of `stateHash`. To compare two indexers on a collection, compare those responses as well as the digest. The root itself is in the genesis field 5, which the digest does not cover either.
+- **Creation data.** The height and position of the block and transaction that created the inscription (`createdHeight`, `createdIndex`) and the public key that opened the reveal leaf (`leafIssuer`) are not covered.
+- **Derived views.** Authenticity, the reserve, the sale order, the price, and the closing inscription are computed from inscriptions and are not in the digest.
+- **Undo data.** The rows kept to undo recent blocks are not covered.
+
+The preimage and the digest are the same for every collection and for inscriptions that belong to none. The recorded values for the public example are on the [example page](../examples/flatbits.md). A change to what the digest covers would change every recorded value, so the format is fixed. The store keeps the digest of every block it has applied in the `blocks` table (`height`, `hash`, `state_hash`). `/status` shows only the tip, so to compare an earlier height read that table, for example `SELECT state_hash FROM blocks WHERE height = 171486`.
 
 ## Performance
 

@@ -38,7 +38,10 @@ export type MintPlan = {
   issuerPublic: string;
   recoveryPublic: string;
   creator: string;
+  /** Holding address of the sale items. For a plan with no sale it is `creator`, and `noSale` is true. */
   sale: string;
+  /** Present, and true, only in a plan for a collection with no sale: every item goes to `creator`. */
+  noSale?: true;
   /** Plain mint change. Not Reserve, not Sale, and not Revenue. */
   change: string;
   /** Envelope marker, 8 hex characters. Launch value is 70696e73 (`pins`). */
@@ -72,7 +75,8 @@ export function buildPlan(input: {
   issuerPublic: Uint8Array;
   recoveryPublic: Uint8Array;
   creator: string;
-  sale: string;
+  /** `null` for a collection with no sale. Every item then goes to `creator` and `reserve` must be empty. */
+  sale: string | null;
   change: string;
   root: string;
   utxo: Utxo;
@@ -84,6 +88,7 @@ export function buildPlan(input: {
 }): MintPlan {
   if (!Number.isFinite(input.feeRate) || input.feeRate <= 0) throw new Error("fee rate must be a positive finite number");
   assertSeparateChange(input.creator, input.sale, input.change);
+  if (input.sale === null && input.reserve.size > 0) throw new Error("a collection with no sale has no reserve");
   const marker = input.marker ?? PINS_MARKER;
   assertMarkerForNetwork(marker, input.network);
   const fundingLeaf = recoveryFor(input.issuerPublic);
@@ -114,7 +119,7 @@ export function buildPlan(input: {
     })), undefined, undefined, marker);
     const tree = commitTree(script, recovery);
     const outputs = group.items.map((item) => {
-      const address = item.number !== null && input.reserve.has(item.number) ? input.creator : item.number === null ? input.creator : input.sale;
+      const address = item.number !== null && input.reserve.has(item.number) ? input.creator : item.number === null ? input.creator : (input.sale ?? input.creator);
       assertPostage(POSTAGE, `${group.name} item ${item.number ?? "genesis"}`);
       return {
         value: POSTAGE,
@@ -162,7 +167,8 @@ export function buildPlan(input: {
     issuerPublic: Buffer.from(input.issuerPublic).toString("hex"),
     recoveryPublic: Buffer.from(input.recoveryPublic).toString("hex"),
     creator: input.creator,
-    sale: input.sale,
+    sale: input.sale ?? input.creator,
+    ...(input.sale === null ? { noSale: true as const } : {}),
     change: input.change,
     marker: markerHex(marker),
     root: input.root,

@@ -3,6 +3,8 @@
 /**
  * A collection profile is data, not a protocol default.
  * The caller supplies the name, root, and reserve quotas.
+ * `sale` is true unless the profile says `false`. A profile with `sale: false` declares no sale:
+ * it has no reserve fields and its genesis carries no `sale_commitment` (PINS-5 section 3).
  */
 
 export function parseCollectionProfile(value) {
@@ -15,6 +17,26 @@ export function parseCollectionProfile(value) {
   if (typeof profile.schema !== "string" || profile.schema.length === 0) throw new Error("collection profile needs a schema");
   if (typeof profile.itemType !== "string" || profile.itemType.length === 0) throw new Error("collection profile needs an itemType");
   if (typeof profile.root !== "string" || !/^[0-9a-f]{64}$/.test(profile.root)) throw new Error("collection profile root must be 64 hex characters");
+  if (profile.sale !== undefined && typeof profile.sale !== "boolean") throw new Error("collection profile sale must be true or false");
+  if (profile.sale === false) {
+    if (profile.reserveGroups !== undefined || profile.reserveExtra !== undefined) {
+      throw new Error("collection profile with sale false cannot have reserveGroups or reserveExtra");
+    }
+    return {
+      name: profile.name,
+      namePrefix: profile.namePrefix,
+      supply: profile.supply,
+      first: profile.first,
+      schema: profile.schema,
+      itemType: profile.itemType,
+      root: profile.root,
+      sale: false,
+      reserveGroups: [],
+      reserveExtra: 0,
+      reserveCount: 0,
+      saleCount: 0,
+    };
+  }
   if (!Number.isInteger(profile.reserveExtra) || profile.reserveExtra < 0) throw new Error("collection profile reserveExtra must be a non-negative integer");
   if (!Array.isArray(profile.reserveGroups) || profile.reserveGroups.length === 0) throw new Error("collection profile needs reserveGroups");
   const reserveGroups = profile.reserveGroups.map((group) => {
@@ -33,6 +55,7 @@ export function parseCollectionProfile(value) {
     schema: profile.schema,
     itemType: profile.itemType,
     root: profile.root,
+    sale: true,
     reserveGroups,
     reserveExtra: profile.reserveExtra,
     reserveCount,

@@ -172,3 +172,12 @@ test("a rehearsal schema accepts the same optional keys", async () => {
     assert.equal((await collectionView(rehearsal, cursor)).status, "present");
   }
 });
+
+test("a profile with no reserve groups configures no reserve", async () => {
+  const profile = { name: "Example", namePrefix: "Item#", supply: 3, first: 1, itemType: "image/png", root: ROOT.toString("hex"), reserveGroups: [], reserveExtra: 0, reserveCount: 0 };
+  assert.equal((await collectionView(collection(BASE), cursor, profile)).reserveMode, "none");
+  const withGroups = { ...profile, reserveGroups: [{ trait_type: "a", value: "b", count: 1 }], reserveCount: 1 };
+  const declared = { ...BASE, sale_commitment: sha(SECRET).toString("hex") };
+  assert.equal((await collectionView(collection(declared), cursor, withGroups)).reserveMode, "configured");
+  assert.equal((await collectionView(collection(declared), cursor)).reserveMode, "none");
+});

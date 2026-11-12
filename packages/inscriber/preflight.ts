@@ -136,10 +136,11 @@ function addressOk(address: string, network: MintNetwork): string | null {
   }
 }
 
-export function addressChecks(network: MintNetwork, creator: string, sale: string, change: string, funding: string): Check[] {
+/** `sale` is `null` for a collection with no sale. Its plan has no sale address, so there is no row for it. */
+export function addressChecks(network: MintNetwork, creator: string, sale: string | null, change: string, funding: string): Check[] {
   const rows: [string, string][] = [
     ["creator address", creator],
-    ["sale address", sale],
+    ...(sale === null ? [] : [["sale address", sale] as [string, string]]),
     ["change address", change],
     ["funding address", funding],
   ];
@@ -149,11 +150,15 @@ export function addressChecks(network: MintNetwork, creator: string, sale: strin
   });
   // Revenue is a fifth wallet. Buyer payments go there. It is not a mint-plan
   // address, so it is not one of these four. Do not pass it as any of them.
-  const distinct = new Set([creator, sale, change, funding]).size === 4;
+  const distinct = sale === null
+    ? new Set([creator, change, funding]).size === 3
+    : new Set([creator, sale, change, funding]).size === 4;
   checks.push({
     name: "addresses distinct",
     pass: distinct,
-    detail: distinct ? "creator, sale, change, and funding differ" : "two of creator, sale, change, and funding are the same",
+    detail: sale === null
+      ? (distinct ? "creator, change, and funding differ" : "two of creator, change, and funding are the same")
+      : (distinct ? "creator, sale, change, and funding differ" : "two of creator, sale, change, and funding are the same"),
   });
   return checks;
 }
@@ -285,7 +290,7 @@ export function signedBodyChecks(unsigned: MintPlan, signed: MintPlan): Check[] 
   const problems: string[] = [];
   if (unsigned.signed !== false) problems.push("unsigned file is marked signed");
   if (signed.signed !== true) problems.push("signed file is not marked signed");
-  const keys = ["version", "network", "feeRate", "issuerPublic", "recoveryPublic", "creator", "sale", "change", "marker", "root"] as const;
+  const keys = ["version", "network", "feeRate", "issuerPublic", "recoveryPublic", "creator", "sale", "noSale", "change", "marker", "root"] as const;
   for (const key of keys) {
     if (unsigned[key] !== signed[key]) problems.push(key);
   }
@@ -346,11 +351,14 @@ export type GenesisProfile = {
   namePrefix: string;
   itemType: string;
   root: string;
+  /** Left out, it is true. False means the genesis declares no sale and carries no `sale_commitment`. */
+  sale?: boolean;
 };
 
-export async function encodeGenesisField(input: GenesisProfile & {
+/** `saleCommitment` left out gives the eight-key genesis of a collection with no sale. */
+export async function encodeGenesisField(input: Omit<GenesisProfile, "sale"> & {
   issuer: string;
-  saleCommitment: string;
+  saleCommitment?: string;
 }): Promise<Uint8Array> {
   const specifier = "../collection/canonical.mjs";
   const canonical = await import(specifier) as { encodeCbor: (value: unknown) => Uint8Array };
@@ -363,7 +371,7 @@ export async function encodeGenesisField(input: GenesisProfile & {
     root: input.root,
     issuer: input.issuer,
     item_type: input.itemType,
-    sale_commitment: input.saleCommitment,
+    ...(input.saleCommitment === undefined ? {} : { sale_commitment: input.saleCommitment }),
   });
 }
 
@@ -506,6 +514,7 @@ export function genesisChecks(field: Record<string, unknown> | null, profile: Ge
     return [{ name: "genesis field 5", pass: false, detail: "missing" }];
   }
   const commitment = field.sale_commitment;
+  const noSale = profile.sale === false;
   const pricePresent = field.price_bits !== undefined || field.price_sources !== undefined || field.price_time !== undefined;
   return [
     {
@@ -519,11 +528,17 @@ export function genesisChecks(field: Record<string, unknown> | null, profile: Ge
         && field.root === profile.root,
       detail: `schema ${String(field.schema)}, root ${String(field.root)}`,
     },
-    {
-      name: "sale commitment",
-      pass: typeof commitment === "string" && /^[0-9a-f]{64}$/.test(commitment),
-      detail: typeof commitment === "string" ? commitment : "missing",
-    },
+    noSale
+      ? {
+        name: "sale commitment",
+        pass: commitment === undefined,
+        detail: commitment === undefined ? "absent: the collection declares no sale" : "present, but the collection declares no sale",
+      }
+      : {
+        name: "sale commitment",
+        pass: typeof commitment === "string" && /^[0-9a-f]{64}$/.test(commitment),
+        detail: typeof commitment === "string" ? commitment : "missing",
+      },
     {
       name: "genesis price",
       pass: !pricePresent,

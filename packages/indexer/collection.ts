@@ -101,7 +101,8 @@ export type CollectionProfile = {
 };
 
 function matchesProfile(genesis: Genesis, profile: CollectionProfile | null | undefined): boolean {
-  if (!profile) return false;
+  // A profile with no reserve groups is one with no sale. It configures no reserve.
+  if (!profile || profile.reserveGroups.length === 0) return false;
   return genesis.name === profile.name
     && genesis.supply === profile.supply
     && genesis.first === profile.first

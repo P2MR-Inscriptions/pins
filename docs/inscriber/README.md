@@ -10,6 +10,10 @@ The sale stays closed until a wallet can complete a pre-signed offer. The tool s
 assigns the profile's reserve ids to the creator address, the rest to a sale holding
 address, and every mint change output to a third address.
 
+A profile with `"sale": false` declares no sale. The tool then needs no sale secret, no reserve, no
+commitment and no `--sale` address, and every item goes to the creator address. See
+[the launch guide](../guides/COLLECTION-LAUNCH.md#a-collection-with-no-sale). Everything below is the path with a sale.
+
 ## Air gap
 
 Four mint commands. Only `plan` and `broadcast` touch a network. `price` is also offline. It builds the sale-open inscription and does not broadcast.

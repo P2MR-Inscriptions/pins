@@ -45,6 +45,8 @@ export type MintPlan = {
   noSale?: true;
   /** Present only in a plan with no sale, when its items go to an address other than `creator`. */
   holder?: string;
+  /** Present, and true, only in a plan for one stand-alone inscription: no genesis, no collection, no item number. It has `noSale` too. */
+  single?: true;
   /** Plain mint change. It is its own address: not the creator, not the sale address, and not the holder. */
   change: string;
   /** Envelope marker, 8 hex characters. Launch value is 70696e73 (`pins`). */
@@ -65,11 +67,25 @@ export type PlanContent = {
   batches: { name: string; items: (RevealItem & { number: number })[] }[];
 };
 
+/** What a single inscription is: one body with its content type, and optional metadata (field 5). Nothing else. */
+export type SingleInscription = { body: Uint8Array; contentType: string; metadata?: Uint8Array };
+
+/** The content of a plan for one stand-alone inscription. It has one reveal, named `inscription`. */
+export type SingleContent = { single: SingleInscription };
+
+export function isSingleContent(content: PlanContent | SingleContent): content is SingleContent {
+  return "single" in content;
+}
+
 /**
  * The reveal groups of a mint. `buildPlan` and `sign` both call this, so the leaf that is planned and
  * the leaf that is checked before signing come from one definition.
+ * A single inscription is one group of one inscription that carries no item number.
  */
-export function revealGroups(content: PlanContent): PlanGroup[] {
+export function revealGroups(content: PlanContent | SingleContent): PlanGroup[] {
+  if (isSingleContent(content)) {
+    return [{ name: "inscription", items: [{ number: null, body: content.single.body, contentType: content.single.contentType, metadata: content.single.metadata }] }];
+  }
   return [
     {
       name: "genesis",
@@ -110,7 +126,7 @@ function internalTxid(display: string): Uint8Array {
   return Uint8Array.from(Buffer.from(display, "hex").reverse());
 }
 
-export function buildPlan(input: {
+type AssembleInput = {
   network: MintNetwork;
   feeRate: number;
   issuerPublic: Uint8Array;
@@ -125,10 +141,37 @@ export function buildPlan(input: {
   utxo: Utxo;
   /** Omitted means `pins`. Mainnet refuses any other value. */
   marker?: Uint8Array;
+  reserve: Set<number>;
+};
+
+export function buildPlan(input: AssembleInput & {
   genesis: { body: Uint8Array; leafList: Uint8Array; field5?: Uint8Array; bodyType?: string };
   batches: { name: string; items: (RevealItem & { number: number })[] }[];
-  reserve: Set<number>;
 }): MintPlan {
+  return assemble(input, revealGroups(input), {});
+}
+
+/**
+ * The plan for one stand-alone inscription: one fan-out output, one reveal with one inscription and the change
+ * output. There is no genesis, no collection, no root, no reserve, and no sale. The inscription goes to
+ * `creator`, the same address the destination rule gives a genesis. Mint change is its own address.
+ */
+export function buildSinglePlan(input: {
+  network: MintNetwork;
+  feeRate: number;
+  issuerPublic: Uint8Array;
+  recoveryPublic: Uint8Array;
+  creator: string;
+  change: string;
+  utxo: Utxo;
+  marker?: Uint8Array;
+  inscription: SingleInscription;
+}): MintPlan {
+  const { inscription, ...rest } = input;
+  return assemble({ ...rest, sale: null, root: "", reserve: new Set() }, revealGroups({ single: inscription }), { single: true });
+}
+
+function assemble(input: AssembleInput, groups: PlanGroup[], extra: { single?: true }): MintPlan {
   if (!Number.isFinite(input.feeRate) || input.feeRate <= 0) throw new Error("fee rate must be a positive finite number");
   assertSeparateChange(input.creator, input.sale, input.change);
   assertHolder(input.creator, input.sale, input.holder, input.change);
@@ -143,7 +186,6 @@ export function buildPlan(input: {
   const recovery = recoveryFor(input.recoveryPublic);
   const changeScript = addressToScriptPubKey(input.change, input.network);
   const reveals: { name: string; script: Uint8Array; tree: ReturnType<typeof commitTree>; outputs: { value: bigint; scriptPubKey: Uint8Array; plan: PlanOutput }[]; fee: bigint }[] = [];
-  const groups = revealGroups(input);
   for (const group of groups) {
     const script = groupLeaf(input.issuerPublic, group, marker);
     const tree = commitTree(script, recovery);
@@ -198,6 +240,7 @@ export function buildPlan(input: {
     creator: input.creator,
     sale: input.sale ?? input.creator,
     ...(input.sale === null ? { noSale: true as const } : {}),
+    ...extra,
     ...(input.holder === undefined ? {} : { holder: input.holder }),
     change: input.change,
     marker: markerHex(marker),

@@ -24,7 +24,7 @@ This repository is the protocol and the reference indexer and inscriber. A colle
 - **The specifications are Draft.** PINS-1 through PINS-6 describe what the reference code does and what has been measured on regtest and mainnet. They can still change, and nothing in this repository calls them final. The marker `pins` is fixed because it is in use on mainnet. The version number of the reference tools (1.0.0) is not a status of the specifications.
 - **Some test vectors are open.** The regtest runs of TV1-1, TV1-3 and TV1-4 are not done. Their script-level vectors exist in [docs/specs/vectors](docs/specs/vectors/README.md). TV1-2, TV1-5, TV1-6, TV1-7, TV2-2 to TV2-4, TV3-1 to TV3-5, TV4-2, TV4-3, TV5-3, TV5-4 and TV6-1 to TV6-4 are not done either. The list, with the state of each, is in [docs/specs/README.md](docs/specs/README.md#open-test-vectors).
 - **One scan is open.** The collision scan for the marker covers mainnet up to height 160,950. Blocks 160,951 to 161,947 have not been scanned ([collision-check.md](docs/specs/collision-check.md#4-open-blocks-160951-to-161947)).
-- **What a collection is, and what is not covered.** The reference inscriber mints collections of images. It does not yet mint a single stand-alone inscription, although the protocol and the indexer handle one (see [Single inscriptions](#single-inscriptions)).
+- **What the reference inscriber mints.** Collections of images, and single stand-alone inscriptions of any content type with `--single` (see [Single inscriptions](#single-inscriptions)). The specifications behind both are Draft.
 
 ## Explorer
 
@@ -169,12 +169,23 @@ Postage on every item output is 10,000 bits. A reveal heavier than 400,000 weigh
 
 An inscription does not need a collection. PINS-1 defines one inscription as an envelope with a content type and a body in a revealed leaf. A collection (PINS-5) is a layer on top of it: a genesis inscription and the items that match its Merkle root.
 
-- **The indexer** numbers, locates and tracks every inscription with the marker, in or out of a collection. `/inscription/{id}`, `/content/{id}`, `/inscriptions?owner=` and `/output/{outpoint}` answer for any of them. `/collection` and `/pieces` are only about a collection.
-- **The reference inscriber does not mint one on its own yet.** `assign`, `plan` and `preflight` need `--collection` and `--zip`. The loader reads `images/N.png`, `json/N.json` and `collection.json`, so every item is a PNG image, and every mint writes a genesis. No command takes a body file and a content type and writes a stand-alone inscription.
-- **The closest path today** is a collection of one item: a profile with `"supply": 1`, `"batchSize": 1` and `"sale": false`, and a zip with `images/1.png`, `json/1.json` and `collection.json`. `plan` and `sign` accept that profile. The result is a genesis and one image item, which is two inscriptions and not a bare one. The reference tests do not cover this case, and it only holds PNG images.
-- **Below the CLI**, the envelope writer and the plan builder in `packages/inscriber` carry a content type per item (the `price` plan already inscribes one text record), but no command uses them for a single inscription.
+- **The indexer** numbers, locates and tracks every inscription with the marker, in or out of a collection. `/inscription/{id}`, `/content/{id}`, `/inscriptions?owner=` and `/output/{outpoint}` answer for any of them. `/collection` and `/pieces` are only about a collection. A single inscription is never a collection item, so it is never authentic in the sense of PINS-5 §9.
+- **The reference inscriber mints one with `--single`.** `plan`, `sign` and `preflight` take `--single`, a `--body` file, a `--content-type`, and optionally `--metadata`. There is no genesis, no collection profile, no zip, no assignment, no reserve and no sale. One fan-out pays one reveal, and the reveal holds the one inscription and the mint change.
+- **The body is inscribed exactly as the file holds it**, with any content type that is a short ASCII MIME type (for example `text/plain;charset=utf-8` or `image/png`). It is not converted. `--metadata` is a JSON file with the same record form as an item of a collection, `{"meta": {"name": "...", "attributes": [{"trait_type": "...", "value": "..."}]}}`, and is written as field 5 in canonical form. Leave it out for no field 5.
+- **Where the output goes** follows the same destination rule as every other output (`packages/inscriber/destination.ts`): the inscription goes to `--creator`, and the last output of the reveal is mint change, which goes to `--change`. The funding address (from `address`) must be a third address. `--sale`, `--holder`, `--collection`, `--zip`, `--assignment` and `--root` are refused with `--single`.
+- **`sign --single` does not trust the plan.** It rebuilds the reveal leaf from the body, content type and metadata files and the issuer key of the keyfile, and refuses a plan whose leaf, outputs or addresses differ. The files you pass to `sign` are the ones that get signed. A plan cannot move itself into the single path, and a single plan cannot be signed as a collection plan.
+- **The id** of the inscription is the txid of the reveal, `i0`. `plan` prints it before anything is broadcast.
 
-A stand-alone inscription command is not in this release. Until it is, use a collection of one item, or write to the library.
+```text
+node --experimental-strip-types packages/inscriber/cli.ts plan --single --body note.txt --content-type "text/plain;charset=utf-8" --pub issuer.key.pub.json --utxo utxo.json --creator <address> --change <address> --fee-rate 1 --network regtest --out plan.json
+node --experimental-strip-types packages/inscriber/cli.ts sign --single --body note.txt --content-type "text/plain;charset=utf-8" --key issuer.key --plan plan.json --utxo utxo.json --creator <address> --change <address> --network regtest --out plan.signed.json
+node --experimental-strip-types packages/inscriber/cli.ts preflight --single --body note.txt --content-type "text/plain;charset=utf-8" --network regtest --plan plan.json --signed plan.signed.json --utxo utxo.json --pub issuer.key.pub.json --rpc http://127.0.0.1:18443/ --rpc-user YOUR_RPC_USER --rpc-password YOUR_RPC_PASSWORD
+node --experimental-strip-types packages/inscriber/cli.ts broadcast --plan plan.signed.json --network regtest --mine --rpc http://127.0.0.1:18443/ --rpc-user YOUR_RPC_USER --rpc-password YOUR_RPC_PASSWORD
+```
+
+`--single` takes `plan`, `sign` and `preflight`. `keygen`, `address` and `broadcast` are the same as for a collection, and there is no `assign` step because there is no reserve. The keyfile may be made with `keygen --no-sale`, since no sale secret is read. On mainnet, pass `--network mainnet` and `--confirm-network mainnet` to `preflight` and `broadcast`, as for a collection. The same rule holds as everywhere: rehearse on regtest first, and read the open items in [Status](#status).
+
+A collection of one item still works as before (a profile with `"supply": 1`, `"batchSize": 1`, and `"sale": false`). It writes a genesis and one image item, which is two inscriptions, and is for a collection that you mean to be a collection.
 
 ## Security
 

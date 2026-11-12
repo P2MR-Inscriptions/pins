@@ -11,7 +11,7 @@ import { readCompactSize } from "./compact.ts";
 import { parseEnvelopes } from "./script.ts";
 import { parseMarker } from "./marker.ts";
 import { rpcChainName, type MintNetwork } from "./network.ts";
-import type { MintPlan, PlanContent } from "./plan.ts";
+import { groupLeaf, revealGroups, type MintPlan, type PlanContent, type SingleContent } from "./plan.ts";
 import { LAUNCH_PRICE_SCHEMA, priceBody, priceSchemaFor } from "./price.ts";
 
 export { LAUNCH_COLLECTION_SCHEMA, LAUNCH_PRICE_SCHEMA, PRICE_BODY, priceBody, priceSchemaFor } from "./price.ts";
@@ -295,7 +295,7 @@ export function signedBodyChecks(unsigned: MintPlan, signed: MintPlan): Check[] 
   const problems: string[] = [];
   if (unsigned.signed !== false) problems.push("unsigned file is marked signed");
   if (signed.signed !== true) problems.push("signed file is not marked signed");
-  const keys = ["version", "network", "feeRate", "issuerPublic", "recoveryPublic", "creator", "sale", "noSale", "holder", "change", "marker", "root"] as const;
+  const keys = ["version", "network", "feeRate", "issuerPublic", "recoveryPublic", "creator", "sale", "noSale", "holder", "change", "marker", "root", "single"] as const;
   for (const key of keys) {
     if (unsigned[key] !== signed[key]) problems.push(key);
   }
@@ -331,6 +331,40 @@ export function signedBodyChecks(unsigned: MintPlan, signed: MintPlan): Check[] 
     pass: problems.length === 0,
     detail: problems.length === 0 ? "matches the unsigned plan except witnesses" : problems.join(", "),
   }];
+}
+
+/**
+ * Rows for a single inscription. The signed plan must declare itself single, with one reveal named `inscription`,
+ * and its reveal leaf must be the leaf rebuilt from the body, content type and metadata files with the issuer key
+ * of the public file. A leaf for any other content fails here, before anything is broadcast.
+ */
+export function singleChecks(unsigned: MintPlan, signed: MintPlan, content: SingleContent, issuerPublicHex: string): Check[] {
+  const problems: string[] = [];
+  if (unsigned.single !== true || signed.single !== true) problems.push("the plan is not a single inscription");
+  if (signed.noSale !== true || signed.root !== "" || signed.holder !== undefined) problems.push("the plan carries a sale, a holder, or a collection root");
+  if (signed.reveals.length !== 1 || signed.reveals[0]?.name !== "inscription") problems.push("the plan is not one reveal named inscription");
+  if (signed.issuerPublic !== issuerPublicHex) problems.push("issuer key differs from the public file");
+  const rows: Check[] = [{
+    name: "single inscription",
+    pass: problems.length === 0,
+    detail: problems.length === 0 ? "one inscription, no collection, no sale" : problems.join(", "),
+  }];
+  let match: boolean;
+  let detail: string;
+  try {
+    if (signed.reveals.length !== 1) throw new Error("no single reveal");
+    const group = revealGroups(content)[0];
+    const leaf = Buffer.from(groupLeaf(Buffer.from(issuerPublicHex, "hex"), group, parseMarker(signed.marker))).toString("hex");
+    match = leaf === signed.reveals[0].leaf;
+    detail = match
+      ? `${content.single.body.length} bytes ${content.single.contentType}, leaf rebuilt from the files`
+      : "the reveal leaf is not the leaf of these files";
+  } catch (error) {
+    match = false;
+    detail = error instanceof Error ? error.message : "could not rebuild the leaf";
+  }
+  rows.push({ name: "inscription content", pass: match, detail });
+  return rows;
 }
 
 export function parsePrice(value: unknown): PriceRecord {

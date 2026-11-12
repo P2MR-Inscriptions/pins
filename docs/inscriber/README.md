@@ -64,7 +64,13 @@ node --experimental-strip-types packages/inscriber/cli.ts price --pub issuer.key
 
 `npm run mainnet:preflight` is the preflight command. It reads `--key`, re-runs the reserve selection the indexer will run, checks the sale-secret hash against `sale_commitment`, and wipes the secret. Without `--key` those rows fail. Every row must be `PASS` before broadcast. `plan` does not take a price file. A price is optional. It belongs to a collection that declares a sale, and `price` refuses a `--collection` profile with `"sale": false`. `price` builds the sale-open inscription and does not broadcast. The tool holds no price: `price_bits`, `price_sources`, and `price_time` are read from the `--price` file, and only their form is checked. `--schema` on `price` is the rehearsal mask, the same value the indexer takes (`c/1` derives price text `p/1`). Omit it on mainnet. The launch text stays `pins-price/1`.
 
-`--creator`, `--sale`, and `--change` are Reserve, Sale, and Change. The funding address is the issuer address from `address`. Revenue is a fifth wallet. It receives buyer payments and is not a flag on `plan` or `preflight`. Do not pass it as `--sale` or as the funding address.
+Where each output goes is one rule (`packages/inscriber/destination.ts`), used by `plan` to build a plan and by `sign` to check it:
+
+- The genesis and the leaf list go to `--creator`.
+- An item goes to `--creator` when it is in the reserve, and to `--sale` otherwise. A collection with no sale has no reserve and no `--sale`. Its items go to `--creator`, or to `--holder` when you pass one.
+- The last output of every reveal is mint change. It goes to `--change`.
+
+The funding address is the issuer address from `address`. These addresses are all different, and `preflight` checks it. An address that receives payments outside the mint is not a flag on `plan` or `preflight`, and must not be passed as any of them.
 
 `sign` checks each unsigned raw transaction against `--creator`, `--sale`, and `--change`, and checks the fan-out input against `--utxo`. The address strings inside the plan are not a second source. The reveal control block must be a valid P2MR path from the reveal leaf to the commit root. The fan-out control block must match the issuer recovery leaf. A plan whose addresses or funding outpoint were replaced is refused while those four inputs stay the ones you passed to `plan`. `sign` does not accept a plan that omits them. A library call to `signPlan` requires the same `SignExpectations` object. There is no default that reads the plan.
 

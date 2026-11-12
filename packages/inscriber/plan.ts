@@ -10,7 +10,8 @@ import { addressToScriptPubKey, buildControlBlock, p2mrAddressFromRoot, p2mrLeaf
 import { commitTree, itemsLeaf, rawWitnessTransaction, recoveryFor, POSTAGE, type RevealItem } from "./reveal.ts";
 import { revealWeight } from "./weight.ts";
 import { assertMarkerForNetwork, markerHex, PINS_MARKER } from "./marker.ts";
-import { assertPostage, assertRevealWeight, assertSeparateChange } from "./verify.ts";
+import { assertHolder, assertPostage, assertRevealWeight, assertSeparateChange } from "./verify.ts";
+import { itemAddress } from "./destination.ts";
 import type { MintNetwork } from "./network.ts";
 
 export type Utxo = { txid: string; vout: number; value: bigint; script: Uint8Array };
@@ -40,9 +41,11 @@ export type MintPlan = {
   creator: string;
   /** Holding address of the sale items. For a plan with no sale it is `creator`, and `noSale` is true. */
   sale: string;
-  /** Present, and true, only in a plan for a collection with no sale: every item goes to `creator`. */
+  /** Present, and true, only in a plan for a collection with no sale. Every item goes to `holder`, or to `creator` when there is none. */
   noSale?: true;
-  /** Plain mint change. Not Reserve, not Sale, and not Revenue. */
+  /** Present only in a plan with no sale, when its items go to an address other than `creator`. */
+  holder?: string;
+  /** Plain mint change. It is its own address: not the creator, not the sale address, and not the holder. */
   change: string;
   /** Envelope marker, 8 hex characters. Launch value is 70696e73 (`pins`). */
   marker: string;
@@ -77,6 +80,8 @@ export function buildPlan(input: {
   creator: string;
   /** `null` for a collection with no sale. Every item then goes to `creator` and `reserve` must be empty. */
   sale: string | null;
+  /** Only with `sale: null`. Where the items go, when not to `creator`. */
+  holder?: string;
   change: string;
   root: string;
   utxo: Utxo;
@@ -88,6 +93,7 @@ export function buildPlan(input: {
 }): MintPlan {
   if (!Number.isFinite(input.feeRate) || input.feeRate <= 0) throw new Error("fee rate must be a positive finite number");
   assertSeparateChange(input.creator, input.sale, input.change);
+  assertHolder(input.creator, input.sale, input.holder, input.change);
   if (input.sale === null && input.reserve.size > 0) throw new Error("a collection with no sale has no reserve");
   const marker = input.marker ?? PINS_MARKER;
   assertMarkerForNetwork(marker, input.network);
@@ -119,7 +125,7 @@ export function buildPlan(input: {
     })), undefined, undefined, marker);
     const tree = commitTree(script, recovery);
     const outputs = group.items.map((item) => {
-      const address = item.number !== null && input.reserve.has(item.number) ? input.creator : item.number === null ? input.creator : (input.sale ?? input.creator);
+      const address = itemAddress({ creator: input.creator, holder: input.sale ?? input.holder ?? input.creator, reserve: input.reserve }, item.number);
       assertPostage(POSTAGE, `${group.name} item ${item.number ?? "genesis"}`);
       return {
         value: POSTAGE,
@@ -169,6 +175,7 @@ export function buildPlan(input: {
     creator: input.creator,
     sale: input.sale ?? input.creator,
     ...(input.sale === null ? { noSale: true as const } : {}),
+    ...(input.holder === undefined ? {} : { holder: input.holder }),
     change: input.change,
     marker: markerHex(marker),
     root: input.root,

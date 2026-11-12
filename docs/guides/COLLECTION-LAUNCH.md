@@ -27,11 +27,12 @@ The groups are collection configuration. This repository does not list them.
 
 ## A collection with no sale
 
-A profile with `"sale": false` has no `reserveGroups` and no `reserveExtra`. The tool then writes a genesis with the eight base keys and no `sale_commitment` (PINS-5 §3), and every item goes to the creator address.
+A profile with `"sale": false` has no `reserveGroups` and no `reserveExtra`. The tool then writes a genesis with the eight base keys and no `sale_commitment` (PINS-5 §3), and every item goes to the creator address, or to the holder when you name one.
 
 - `keygen --no-sale` makes a keyfile with no sale secret. A keyfile that has one still works, and the secret is not used.
 - `assign` takes no `--key`. It writes an empty assignment (no reserve, no sale ids, no commitment), so the later commands read the same file as before.
 - `plan` and `sign` take no `--sale`. Give them `--creator`, `--change`, and `--utxo`. They refuse a `--sale`, and an assignment that has a reserve or a commitment.
+- `plan` and `sign` take an optional `--holder`: the address that receives the items, when it is not the creator. The genesis and the leaf list still go to the creator. The holder is its own address, not the creator or the change address. `sign` needs the same `--holder` as `plan`, and refuses a plan whose holder is not the one you pass, or that has one when you pass none. `preflight` adds a holder row. A profile with a sale refuses `--holder`: its items go to `--sale`.
 - `preflight` needs no `--key`. It skips the seed hash, reserve reproduction, and sale complement rows. Its sale commitment row passes only when the genesis has none.
 - A plan carries `"noSale": true`. `sign` refuses a plan and a profile that disagree about the sale.
 

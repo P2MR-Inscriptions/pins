@@ -39,7 +39,7 @@ import { createKeyfile, openKeyfile, readPassphrase, writeKeyfile, zeroSecrets }
 import { assertBroadcastNetwork, parseNetwork } from "./network.ts";
 import { buildPlan, type MintPlan } from "./plan.ts";
 import { signPlan } from "./sign.ts";
-import { assertReserveSize, assertRoot, merkleRoot, leafPreimage } from "./verify.ts";
+import { assertReserveSize, assertRoot, holderFlag, merkleRoot, leafPreimage } from "./verify.ts";
 import { loadCanonical } from "../../scripts/canonical-batch.ts";
 
 function flags(argv: string[]): Record<string, string | boolean> {
@@ -77,7 +77,7 @@ function summary(plan: MintPlan, showMarker = false): string {
     `total fee ${total} bits`,
     `postage 10000 bits on every item output`,
     `creator ${plan.creator}`,
-    plan.noSale ? "no sale: every item goes to the creator" : `sale holding ${plan.sale}`,
+    plan.noSale ? (plan.holder === undefined ? "no sale: every item goes to the creator" : `no sale: every item goes to the holder ${plan.holder}`) : `sale holding ${plan.sale}`,
     `change ${plan.change}`,
     formatMarkerLine(plan.marker, showMarker),
   ];
@@ -226,6 +226,7 @@ async function main(): Promise<void> {
         recoveryPublic: Buffer.from(pubs.recoveryPublic, "hex"),
         creator: text(flag, "creator"),
         sale: noSale ? null : text(flag, "sale"),
+        holder: holderFlag(flag.holder, noSale, "plan"),
         change: text(flag, "change"),
         root,
         utxo: { txid: utxo.txid, vout: utxo.vout, value: BigInt(utxo.value), script: Buffer.from(utxo.script, "hex") },
@@ -320,6 +321,7 @@ async function main(): Promise<void> {
         fundingVout: utxo.vout,
         creator: text(flag, "creator"),
         sale: noSale ? null : text(flag, "sale"),
+        holder: holderFlag(flag.holder, noSale, "sign") ?? null,
         change: text(flag, "change"),
       }, profile?.root, priceField ? 0 : profile?.reserveCount);
       process.stdout.write(`${summary(signed, flag["show-marker"] === true)}\n`);
@@ -391,7 +393,7 @@ async function main(): Promise<void> {
         detail: agree ? "the profile and the plan declare no sale" : "the plan and the collection profile disagree about the sale",
       });
     }
-    checks.push(...addressChecks(network, signed.creator, signed.noSale ? null : signed.sale, signed.change, funding));
+    checks.push(...addressChecks(network, signed.creator, signed.noSale ? null : signed.sale, signed.change, funding, signed.holder));
     let found = false;
     let confirmations = 0;
     let valueBits: bigint | null = null;

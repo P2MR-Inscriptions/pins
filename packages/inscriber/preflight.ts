@@ -136,11 +136,15 @@ function addressOk(address: string, network: MintNetwork): string | null {
   }
 }
 
-/** `sale` is `null` for a collection with no sale. Its plan has no sale address, so there is no row for it. */
-export function addressChecks(network: MintNetwork, creator: string, sale: string | null, change: string, funding: string): Check[] {
+/**
+ * `sale` is `null` for a collection with no sale. Its plan has no sale address, so there is no row for it.
+ * `holder` is the address of the items of a plan with no sale that names one. It adds a row, and it is one more address that must differ.
+ */
+export function addressChecks(network: MintNetwork, creator: string, sale: string | null, change: string, funding: string, holder?: string): Check[] {
   const rows: [string, string][] = [
     ["creator address", creator],
     ...(sale === null ? [] : [["sale address", sale] as [string, string]]),
+    ...(holder === undefined ? [] : [["holder address", holder] as [string, string]]),
     ["change address", change],
     ["funding address", funding],
   ];
@@ -148,17 +152,18 @@ export function addressChecks(network: MintNetwork, creator: string, sale: strin
     const problem = addressOk(address, network);
     return { name, pass: problem === null, detail: problem ?? address };
   });
-  // Revenue is a fifth wallet. Buyer payments go there. It is not a mint-plan
-  // address, so it is not one of these four. Do not pass it as any of them.
-  const distinct = sale === null
-    ? new Set([creator, change, funding]).size === 3
-    : new Set([creator, sale, change, funding]).size === 4;
+  // Only the addresses of the mint plan are checked here. An address that receives payments outside the mint is
+  // not one of them, and must not be passed as any of them.
+  const named = [["creator", creator], ...(sale === null ? [] : [["sale", sale]]), ...(holder === undefined ? [] : [["holder", holder]]), ["change", change], ["funding", funding]] as [string, string][];
+  const distinct = new Set(named.map(([, address]) => address)).size === named.length;
+  const labels = named.map(([label]) => label);
+  const list = `${labels.slice(0, -1).join(", ")}, and ${labels[labels.length - 1]}`;
   checks.push({
     name: "addresses distinct",
     pass: distinct,
-    detail: sale === null
-      ? (distinct ? "creator, change, and funding differ" : "two of creator, change, and funding are the same")
-      : (distinct ? "creator, sale, change, and funding differ" : "two of creator, sale, change, and funding are the same"),
+    detail: distinct
+      ? `${list} differ`
+      : `two of ${list} are the same`,
   });
   return checks;
 }
@@ -290,7 +295,7 @@ export function signedBodyChecks(unsigned: MintPlan, signed: MintPlan): Check[] 
   const problems: string[] = [];
   if (unsigned.signed !== false) problems.push("unsigned file is marked signed");
   if (signed.signed !== true) problems.push("signed file is not marked signed");
-  const keys = ["version", "network", "feeRate", "issuerPublic", "recoveryPublic", "creator", "sale", "noSale", "change", "marker", "root"] as const;
+  const keys = ["version", "network", "feeRate", "issuerPublic", "recoveryPublic", "creator", "sale", "noSale", "holder", "change", "marker", "root"] as const;
   for (const key of keys) {
     if (unsigned[key] !== signed[key]) problems.push(key);
   }

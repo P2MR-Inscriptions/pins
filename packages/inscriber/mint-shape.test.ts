@@ -13,7 +13,7 @@ import { collectionView } from "../indexer/collection.ts";
 import { Indexer } from "../indexer/pins.ts";
 import { groupsOf, loadCanonicalDir } from "../../scripts/canonical-batch.ts";
 import { createKeyfile } from "./keyfile.ts";
-import { buildPlan } from "./plan.ts";
+import { buildPlan, type PlanContent } from "./plan.ts";
 import { encodeGenesisField } from "./preflight.ts";
 import { recoveryFor } from "./reveal.ts";
 import { signPlan, type SignExpectations } from "./sign.ts";
@@ -71,6 +71,13 @@ async function mintAndRead(sale: boolean) {
       issuer: f.issuer.toString("hex"), ...(sale ? { saleCommitment: "ab".repeat(32) } : {}),
     });
     const groups = groupsOf(canonical.items, BATCH);
+    const content: PlanContent = {
+      genesis: { body: canonical.collectionJson, leafList: canonical.leafList, field5 },
+      batches: groups.map((group, index) => ({
+        name: `batch-${index}`,
+        items: canonical.items.slice(group.start, group.start + group.count).map((item, offset) => ({ ...item, number: group.start + offset + 1 })),
+      })),
+    };
     const plan = buildPlan({
       network: "regtest",
       feeRate: 1,
@@ -81,15 +88,11 @@ async function mintAndRead(sale: boolean) {
       change: f.change,
       root,
       utxo: { txid: "11".repeat(32), vout: 0, value: 50_000_000_000n, script: f.funding },
-      genesis: { body: canonical.collectionJson, leafList: canonical.leafList, field5 },
-      batches: groups.map((group, index) => ({
-        name: `batch-${index}`,
-        items: canonical.items.slice(group.start, group.start + group.count).map((item, offset) => ({ ...item, number: group.start + offset + 1 })),
-      })),
+      ...content,
       reserve: new Set(reserve),
     });
     const expects: SignExpectations = { fundingTxid: "11".repeat(32), fundingVout: 0, creator: f.creator, sale: sale ? f.sale : null, change: f.change };
-    const signed = signPlan(plan, f.secret, new Set(reserve), expects, root, reserve.length);
+    const signed = signPlan(plan, f.secret, new Set(reserve), expects, root, reserve.length, content);
     const coinbase = { txid: "cc".repeat(32), hex: "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff00ffffffff0100e1f50500000000015100000000", vin: [], vout: [] };
     const fan = { txid: signed.fanout.txid, hex: signed.fanout.raw, vin: [], vout: [] };
     const known = new Map<string, bigint>([[`${"11".repeat(32)}:0`, BigInt(signed.fanout.spentValue)]]);

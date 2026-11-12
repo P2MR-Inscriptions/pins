@@ -32,7 +32,7 @@ Four mint commands. Only `plan` and `broadcast` touch a network. `price` is also
 2. `plan` runs online, watch-only. It reads the public keys, the id lists, the canonical
    zip, and one funding UTXO. It writes unsigned transactions. It has no secret.
 3. `sign` runs offline. It checks the Merkle root against
-   the root in `--collection`, checks every reveal
+   the root in `--collection`, rebuilds the genesis and every reveal leaf from the zip and compares the bytes with the plan, checks every reveal
    weight, checks postage, recomputes the reserve from the keyfile, refuses a reserve the indexer would not reproduce, and only then signs.
    It also requires `--creator`, `--sale`, `--change`, and `--utxo`. Those are the same
    three addresses and the same funding file passed to `plan`. They are not read from
@@ -78,7 +78,9 @@ The funding address is the issuer address from `address`. These addresses are al
 
 `sign` checks each unsigned raw transaction against `--creator`, `--sale`, and `--change`, and checks the fan-out input against `--utxo`. The address strings inside the plan are not a second source. The reveal control block must be a valid P2MR path from the reveal leaf to the commit root. The fan-out control block must match the issuer recovery leaf. A plan whose addresses or funding outpoint were replaced is refused while those four inputs stay the ones you passed to `plan`. `sign` does not accept a plan that omits them. A library call to `signPlan` requires the same `SignExpectations` object. There is no default that reads the plan.
 
-`sign` also signs the plan that `price` writes. That plan has no item and no reserve, so `sign` needs `--collection` and `--assignment` and no `--zip`. The price field does not carry the sale commitment. `sign` takes it from the assignment, which `assign` wrote, and refuses the plan unless the hash of the keyfile's sale secret equals it. It also checks that the price field is well formed with the price schema of the collection.
+`sign` rebuilds the genesis and each reveal leaf from the zip with the same code `plan` uses (`revealGroups` and `groupLeaf` in `plan.ts`), and compares them with the plan: the leaves, the names and the order of the reveals, the item number carried by each output, and the address of each output under the destination rule. The issuer key comes from the keyfile. The genesis field 5 is rebuilt from the profile, the root, and, for a collection with a sale on mainnet, the hash of the keyfile's own sale secret, not the commitment the plan carries. A collection with no sale has no commitment and no sale secret is read. The reveals are grouped by the profile's `batchSize`, so `sign` needs it with `--collection`, as `plan` does. A plan with the `pins` marker is refused without the zip. A plan that is not what the zip makes is refused, so a plan made on the online machine cannot get other content signed with the issuer key. `sign` also refuses a marker other than `pins` when the plan says mainnet, as `plan` does.
+
+`sign` also signs the plan that `price` writes. That plan has no item and no reserve, so `sign` needs `--collection` and `--assignment` and no `--zip`. The price plan is not rebuilt from a zip. It is rebuilt from its own price record: one inscription whose body is the price text of the record's schema, as plain text, with the record as field 5, and nothing else, so the issuer key signs no other content. The price field does not carry the sale commitment. `sign` takes it from the assignment, which `assign` wrote, and refuses the plan unless the hash of the keyfile's sale secret equals it. It also checks that the price field is well formed with the price schema of the collection.
 
 `--dry-run` on `plan` or `sign` prints the summary and does not write the output file.
 

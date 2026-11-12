@@ -10,7 +10,7 @@ import { init } from "@qbit-oss/pqc";
 import { encodeCbor } from "../collection/canonical.mjs";
 import { parseCollectionProfile } from "../protocol/profile.mjs";
 import { createKeyfile } from "./keyfile.ts";
-import { buildPlan, type MintPlan } from "./plan.ts";
+import { buildPlan, type MintPlan, type PlanContent } from "./plan.ts";
 import { recoveryFor } from "./reveal.ts";
 import { signPlan, verifyPlan, type SignExpectations } from "./sign.ts";
 import { assertReserveSize, leafPreimage, merkleRoot } from "./verify.ts";
@@ -38,6 +38,12 @@ async function fixture() {
 
 type Fixture = Awaited<ReturnType<typeof fixture>>;
 
+/** What the zip makes, for `sign` to rebuild and compare. */
+const CONTENT: PlanContent = {
+  genesis: { body: new TextEncoder().encode("{}"), leafList: new Uint8Array(0) },
+  batches: [{ name: "batch-0", items: [1, 2, 3].map((n) => ({ number: n, body: BODIES[n - 1], contentType: "image/png", metadata: METAS[n - 1] })) }],
+};
+
 function salePlan(f: Fixture, reserve: number[] = [2]): MintPlan {
   return buildPlan({
     network: "regtest",
@@ -49,8 +55,7 @@ function salePlan(f: Fixture, reserve: number[] = [2]): MintPlan {
     change: f.change,
     root: ROOT,
     utxo: { txid: "11".repeat(32), vout: 0, value: 50_000_000_000n, script: f.funding },
-    genesis: { body: new TextEncoder().encode("{}"), leafList: new Uint8Array(0) },
-    batches: [{ name: "batch-0", items: [1, 2, 3].map((n) => ({ number: n, body: BODIES[n - 1], contentType: "image/png", metadata: METAS[n - 1] })) }],
+    ...CONTENT,
     reserve: new Set(reserve),
   });
 }
@@ -64,9 +69,9 @@ test("a plan with a sale is refused when its reserve count is not declared", asy
   const f = await fixture();
   const plan = salePlan(f);
   for (const reserve of [new Set([2]), new Set<number>(), reserve500()]) {
-    assert.throws(() => verifyPlan(plan, reserve, expects(f), ROOT), /needs its reserve count/);
-    assert.throws(() => verifyPlan(plan, reserve, expects(f), ROOT, undefined), /needs its reserve count/);
-    assert.throws(() => signPlan(plan, f.made.secrets.issuerSecret, reserve, expects(f), ROOT), /needs its reserve count/);
+    assert.throws(() => verifyPlan(plan, reserve, expects(f), ROOT, undefined, CONTENT), /needs its reserve count/);
+    assert.throws(() => verifyPlan(plan, reserve, expects(f), ROOT, undefined, CONTENT), /needs its reserve count/);
+    assert.throws(() => signPlan(plan, f.made.secrets.issuerSecret, reserve, expects(f), ROOT, undefined, CONTENT), /needs its reserve count/);
   }
   f.made.secrets.issuerSecret.fill(0);
 });
@@ -74,14 +79,14 @@ test("a plan with a sale is refused when its reserve count is not declared", asy
 test("the declared reserve count is the one that is checked, 500 included", async () => {
   const f = await fixture();
   const plan = salePlan(f);
-  assert.doesNotThrow(() => verifyPlan(plan, new Set([2]), expects(f), ROOT, 1));
-  assert.doesNotThrow(() => verifyPlan(plan, reserve500(), expects(f), ROOT, 500));
-  assert.throws(() => verifyPlan(plan, reserve500(), expects(f), ROOT, 1), /reserve has 500 ids, not 1/);
-  assert.throws(() => verifyPlan(plan, new Set([2]), expects(f), ROOT, 500), /reserve has 1 ids, not 500/);
+  assert.doesNotThrow(() => verifyPlan(plan, new Set([2]), expects(f), ROOT, 1, CONTENT));
+  assert.doesNotThrow(() => verifyPlan(plan, reserve500(), expects(f), ROOT, 500, CONTENT));
+  assert.throws(() => verifyPlan(plan, reserve500(), expects(f), ROOT, 1, CONTENT), /reserve has 500 ids, not 1/);
+  assert.throws(() => verifyPlan(plan, new Set([2]), expects(f), ROOT, 500, CONTENT), /reserve has 1 ids, not 500/);
   // A sale with a declared count of zero is a count, not a missing one.
-  assert.doesNotThrow(() => verifyPlan(salePlan(f, []), new Set(), expects(f), ROOT, 0));
+  assert.doesNotThrow(() => verifyPlan(salePlan(f, []), new Set(), expects(f), ROOT, 0, CONTENT));
   for (const bad of [-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
-    assert.throws(() => verifyPlan(plan, new Set([2]), expects(f), ROOT, bad), /non-negative integer/);
+    assert.throws(() => verifyPlan(plan, new Set([2]), expects(f), ROOT, bad, CONTENT), /non-negative integer/);
   }
   f.made.secrets.issuerSecret.fill(0);
 });

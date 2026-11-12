@@ -20,7 +20,7 @@ This repository is the protocol. It does not name a collection, a Merkle root, o
 | `sale` | optional boolean, `true` when left out. `false` declares a collection with no sale (see below) |
 | `reserveGroups` | non-empty array. Each group has `trait_type`, `value`, and a positive `count`. Not allowed with `sale: false` |
 | `reserveExtra` | non-negative integer. Extra items taken after the groups. Not allowed with `sale: false` |
-| `batchSize` | positive integer. The number of items in each reveal. An operator setting that is not on-chain and has no default. `plan` refuses a profile without it. `assign`, `sign`, and `preflight` do not need it |
+| `batchSize` | positive integer. The number of items in each reveal. An operator setting that is not on-chain and has no default. `plan` and `sign` refuse a profile without it (`sign` rebuilds the reveals the way `plan` cut them). `assign` and `preflight` do not need it; `sign` of a price plan does not either |
 
 `reserveCount` is not a field you write. The parser sets it to the sum of the group counts plus `reserveExtra`, and refuses a sum larger than `supply`. It is the only reserve size the tools use. There is no default size: `plan` refuses an assignment of another size, and `sign` refuses a plan with a sale and the `pins` marker when it is not given the profile.
 

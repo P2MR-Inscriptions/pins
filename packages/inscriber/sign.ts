@@ -2,17 +2,19 @@
 
 /**
  * Offline signing. This module does not open a socket. It checks the frozen
- * Merkle root, the reveal weights, postage, and the reserve assignment, then
- * signs the fan-out and the reveals with the issuer key.
+ * Merkle root, the reveal weights, postage, and the reserve assignment. It
+ * rebuilds every reveal leaf from the canonical collection files and compares
+ * the bytes. Only then does it sign the fan-out and the reveals with the issuer key.
  */
 import { createHash } from "node:crypto";
 import { addressToScriptPubKey, p2mrLeafHash, p2mrScriptPubKey, p2mrSighash, verifyControlBlock, P2MR_LEAF_VERSION_V1, SIGHASH_DEFAULT, type P2mrTransaction } from "@qbit-oss/protocol";
 import { sign } from "@qbit-oss/pqc";
 import { parseTransaction } from "../indexer/chain.ts";
 import { commitTree, rawWitnessTransaction, recoveryFor, revealWitness } from "./reveal.ts";
-import { isPinsMarker, parseMarker } from "./marker.ts";
+import { assertMarkerForNetwork, isPinsMarker, parseMarker } from "./marker.ts";
 import { assertHolder, assertRevealWeight, assertRoot, assertSeparateChange, POSTAGE_BITS } from "./verify.ts";
-import type { MintPlan, RevealPlan } from "./plan.ts";
+import { groupLeaf, revealGroups, type MintPlan, type PlanContent, type RevealPlan } from "./plan.ts";
+import { priceContentOf } from "./preflight.ts";
 import { destinationsOf, itemAddress } from "./destination.ts";
 
 /**
@@ -130,6 +132,38 @@ function assertRaw(plan: MintPlan, reveal: RevealPlan, reserve: Set<number>, fan
   }
 }
 
+/**
+ * Rebuild every reveal from the canonical files and compare the bytes. The leaf is what the issuer key
+ * signs, so a leaf the zip does not produce is refused even when the rest of the plan is consistent with
+ * it. The outputs must carry the items of the envelopes, in order, and each must go where the destination
+ * rule sends it: the reserve assignment pays an output by its item number, so an output that carried
+ * another number could send a sale item to the creator or the reverse.
+ */
+function assertContent(plan: MintPlan, content: PlanContent, marker: Uint8Array, reserve: Set<number>): void {
+  const groups = revealGroups(content);
+  if (groups.length !== plan.reveals.length) {
+    throw new Error(`plan has ${plan.reveals.length} reveals, the canonical zip makes ${groups.length}`);
+  }
+  const issuer = bytes(plan.issuerPublic);
+  const destinations = destinationsOf(plan, reserve);
+  groups.forEach((group, index) => {
+    const reveal = plan.reveals[index];
+    if (reveal.name !== group.name) throw new Error(`reveal ${index} is named ${reveal.name}, the canonical zip makes ${group.name}`);
+    if (!sameBytes(groupLeaf(issuer, group, marker), bytes(reveal.leaf))) {
+      throw new Error(`${reveal.name} leaf does not match the canonical zip`);
+    }
+    const expected = [...group.items.map((item) => item.number), null];
+    const found = reveal.outputs.map((output) => output.item);
+    if (expected.length !== found.length || expected.some((item, at) => item !== found[at])) {
+      throw new Error(`${reveal.name} outputs do not carry the items of the canonical zip`);
+    }
+    reveal.outputs.forEach((output, at) => {
+      const want = at === reveal.outputs.length - 1 ? plan.change : itemAddress(destinations, output.item);
+      if (output.address !== want) throw new Error(`${reveal.name} output ${at} is not for ${want}`);
+    });
+  });
+}
+
 function assertExpectations(plan: MintPlan, expected: SignExpectations): void {
   if (plan.creator !== expected.creator || (plan.noSale ? null : plan.sale) !== expected.sale || plan.change !== expected.change || (plan.holder ?? null) !== (expected.holder ?? null)) {
     throw new Error("plan addresses do not match the addresses supplied to sign");
@@ -145,24 +179,31 @@ function assertExpectations(plan: MintPlan, expected: SignExpectations): void {
 }
 
 /**
+ * `content` is the genesis and the batches as the canonical zip makes them. A plan with the `pins` marker
+ * needs it, except a plan that inscribes only a price: that one is rebuilt from its own price record, which
+ * `sign` checks against the assignment. A rehearsal plan is checked against `content` when it is given.
  * `reserveCount` is the size the reserve must have. It is the collection's own number: the sum of the
  * group counts and `reserveExtra` of its profile. There is no default. A plan with a sale that uses the
  * `pins` marker is refused when the count is not given. A plan with no sale never takes a reserve.
  */
-export function verifyPlan(plan: MintPlan, reserve: Set<number>, expected: SignExpectations, expectedRoot?: string, reserveCount?: number): void {
+export function verifyPlan(plan: MintPlan, reserve: Set<number>, expected: SignExpectations, expectedRoot?: string, reserveCount?: number, content?: PlanContent): void {
   assertExpectations(plan, expected);
   if (plan.noSale && (reserve.size > 0 || (reserveCount ?? 0) > 0)) throw new Error("a plan with no sale has no reserve");
   if (reserveCount !== undefined && (!Number.isInteger(reserveCount) || reserveCount < 0)) throw new Error("reserve count must be a non-negative integer");
   if (plan.noSale) reserveCount = 0;
   const marker = parseMarker(plan.marker);
+  assertMarkerForNetwork(marker, plan.network);
+  const rebuilt = priceContentOf(plan) ?? content;
   if (isPinsMarker(marker)) {
     if (!expectedRoot) throw new Error("a pins plan needs the collection profile root");
+    if (!rebuilt) throw new Error("a pins plan needs the canonical zip to rebuild its reveals");
     assertRoot(plan.root, expectedRoot);
     if (reserveCount === undefined) throw new Error("a plan with a sale needs its reserve count: pass the collection profile, which declares the reserve groups");
     if (reserve.size !== reserveCount) throw new Error(`reserve has ${reserve.size} ids, not ${reserveCount}`);
   } else if (expectedRoot && plan.root === expectedRoot) {
     throw new Error("a rehearsal plan must not carry the collection root");
   }
+  if (rebuilt) assertContent(plan, rebuilt, marker, reserve);
   assertSeparateChange(plan.creator, plan.noSale ? null : plan.sale, plan.change);
   assertHolder(plan.creator, plan.noSale ? null : plan.sale, plan.holder, plan.change);
   const fanRaw = bytes(plan.fanout.raw);
@@ -203,8 +244,8 @@ export function verifyPlan(plan: MintPlan, reserve: Set<number>, expected: SignE
 }
 
 /** Returns a signed copy. The caller zeros the secret. */
-export function signPlan(plan: MintPlan, issuerSecret: Uint8Array, reserve: Set<number>, expected: SignExpectations, expectedRoot?: string, reserveCount?: number): MintPlan {
-  verifyPlan(plan, reserve, expected, expectedRoot, reserveCount);
+export function signPlan(plan: MintPlan, issuerSecret: Uint8Array, reserve: Set<number>, expected: SignExpectations, expectedRoot?: string, reserveCount?: number, content?: PlanContent): MintPlan {
+  verifyPlan(plan, reserve, expected, expectedRoot, reserveCount, content);
   const signed: MintPlan = { ...plan, reveals: plan.reveals.map((reveal) => ({ ...reveal })), signed: true };
   signed.fanout = { ...plan.fanout };
   signed.fanout.raw = Buffer.from(signInput(

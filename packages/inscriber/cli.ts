@@ -37,7 +37,7 @@ import {
 } from "./preflight.ts";
 import { createKeyfile, openKeyfile, readPassphrase, writeKeyfile, zeroSecrets } from "./keyfile.ts";
 import { assertBroadcastNetwork, parseNetwork } from "./network.ts";
-import { buildPlan, type MintPlan } from "./plan.ts";
+import { buildPlan, type MintPlan, type PlanContent } from "./plan.ts";
 import { signPlan } from "./sign.ts";
 import { assertReserveSize, assertRoot, holderFlag, merkleRoot, leafPreimage } from "./verify.ts";
 import { groupsOf, loadCanonical, type MintShape } from "../../scripts/canonical-batch.ts";
@@ -113,6 +113,20 @@ function batchSizeOf(profile: CollectionProfile): number {
   return profile.batchSize;
 }
 
+/** The genesis and the batches of a mint, from the canonical zip. `plan` and `sign` both use this. */
+function planContent(canonical: Awaited<ReturnType<typeof loadCanonical>>, batchSize: number, field5: Uint8Array): PlanContent {
+  return {
+    genesis: { body: canonical.collectionJson, leafList: canonical.leafList, field5 },
+    batches: groupsOf(canonical.items, batchSize).map((group, index) => ({
+      name: `batch-${index}`,
+      items: canonical.items.slice(group.start, group.start + group.count).map((item, offset) => ({
+        ...item,
+        number: group.start + offset + 1,
+      })),
+    })),
+  };
+}
+
 async function readProfile(flag: Record<string, string | boolean>, required: true): Promise<CollectionProfile>;
 async function readProfile(flag: Record<string, string | boolean>, required: false): Promise<CollectionProfile | null>;
 async function readProfile(flag: Record<string, string | boolean>, required: boolean): Promise<CollectionProfile | null> {
@@ -174,14 +188,15 @@ async function main(): Promise<void> {
   }
   if (command === "assign" || command === "plan" || command === "sign") {
     const profile = command === "sign" ? await readProfile(flag, false) : await readProfile(flag, true);
-    // `plan` splits the items into reveals of the declared size. Ask for it before the zip is read.
-    const batchSize = command === "plan" ? batchSizeOf(profile as CollectionProfile) : 0;
     // A rehearsal sign passes --assignment and no collection profile. It must
     // not need the collection zip. Every other path recomputes the root.
     // A plan that inscribes only a price has no item and no reserve. It is signed without the zip.
     const earlyPlan = command === "sign" && typeof flag.plan === "string" ? JSON.parse(readFileSync(flag.plan, "utf8")) as MintPlan : null;
     const priceField = profile && earlyPlan ? pricePlanField(earlyPlan) : null;
     const signWithoutZip = command === "sign" && (priceField !== null || (!profile && typeof flag.assignment === "string"));
+    // `plan` splits the items into reveals of the declared size, and `sign` rebuilds them the same way.
+    // Ask for the size before the zip is read.
+    const batchSize = (command === "plan" || (command === "sign" && !signWithoutZip && profile)) ? batchSizeOf(profile as CollectionProfile) : 0;
     const canonical = signWithoutZip ? null : await loadCanonical(text(flag, "zip"), shapeOf(profile));
     const root = canonical
       ? merkleRoot(canonical.items.map((item, index) => leafPreimage(index + 1, item.body, item.metadata ?? new Uint8Array())))
@@ -246,14 +261,7 @@ async function main(): Promise<void> {
         change: text(flag, "change"),
         root,
         utxo: { txid: utxo.txid, vout: utxo.vout, value: BigInt(utxo.value), script: Buffer.from(utxo.script, "hex") },
-        genesis: { body: canonical.collectionJson, leafList: canonical.leafList, field5: await mainnetOrCollectionField(network, flag, pubs.issuerPublic, root, assignment.saleCommitment, profile) },
-        batches: groupsOf(canonical.items, batchSize).map((group, index) => ({
-          name: `batch-${index}`,
-          items: canonical.items.slice(group.start, group.start + group.count).map((item, offset) => ({
-            ...item,
-            number: group.start + offset + 1,
-          })),
-        })),
+        ...planContent(canonical, batchSize, await mainnetOrCollectionField(network, flag, pubs.issuerPublic, root, assignment.saleCommitment, profile)),
         reserve: new Set(assignment.reserve),
       });
       process.stdout.write(`${summary(plan, flag["show-marker"] === true)}\n`);
@@ -332,6 +340,19 @@ async function main(): Promise<void> {
       if (secrets.issuerPublic !== plan.issuerPublic) throw new Error("keyfile does not match the plan");
       const utxo = JSON.parse(readFileSync(text(flag, "utxo"), "utf8")) as { txid?: unknown; vout?: unknown };
       if (typeof utxo.txid !== "string" || typeof utxo.vout !== "number") throw new Error("--utxo must be the funding file, with txid and vout");
+      // Rebuild the genesis and every batch from the zip, with the issuer key and the sale commitment taken
+      // from the keyfile, not from the plan. A price plan has no zip: `signPlan` rebuilds it from its own
+      // price record, which was checked against the assignment above.
+      const content = canonical && profile && !priceField
+        ? planContent(canonical, batchSize, await mainnetOrCollectionField(
+          plan.network,
+          flag,
+          secrets.issuerPublic,
+          root,
+          noSale ? undefined : createHash("sha256").update(saleSecretOf(secrets)).digest("hex"),
+          profile,
+        ))
+        : undefined;
       const signed = signPlan(plan, secrets.issuerSecret, new Set(reserveIds), {
         fundingTxid: utxo.txid,
         fundingVout: utxo.vout,
@@ -339,7 +360,7 @@ async function main(): Promise<void> {
         sale: noSale ? null : text(flag, "sale"),
         holder: holderFlag(flag.holder, noSale, "sign") ?? null,
         change: text(flag, "change"),
-      }, profile?.root, priceField ? 0 : profile?.reserveCount);
+      }, profile?.root, priceField ? 0 : profile?.reserveCount, content);
       process.stdout.write(`${summary(signed, flag["show-marker"] === true)}\n`);
       if (flag["dry-run"]) return;
       writeFileSync(text(flag, "out"), `${JSON.stringify(signed)}\n`);

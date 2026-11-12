@@ -11,8 +11,9 @@ import { sign } from "@qbit-oss/pqc";
 import { parseTransaction } from "../indexer/chain.ts";
 import { commitTree, rawWitnessTransaction, recoveryFor, revealWitness } from "./reveal.ts";
 import { isPinsMarker, parseMarker } from "./marker.ts";
-import { assertRevealWeight, assertRoot, assertSeparateChange, POSTAGE_BITS } from "./verify.ts";
+import { assertHolder, assertRevealWeight, assertRoot, assertSeparateChange, POSTAGE_BITS } from "./verify.ts";
 import type { MintPlan, RevealPlan } from "./plan.ts";
+import { destinationsOf, itemAddress } from "./destination.ts";
 
 /**
  * Values the operator supplies beside the plan. They are not read from the plan.
@@ -24,6 +25,8 @@ export type SignExpectations = {
   creator: string;
   /** `null` when the plan has no sale. */
   sale: string | null;
+  /** The holder of a plan with no sale, when it has one. Left out or `null` means the plan has none. */
+  holder?: string | null;
   change: string;
 };
 
@@ -120,9 +123,7 @@ function assertRaw(plan: MintPlan, reveal: RevealPlan, reserve: Set<number>, fan
     }
     const last = i === reveal.outputs.length - 1;
     if (last && meta.item !== null) throw new Error(`${reveal.name} change is not the change address`);
-    const expectedAddress = last || meta.item === null
-      ? (last ? plan.change : plan.creator)
-      : reserve.has(meta.item) || plan.noSale ? plan.creator : plan.sale;
+    const expectedAddress = last ? plan.change : itemAddress(destinationsOf(plan, reserve), meta.item);
     if (!sameBytes(output.script, addressToScriptPubKey(expectedAddress, plan.network))) {
       throw new Error(`${reveal.name} output ${i} is not ${expectedAddress}`);
     }
@@ -130,7 +131,7 @@ function assertRaw(plan: MintPlan, reveal: RevealPlan, reserve: Set<number>, fan
 }
 
 function assertExpectations(plan: MintPlan, expected: SignExpectations): void {
-  if (plan.creator !== expected.creator || (plan.noSale ? null : plan.sale) !== expected.sale || plan.change !== expected.change) {
+  if (plan.creator !== expected.creator || (plan.noSale ? null : plan.sale) !== expected.sale || plan.change !== expected.change || (plan.holder ?? null) !== (expected.holder ?? null)) {
     throw new Error("plan addresses do not match the addresses supplied to sign");
   }
   if (!/^[0-9a-f]{64}$/.test(expected.fundingTxid) || !Number.isInteger(expected.fundingVout) || expected.fundingVout < 0) {
@@ -163,6 +164,7 @@ export function verifyPlan(plan: MintPlan, reserve: Set<number>, expected: SignE
     throw new Error("a rehearsal plan must not carry the collection root");
   }
   assertSeparateChange(plan.creator, plan.noSale ? null : plan.sale, plan.change);
+  assertHolder(plan.creator, plan.noSale ? null : plan.sale, plan.holder, plan.change);
   const fanRaw = bytes(plan.fanout.raw);
   const fanHeader = headerOf(fanRaw);
   if (fanHeader.version !== 2 || fanHeader.locktime !== 0) throw new Error("fan-out version or locktime is not the unsigned plan");

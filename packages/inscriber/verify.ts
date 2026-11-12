@@ -48,6 +48,27 @@ export function assertSeparateChange(creator: string, sale: string | null, chang
   if (!change || change === creator || change === sale) throw new Error("mint change must be its own address");
 }
 
+/**
+ * A holder is an address for the items of a collection with no sale. It is not allowed with a sale, whose items
+ * go to the sale address. It is neither the creator nor the change address, so it names a different place.
+ */
+export function assertHolder(creator: string, sale: string | null, holder: string | undefined, change: string): void {
+  if (holder === undefined) return;
+  if (sale !== null) throw new Error("a holder is for a collection with no sale; with a sale, the items go to the sale address");
+  if (!holder || holder === creator || holder === change) throw new Error("the holder must be its own address, not the creator or the change address");
+}
+
+/**
+ * `--holder` names where the items of a collection with no sale go, when not to the creator. With a sale the items
+ * go to `--sale`, so a holder is refused. A flag with no value is refused.
+ */
+export function holderFlag(value: string | boolean | undefined, noSale: boolean, command: string): string | undefined {
+  if (value === undefined) return undefined;
+  if (!noSale) throw new Error(`--holder is for a collection with no sale, so ${command} takes none here; with a sale, the items go to --sale`);
+  if (typeof value !== "string" || value.length === 0) throw new Error("missing --holder");
+  return value;
+}
+
 /** The reserve an assignment carries must be the size the collection profile declares. Repeated ids count once. */
 export function assertReserveSize(reserve: readonly number[], declared: number): void {
   const size = new Set(reserve).size;

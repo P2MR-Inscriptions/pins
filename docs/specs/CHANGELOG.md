@@ -11,6 +11,7 @@ today becomes invalid.
 - PINS-5 §2 and §6.1. The reveal count is stated for any `supply` and `batch` (`1 + ceil(supply / batch)`). The 10,000-item figures are labeled as the worked example.
 - PINS-5 §6.2. The mainnet record names its collection, the public example of [docs/examples/flatbits.md](../examples/flatbits.md).
 - PINS-1 §9.5.1. The recommended batching is labeled as the one for that example.
+- PINS-5 §8.5, PINS-6 §5.1 and §6, and the index. The 30-day sale length and the 1 USD creator revenue are removed. They were terms of one collection. No tool or indexer enforced either: no code measures a sale length, and the checks on a price inscription are only that its three fields are well formed. The protocol now fixes no sale length and no price. `price_bits` is the price of one sale item in bits as the issuer declares it, `price_sources` the issuer's record of where the price comes from, `price_time` its UTC timestamp. The median rule is no longer part of the specification. No field was added, and no inscription that is valid today becomes invalid.
 - PINS-5 §6. Field 5 of the leaf list is optional. The leaf list on mainnet has none. When present it
   is `pins-leaflist/1` with `root` as a byte string. The section now states which inscription the
   reference indexer takes as the leaf list: it is in the transaction of the genesis, and its leaves

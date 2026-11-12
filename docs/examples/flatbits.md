@@ -4,6 +4,8 @@
 
 FlatBits is the first collection inscribed with PINS on Qbit mainnet. This page records it as a public example of the protocol: what is on chain, and what an indexer reports for it. It is an example only. The protocol, the inscriber, the indexer, and the explorer have no default collection, and nothing here is read by them. This page holds no art, no key, no seed, and no sale price. The reserve groups are not listed.
 
+Its sale length and price are terms of that collection. They are not rules of the protocol and are not recorded on this page.
+
 ## What is on chain
 
 | Item | Value |

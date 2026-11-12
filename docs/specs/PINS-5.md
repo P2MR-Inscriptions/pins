@@ -324,9 +324,11 @@ Reference: `saleOrder` in `packages/protocol/reserve.mjs`.
 
 The k-th primary sale, in chain order of the sale transactions, MUST deliver `order[k]`.
 
-### 8.5 Thirty days, reveal, unsold items
+### 8.5 Sale reveal, unsold items
 
-The sale lasts 30 × 86,400 seconds, measured from the timestamp of the block that contains `G`.
+The protocol fixes no sale length. A collection with a sale decides how long it lasts and tells its
+buyers. No field of the genesis or of any inscription declares a length, and no indexer measures one.
+The sale ends when the issuer closes it, and the sale reveal below is the public mark of that close.
 
 At close the issuer publishes a separate inscription. Field 5 is
 `{ "schema": "pins-sale-reveal/1", "root": bytes(32), "sale_secret": bytes(32) }`.

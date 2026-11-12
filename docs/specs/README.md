@@ -55,7 +55,7 @@ These are inputs. This specification does not publish a name, a root, a supply, 
 | Regtest size measurement | one 10,000-item image run: 16 reveals of 625 (345,083–372,817 bytes) plus 1 genesis reveal (326,064 bytes), funded by one confirmed fan-out (PINS-5 §6.1). 6,174,719 bytes with that fan-out, which is 0.06174719 QBT at 1 bit/vB on that measurement. That run is not a mainnet record (PINS-5 §6.2 has the mainnet figures) and it does not fix a supply |
 | Provenance | issuer key + Merkle root + leaf list + closing inscription (PINS-5) |
 | Creator reserve | groups fixed before mint, selected by PINS-5 §8.3. Not a numeric id range. The groups are not listed here |
-| Sale | the items that are not reserved, permutation in PINS-5 §8.4, 30 days, 1 USD per item in QBT from the median rule in PINS-6 §5.1, published later as a `pins-price/1` inscription when the sale opens, final after 6 confirmations |
+| Sale | the items that are not reserved, permutation in PINS-5 §8.4, a length and a price per item that the collection decides (the protocol fixes neither), the price published later as a `pins-price/1` inscription when the sale opens, final after 6 confirmations |
 
 ## Open questions only regtest can settle
 
@@ -83,8 +83,8 @@ does not have its vector copied into this index. The raw regtest log is not part
 
 1. Marker `pins`: final.
 2. A creator reserve is selected by PINS-5 §8 from groups fixed before mint. Not a numeric id range. The groups are collection configuration and are not listed here.
-3. Sale length is 30 days (PINS-5 §8.5). Unsold items go to an address committed before close.
-4. Price: 1 USD per item, in QBT, from the median rule in PINS-6 §5.1. The price is a separate `pins-price/1` inscription, not the genesis. The first valid one wins. No re-pricing.
+3. The protocol fixes no sale length (PINS-5 §8.5). The collection decides it and tells its buyers. Unsold items go to an address committed before close.
+4. Price: the protocol fixes no price. The issuer declares `price_bits`, the price of one sale item in bits, in a separate `pins-price/1` inscription, not the genesis (PINS-6 §5.1). The first valid one wins. No re-pricing.
 5. `CONFIRMATIONS_FINAL` = 6 for the marketplace.
 6. The protocol repository is https://github.com/P2MR-Inscriptions/pins. That URL is not a consensus constant.
 7. A collection's Merkle root is fixed in its genesis. This specification does not publish one.

@@ -51,12 +51,14 @@ breaks any rule is handled as in rule 5 above: it is ignored and the inscription
 5. Integers are read up to 64 bits, from `-2^64` to `2^64 - 1`. A rule that needs a safe integer, such
    as `supply` or `first` in PINS-5 §3, rejects a value above `2^53 - 1`.
 6. A text string MUST be valid UTF-8, and a map key MUST be a text string. Anything else is an error.
+   A leading U+FEFF is a character of the string and is not removed.
 7. The depth of the top-level item is 0, and each array element, map key and map value is one deeper
    than its container. An item at a depth above 32 is an error. An item inside 32 arrays or maps is
    still accepted. One inside 33 is not.
 8. A repeated map key is not an error. The last value replaces the earlier one, and the key keeps the
    position of its first occurrence. The reader does not check key order. The rules that use a map check
    it (PINS-5 §3 for the genesis, PINS-5 §6 for the leaf list). Writers MUST NOT repeat a key (§2).
+   Every text key is an ordinary key, including `__proto__`.
 
 ## 3. Item schema (`pins-item/1`)
 

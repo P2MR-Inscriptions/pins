@@ -27,6 +27,11 @@ today becomes invalid.
   regtest figures. PINS-5 §6.2 records the mainnet figures: the fan-out in block 161947, the genesis
   reveal in block 161948, and the 16 item reveals in blocks 161949 to 161971, 6,175,047 bytes and
   6,175,124 bits in all.
+- PINS-1 §4.1, §5.1 and §8. An empty push in a value position is a value, and only an empty push in a
+  tag position is the body separator. A tag of more than one byte is unknown, and one whose first byte
+  is even makes the inscription opaque. A leading U+FEFF in `content_type` is kept.
+- PINS-4 §2.1. A leading U+FEFF in a text string is kept, and a map key named `__proto__` is an
+  ordinary key.
 
 ## 2026-11-06
 

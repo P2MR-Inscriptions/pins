@@ -258,7 +258,7 @@ export class Indexer {
           number: this.nextNumber,
           location: { state: "unbound" },
           flags: [...envelope.flags],
-          contentType: content ? new TextDecoder().decode(content.value) : "",
+          contentType: content ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(content.value) : "",
           body: envelope.body,
           bodySha256: createHash("sha256").update(envelope.body).digest("hex"),
           metadata,

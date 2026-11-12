@@ -207,7 +207,13 @@ export function parseEnvelopes(script: Uint8Array, expectedMarker: Uint8Array = 
 
 function readFields(pushes: Uint8Array[]): ParsedEnvelope {
   const flags: string[] = [];
-  let separator = pushes.findIndex((push) => push.length === 0);
+  let separator = -1;
+  for (let i = 0; i < pushes.length; i += 2) {
+    if (pushes[i].length === 0) {
+      separator = i;
+      break;
+    }
+  }
   if (separator < 0) {
     flags.push("no_body");
     separator = pushes.length;
@@ -222,7 +228,10 @@ function readFields(pushes: Uint8Array[]): ParsedEnvelope {
   for (let i = 0; i < head.length; i += 2) {
     const tagBytes = head[i];
     const value = head[i + 1];
-    if (tagBytes.length !== 1) continue;
+    if (tagBytes.length !== 1) {
+      if (tagBytes[0] % 2 === 0) flags.push("opaque");
+      continue;
+    }
     const tag = tagBytes[0];
     if (tag % 2 === 0 && ![2].includes(tag)) flags.push("opaque");
     if (seen.has(tag) && tag !== 5) flags.push("duplicate_field");

@@ -8,6 +8,8 @@ This file records the reference tools and the repository layout. Specification e
 
 - Indexer: `--genesis <inscription id>` makes the collection view accept only that inscription as its genesis. Without it, the first valid genesis in chain order is used, as before.
 - Indexer: field 5 metadata whose `name` is not text, or whose `attributes` are not text pairs, is ignored. It no longer makes `/collection` and `/pieces` fail.
+- Inscriber: the envelope reader takes only an empty push at a tag position as the body separator. An empty field value no longer ends the fields early. A multi-byte tag with an even first byte now makes the inscription opaque, as PINS-1 §5.4 says.
+- Indexer: the CBOR reader keeps a map key named `__proto__` and a leading byte order mark in a text string. The content type of an inscription keeps a leading byte order mark.
 - Specifications: clarifications that match the deployed format and the reference indexer. No valid inscription becomes invalid. See [docs/specs/CHANGELOG.md](docs/specs/CHANGELOG.md).
 
 ## 1.0.0

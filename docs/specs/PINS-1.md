@@ -98,8 +98,9 @@ Rules:
    is complete; if it is any other opcode, the candidate is not an envelope.
 4. If the script ends before `OP_ENDIF`, the candidate is not an envelope.
 5. Pushes before the body separator are read as alternating `tag`, `value` items. The body
-   separator is the first push of zero bytes that occupies a tag position. Every push after it,
-   up to `OP_ENDIF`, is a body push.
+   separator is the first push of zero bytes that occupies a tag position. An empty push in a value
+   position is an empty value, not the separator. Every push after the separator, up to `OP_ENDIF`,
+   is a body push.
 6. If, before the separator (or before `OP_ENDIF` when there is no separator), the number of
    pushes after the marker is odd, the final tag has no value. The envelope is still an
    inscription and gets the `incomplete_field` flag (section 7.2); the dangling tag is ignored.
@@ -158,7 +159,7 @@ including OP_SUCCESS opcodes: consensus has already decided the spend is valid.
 
 A tag is the byte string pushed in a tag position. `OP_1`–`OP_16` and `OP_1NEGATE` are accepted
 and read as the one-byte strings they push. A tag of exactly one byte is compared against the table
-below. The parity of a tag is the parity of its first byte (its least significant byte). Even tags
+below. A tag of more than one byte is an unknown tag (section 5.4). The parity of a tag is the parity of its first byte (its least significant byte). Even tags
 are **critical**; odd tags are **informational**.
 
 ### 5.2 Field table
@@ -254,7 +255,8 @@ There are no "cursed" inscriptions and no negative numbers in PINS.
 
 - The **body** is the concatenation of all body pushes, in order.
 - `content_type` tells readers how to interpret the body. Absent, readers SHOULD treat the content
-  as `application/octet-stream`.
+  as `application/octet-stream`. The value is the UTF-8 text of field 1 as written. A leading U+FEFF
+  is part of the text and is not removed, so such a value does not equal the type without it.
 - When `content_encoding` is present, the body is encoded; readers decode it before use. PINS-5
   collection items MUST NOT use `content_encoding`.
 - Delegation: when `delegate` names an existing inscription, readers SHOULD serve the delegate's

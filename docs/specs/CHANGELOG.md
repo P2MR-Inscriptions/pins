@@ -37,6 +37,12 @@ today becomes invalid.
 - PINS-2 §5 and PINS-3 §6. The subsidy schedule of PINS-2 §5.1 applies to every indexer, because it
   fixes where fee bits sit in the coinbase. The text gives the stepdown interval of testnet4 and
   regtest, and says the subsidy is never read from the coinbase.
+- PINS-5 §7, §8.5 and §9. The checks of the reference indexer for the closing inscription and for the
+  sale reveal are stated: signer, position after the genesis, exact keys in order, and the values
+  of `root`, `count` and `sale_secret`. An item inscribed after the closing is not authentic. A bare
+  secret as an inscription body is not a sale reveal. The reference indexer does not read the unsold
+  address commitment, does not compare sale transactions with the sale order, and checks rule 5 with
+  the leaf list only.
 - PINS-4 §2.1. A leading U+FEFF in a text string is kept, and a map key named `__proto__` is an
   ordinary key.
 

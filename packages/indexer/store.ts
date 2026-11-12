@@ -6,6 +6,7 @@
  * activation height.
  */
 import { DatabaseSync } from "node:sqlite";
+import { isP2mr } from "./address.ts";
 import type { CollectionProfile } from "./collection.ts";
 import { stateHash } from "./hash.ts";
 import { Indexer, type ChainBlock, type Inscription, type Location, type UndoEntry } from "./pins.ts";
@@ -27,6 +28,7 @@ CREATE TABLE outputs (
   vout INTEGER NOT NULL,
   value TEXT NOT NULL,
   height INTEGER NOT NULL,
+  p2mr INTEGER,
   PRIMARY KEY (txid, vout)
 );
 CREATE TABLE inscriptions (
@@ -121,6 +123,9 @@ export class Store {
     } else if (this.meta("schema") !== "1") {
       throw new Error(`unknown indexer schema ${this.meta("schema")}`);
     }
+    // Databases written before the output type was kept have no such column. Those rows stay NULL: unknown.
+    const columns = this.db.prepare("PRAGMA table_info(outputs)").all() as { name: string }[];
+    if (!columns.some((column) => column.name === "p2mr")) this.db.exec("ALTER TABLE outputs ADD COLUMN p2mr INTEGER");
     this.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
     this.indexer.adopt(this.readInscriptions());
     this.indexer.installUndo(this.readUndo());
@@ -144,8 +149,15 @@ export class Store {
   }
 
   /** Remember an output that was created before the activation height. */
-  saveOutput(txid: string, vout: number, value: bigint): void {
-    this.db.prepare("INSERT OR IGNORE INTO outputs (txid, vout, value, height) VALUES (?, ?, ?, -1)").run(txid, vout, value.toString());
+  saveOutput(txid: string, vout: number, value: bigint, p2mr?: boolean): void {
+    this.db.prepare("INSERT OR IGNORE INTO outputs (txid, vout, value, height, p2mr) VALUES (?, ?, ?, -1, ?)").run(txid, vout, value.toString(), p2mr === undefined ? null : Number(p2mr));
+  }
+
+  /** Whether a stored output is P2MR. Undefined when it is not stored or was stored without its type. */
+  outputIsP2mr(txid: string, vout: number): boolean | undefined {
+    const row = this.db.prepare("SELECT p2mr FROM outputs WHERE txid = ? AND vout = ?").get(txid, vout) as { p2mr: number | null } | undefined;
+    if (!row || row.p2mr === null) return undefined;
+    return row.p2mr === 1;
   }
 
   outputValue(txid: string, vout: number): bigint | undefined {
@@ -170,9 +182,9 @@ export class Store {
         digest,
       );
       this.db.prepare("INSERT INTO undo (height, payload) VALUES (?, ?)").run(block.height, JSON.stringify(freezeUndo(undo)));
-      const output = this.db.prepare("INSERT INTO outputs (txid, vout, value, height) VALUES (?, ?, ?, ?)");
+      const output = this.db.prepare("INSERT INTO outputs (txid, vout, value, height, p2mr) VALUES (?, ?, ?, ?, ?)");
       for (const tx of block.txs) {
-        tx.outputs.forEach((entry, vout) => output.run(tx.txid, vout, entry.value.toString(), block.height));
+        tx.outputs.forEach((entry, vout) => output.run(tx.txid, vout, entry.value.toString(), block.height, Number(isP2mr(entry.script))));
       }
       const changed = new Set([...undo.created, ...undo.prior.map((row) => row.id)]);
       this.writeInscriptions(changed);

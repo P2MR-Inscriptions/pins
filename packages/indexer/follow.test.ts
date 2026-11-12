@@ -167,13 +167,15 @@ test("an earlier activation matches a start at the first envelope", async () => 
     buildEnvelope([contentTypeField("text/plain")], Uint8Array.of(1)),
     buildEnvelope([contentTypeField("text/plain"), pointerField(10_000n)], Uint8Array.of(2)),
   ]);
+  // A spend of P2MR always has a witness. This one has no envelope.
+  const spend = [Uint8Array.of(1), revealLeaf(pubkey, []), Uint8Array.of(0xc1)];
   const funding = coinbaseTx(1, 20_000n, scriptA);
-  const fanout = payTx(funding.txid, 0, [{ value: 20_000n, script: scriptA }]);
+  const fanout = payTx(funding.txid, 0, [{ value: 20_000n, script: scriptA }], spend);
   const reveal = payTx(fanout.txid, 0, [
     { value: 10_000n, script: scriptA },
     { value: 10_000n, script: scriptA },
   ], [Uint8Array.of(1), leaf, Uint8Array.of(0xc1)]);
-  const transfer = payTx(reveal.txid, 0, [{ value: 10_000n, script: scriptB }]);
+  const transfer = payTx(reveal.txid, 0, [{ value: 10_000n, script: scriptB }], spend);
   const chain: RpcBlock[] = [
     rpcBlock("11".repeat(32), 161946, [funding]),
     rpcBlock("22".repeat(32), 161947, [coinbaseTx(2, 50n, scriptA), fanout]),

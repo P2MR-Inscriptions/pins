@@ -116,7 +116,8 @@ A conforming indexer MUST look for envelopes only in:
 - inside the leaf script (the second-to-last item after annex removal).
 
 Envelopes in a reserved leaf version, in initial stack items, in the annex, in a coinbase, in an
-`OP_RETURN` output or in any non-P2MR input are NOT inscriptions.
+`OP_RETURN` output or in any non-P2MR input are NOT inscriptions. In restricted-output mode (F15) the
+only spendable output that is not P2MR is PayToAnchor, which anyone can spend with any witness.
 
 ### 4.3 Scanning
 

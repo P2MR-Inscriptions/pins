@@ -23,8 +23,10 @@ updates:
       minor-and-patch:
         update-types: [minor, patch]
     ignore:
-      # The supported Node range starts at 22. Its type definitions stay on 22.
-      - dependency-name: "@types/node"
+      # A major update is a deliberate change, made by hand in one pull request for the root and the explorer
+      # together (see CONTRIBUTING.md). Version updates skip them. Security updates are not affected by this rule.
+      # This also keeps "@types/node" on 22, where the supported Node range starts.
+      - dependency-name: "*"
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
@@ -37,5 +39,6 @@ updates:
       minor-and-patch:
         update-types: [minor, patch]
     ignore:
-      - dependency-name: "@types/node"
+      # Same rule as the root.
+      - dependency-name: "*"
         update-types: ["version-update:semver-major"]

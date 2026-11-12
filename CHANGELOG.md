@@ -58,6 +58,7 @@ This file records the reference tools and the repository layout. Specification e
 - Inscriber: `price` refuses a collection profile with `"sale": false`. A price opens a sale, and the indexer reads none for a collection with no sale. `price` is optional and holds no price value.
 - Inscriber: `broadcast` on testnet4 no longer scans the planned bytes against a hard-coded list of words and a hash. The list was unrelated to the protocol and is removed with its module. The testnet4 refusal of the `pins` marker stays.
 - Specifications: clarifications that match the deployed format and the reference indexer. No valid inscription becomes invalid. See [docs/specs/CHANGELOG.md](docs/specs/CHANGELOG.md).
+- CI: Dependabot no longer opens pull requests for a new major version of an npm package, in the root or in `explorer/` (it ignores `version-update:semver-major` for every dependency). Minor and patch updates, GitHub Actions updates and security updates are as before. A major update is made on purpose, in one pull request for the root and the explorer together. `CONTRIBUTING.md` says how.
 
 ## 1.0.0
 

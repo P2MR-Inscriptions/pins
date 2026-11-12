@@ -162,6 +162,7 @@ The air gap and the same commands without the npm wrapper are in [docs/inscriber
 4. Run `assign` offline. It writes the reserve and sale id lists and `saleCommitment`, which is SHA-256 of the sale secret. It does not write the secret.
 5. Run `plan` on an online watch-only machine, then `sign` offline, then `preflight`, then `broadcast`.
 6. Point the indexer at the same node. Pass `--collection` when you want the profile's reserve check.
+7. Open the sale, if the collection has one, and trade P2MR Inscriptions: see [Trade a P2MR Inscription](#trade-a-p2mr-inscription).
 
 Postage on every item output is 10,000 bits. A reveal heavier than 400,000 weight is refused.
 
@@ -186,6 +187,17 @@ node --experimental-strip-types packages/inscriber/cli.ts broadcast --plan plan.
 `--single` takes `plan`, `sign` and `preflight`. `keygen`, `address` and `broadcast` are the same as for a collection, and there is no `assign` step because there is no reserve. The keyfile may be made with `keygen --no-sale`, since no sale secret is read. On mainnet, pass `--network mainnet` and `--confirm-network mainnet` to `preflight` and `broadcast`, as for a collection. The same rule holds as everywhere: rehearse on regtest first, and read the open items in [Status](#status).
 
 A collection of one item still works as before (a profile with `"supply": 1`, `"batchSize": 1`, and `"sale": false`). It writes a genesis and one image item, which is two inscriptions, and is for a collection that you mean to be a collection.
+
+## Trade a P2MR Inscription
+
+A P2MR Inscription moves with its output (PINS-3), so a sale is a Qbit transaction in which the buyer pays and receives the output together, or nothing happens (PINS-6, Draft). The same steps hold for a single P2MR Inscription, an item of a collection with no sale, and an item of a collection with a sale (the primary sale, PINS-6 §6).
+
+1. Mint with the inscriber (single, or a collection with or without a sale) and run the indexer on the same node. Both are above.
+2. The seller, or the sale server of a collection, builds the trade PSBT with `primarySalePsbt` and signs the seller input with `0x83`.
+3. The buyer reads what each input holds from the indexer (`/output/{txid}:{vout}`), runs `checkPurchasePsbt` on the PSBT, and signs only if it passes. The check is the buyer side of PINS-6 §4.4: the P2MR Inscription lands in the buyer's output by FIFO, no output is dust or of another kind than P2MR, `OP_RETURN` or PayToAnchor, the fee is not negative, and the buyer's own inputs hold no P2MR Inscription.
+4. The buyer signs, finalizes and broadcasts with `@qbit-oss/protocol` and the node. After 6 confirmations the indexer shows the new owner.
+
+This part is a library in [packages/sale](packages/sale/README.md): there is no command line for a trade yet. That page lists exactly what is checked, what is left to you (the receive address, the amounts on the chain), and a worked call. It changes no rule of the indexer.
 
 ## Security
 

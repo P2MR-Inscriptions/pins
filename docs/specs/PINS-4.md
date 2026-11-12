@@ -31,6 +31,33 @@ next to it, in the same envelope, and are immutable like the rest of the inscrip
    maps, `true`, `false`, `null`. Floats, tags and undefined MUST NOT be used.
 5. A field 5 value that is not well-formed CBOR is ignored by readers; the inscription stays valid.
 
+### 2.1 Reader rules
+
+A reader MUST decode field 5 with the rules below. Whether an inscription is a genesis, a leaf list, an
+item or a price record depends on them, so every reader MUST apply them in the same way. A value that
+breaks any rule is handled as in rule 5 above: it is ignored and the inscription stays valid.
+
+1. The value is exactly one data item. Bytes after it, or an item that is cut short, are an error.
+2. The additional information values 28, 29 and 30 are an error, and so is 31, which stands for an
+   indefinite length or the break code. Every length is definite.
+3. For major types 0 to 6, the argument MUST use the shortest form. An argument below 24 in a 1-byte
+   form, one up to `0xff` in a 2-byte form, one up to `0xffff` in a 4-byte form, and one up to
+   `0xffffffff` in an 8-byte form are an error. This covers integers and the lengths of strings,
+   arrays and maps.
+4. Major types 0 (unsigned integer), 1 (negative integer), 2 (byte string), 3 (text string), 4 (array)
+   and 5 (map) are accepted. Major type 6 (a tag) is an error. Of major type 7 only `false` (`0xf4`),
+   `true` (`0xf5`) and `null` (`0xf6`) are accepted. `undefined`, every other simple value and every
+   half, single or double float are an error.
+5. Integers are read up to 64 bits, from `-2^64` to `2^64 - 1`. A rule that needs a safe integer, such
+   as `supply` or `first` in PINS-5 §3, rejects a value above `2^53 - 1`.
+6. A text string MUST be valid UTF-8, and a map key MUST be a text string. Anything else is an error.
+7. The depth of the top-level item is 0, and each array element, map key and map value is one deeper
+   than its container. An item at a depth above 32 is an error. An item inside 32 arrays or maps is
+   still accepted. One inside 33 is not.
+8. A repeated map key is not an error. The last value replaces the earlier one, and the key keeps the
+   position of its first occurrence. The reader does not check key order. The rules that use a map check
+   it (PINS-5 §3 for the genesis, PINS-5 §6 for the leaf list). Writers MUST NOT repeat a key (§2).
+
 ## 3. Item schema (`pins-item/1`)
 
 A map with one key:

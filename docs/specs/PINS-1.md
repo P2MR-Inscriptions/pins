@@ -126,6 +126,18 @@ the candidate. A complete envelope ending at index `e` is recorded and scanning 
 a failed candidate resumes scanning at `j + 1`. Any number of envelopes MAY appear in one leaf
 script, before or after executed code.
 
+A leaf script is decoded with the standard push opcodes and these exact bounds:
+
+- `0x00` pushes the empty string, and `0x01`–`0x4b` push the next 1 to 75 bytes;
+- `0x4c`, `0x4d` and `0x4e` (`OP_PUSHDATA1`, `OP_PUSHDATA2`, `OP_PUSHDATA4`) read a length of 1, 2
+  or 4 bytes, little-endian, and push that many bytes;
+- `0x4f` and `0x51`–`0x60` push the one-byte values listed in section 2;
+- a push whose length bytes or data run past the end of the script is a truncated push;
+- every push encoding is accepted. A non-minimal one reads like the minimal one, so `OP_PUSHDATA1`
+  with length 0 is an empty push, like `0x00`;
+- the reader sets no limit of its own on the length of a push. The 520-byte limit (F4) is a
+  consensus rule on the script, not a check the indexer repeats.
+
 Inscriptions are recognized regardless of whether the leaf script also contains other code,
 including OP_SUCCESS opcodes: consensus has already decided the spend is valid.
 
@@ -341,12 +353,12 @@ Averages per item from the canonical manifest: PNG body 249.5 bytes, CBOR metada
 | Items per reveal at the 400,000 limit | a greedy in-order pack is 15 reveals (up to 723 of the lighter items) |
 | Recommended | 16 reveals of 625 items. Measured weight 345,083 to 372,817 bytes |
 | Item reveals in total | 5,844,107 bytes |
-| Genesis + leaf list (one reveal, 320,000-byte list) | 326,064 bytes, mined |
-| Fan-out that funds those 17 commit outputs | 4,548 bytes in the regtest run (17 outputs plus change) |
-| **Those 18 transactions** | **6,174,719 bytes** |
-| Fee at 1 / 5 / 10 bits/vB | 0.06174719 / 0.30873595 / 0.61747190 QBT |
+| Genesis + leaf list (one reveal, 320,000-byte list) | 326,064 bytes in the regtest run, mined. 326,392 bytes on mainnet (PINS-5 §6.2) |
+| Fan-out that funds those 17 commit outputs | 4,548 bytes in the regtest run (17 outputs plus change), and on mainnet |
+| **Those 18 transactions** | **6,174,719 bytes in the regtest run**, 6,175,047 on mainnet |
+| Fee at 1 / 5 / 10 bits/vB, regtest total | 0.06174719 / 0.30873595 / 0.61747190 QBT |
 | Postage locked in item outputs (10,000 × 10,000 bits) | 1 QBT (not a fee; it moves with the items) |
-| Block weight limit 2,000,000 | 5 reveals per block in the regtest run, so 4 blocks for the 17 reveals, plus the fan-out's block |
+| Block weight limit 2,000,000 | 5 reveals per block in the regtest run, so 4 blocks for the 17 reveals, plus the fan-out's block. On mainnet the reveals took 17 blocks (PINS-5 §6.2) |
 
 Exact per-item sizes differ; the batch builder MUST sum real sizes and stay
 under the limit. A reveal of the first 625 canonical items, weight 345,083, and one of 625 one-byte

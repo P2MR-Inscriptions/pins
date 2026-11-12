@@ -4,6 +4,12 @@
 
 This file records the reference tools and the repository layout. Specification edits are in [docs/specs/CHANGELOG.md](docs/specs/CHANGELOG.md).
 
+## Unreleased
+
+- Indexer: `--genesis <inscription id>` makes the collection view accept only that inscription as its genesis. Without it, the first valid genesis in chain order is used, as before.
+- Indexer: field 5 metadata whose `name` is not text, or whose `attributes` are not text pairs, is ignored. It no longer makes `/collection` and `/pieces` fail.
+- Specifications: clarifications that match the deployed format and the reference indexer. No valid inscription becomes invalid. See [docs/specs/CHANGELOG.md](docs/specs/CHANGELOG.md).
+
 ## 1.0.0
 
 - Reference indexer and inscriber for PINS on Qbit, marker `pins`.

@@ -3,6 +3,31 @@
 
 Dates are the day the change was recorded. The documents stay CC0-1.0.
 
+## 2026-11-12
+
+Clarifications. They describe the deployed format and the reference indexer. No inscription that is valid
+today becomes invalid.
+
+- PINS-5 §6. Field 5 of the leaf list is optional. The leaf list on mainnet has none. When present it
+  is `pins-leaflist/1` with `root` as a byte string. The section now states which inscription the
+  reference indexer takes as the leaf list: it is in the transaction of the genesis, and its leaves
+  fold to the genesis root. It is no longer described as optionally sharing that transaction.
+- PINS-5 §3. The genesis map has exactly the nine listed keys in order. `reserve` is an optional last
+  key, and its shape and the checks on it are specified. The checks on `name`, `supply`, `first`,
+  `item_type`, and `issuer` are stated. Genesis choice is described, including the indexer option
+  `--genesis <inscription id>`.
+- PINS-5 §8.1. Where an indexer gets the reserve groups: the `reserve` key, a collection profile, or
+  nowhere.
+- PINS-4 §2.1. The rules of the reference CBOR reader are normative: definite lengths, shortest
+  arguments, no tags, floats, or `undefined`, text keys, valid UTF-8, a depth limit of 32, and the
+  treatment of repeated keys.
+- PINS-1 §4.3. Push decoding bounds: `OP_PUSHDATA1`, `OP_PUSHDATA2`, `OP_PUSHDATA4`, truncated pushes,
+  non-minimal encodings, and no length limit in the reader.
+- PINS-5 §6.1, PINS-1 §9.5.1, and the index. The regtest sizes, fees, and block counts are labeled as
+  regtest figures. PINS-5 §6.2 records the mainnet figures: the fan-out in block 161947, the genesis
+  reveal in block 161948, and the 16 item reveals in blocks 161949 to 161971, 6,175,047 bytes and
+  6,175,124 bits in all.
+
 ## 2026-11-06
 
 - PINS-2 §3. Mainnet `ACTIVATION_HEIGHT` is 161948, the block containing the first `pins` envelope

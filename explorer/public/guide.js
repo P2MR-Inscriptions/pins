@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // Local setup guide. Text only. No remote calls and no credentials.
 // Explorer package 1.0.1.
 
@@ -82,7 +84,7 @@ export const guideSections = [
     title: "Read-only",
     blocks: [
       { kind: "p", text: "The explorer does not sign and does not broadcast.\nIt does not keep a wallet.\nIts own node calls are only getblockcount, getblockhash, getblockheader, and getrawtransaction.\nThe indexer is the separate process that reads blocks." },
-      { kind: "p", text: "PNG, JPEG, GIF, and WebP are drawn in the same frame.\nText and JSON are shown there as plain text, cut off after 2,048 bytes.\nAudio and video use the browser's own controls in that frame.\nThey start only after a click.\nA web page runs only after a click, in a frame whose sandbox is allow-scripts and whose response sets connect-src to none.\nThat frame cannot fetch this explorer or the indexer.\nSVG is shown as an image, so its scripts do not run.\nOther formats stay in the frame with the content type and a download.\nThe detail page can enlarge that frame.\nThe sandbox does not cap processor time.\nStop closes the page." },
+      { kind: "p", text: "PNG, JPEG, GIF, and WebP are drawn in the same frame.\nText and JSON are shown there as plain text, cut off after 2,048 bytes.\nAudio and video use the browser's own controls in that frame.\nThey start only after a click.\nA web page runs only after a click, in a frame whose sandbox is allow-scripts and whose response sets connect-src to none.\nThat frame cannot fetch this explorer or the indexer.\nIt can still change the address of its own frame, which the response cannot stop, so open only pages you trust.\nSVG is shown as an image, so its scripts do not run.\nOther formats stay in the frame with the content type and a download.\nThe detail page can enlarge that frame.\nThe sandbox does not cap processor time.\nStop closes the page." },
       { kind: "p", text: "The RPC password is placed in the indexer process environment.\nIt is not an argument to npm, node, or curl.\nCurl reads the user from its stdin config.\nnpm --silent only hides npm's log line." },
     ],
   },

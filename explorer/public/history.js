@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // In-app return targets. A hash is internal only. External history is never used.
 import { brand } from "./brand.js";
 

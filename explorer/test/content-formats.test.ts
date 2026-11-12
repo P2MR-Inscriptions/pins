@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 import assert from "node:assert/strict";
 import { createServer, type Server } from "node:http";
 import { mkdtempSync, writeFileSync } from "node:fs";

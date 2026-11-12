@@ -22,6 +22,17 @@ export function hostAllowed(hostHeader: string, trustedHosts: readonly string[])
   return trustedHosts.includes(host);
 }
 
+/**
+ * The client address a trusted proxy reports in `X-Forwarded-For`. A proxy appends the address it saw,
+ * so the last element is the one it vouches for. Earlier elements come from the client and can be forged.
+ */
+export function forwardedClient(header: string | string[] | undefined): string | null {
+  const text = Array.isArray(header) ? header.join(",") : header;
+  if (typeof text !== "string") return null;
+  const last = text.split(",").pop()?.trim();
+  return last ? last : null;
+}
+
 export function assertHttpUrl(url: string, label: string, loopbackOnly: boolean): void {
   let parsed: URL;
   try {

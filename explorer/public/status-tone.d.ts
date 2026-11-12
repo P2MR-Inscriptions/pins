@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 export function indexedStatus(input: {
   ready?: boolean;
   preview?: boolean;

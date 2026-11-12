@@ -2,7 +2,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { mediaKind, normalizeType, PREVIEW_BYTES } from "../public/content-view.js";
 import { config } from "./config.ts";
-import { decodeCbor } from "./cbor.ts";
+import { decodeCbor } from "../../packages/indexer/cbor.ts";
 import { cache, type Inscription } from "./index-cache.ts";
 import { profile } from "./profile.ts";
 import { publicError } from "./redact.ts";
@@ -12,7 +12,11 @@ const ID = /^[0-9a-f]{64}i\d+$/;
 const HEX64 = /^[0-9a-f]{64}$/;
 const ADDRESS = /^(qb|tq|qbrt)1[0-9a-z]{6,120}$/;
 const INERT_CSP = "default-src 'none'; sandbox";
-/** Unique origin, inline page only. No network, frames, forms, or parent origin. */
+/**
+ * Unique origin, inline page only. The response blocks fetch, outside scripts, images, fonts and media, nested frames,
+ * objects and form posts, and the sandbox keeps the page off the parent origin. A content security policy does not stop a
+ * frame from navigating itself, so the page can still send its own frame to another address.
+ */
 const HTML_CSP = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; media-src data: blob:; font-src data:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; sandbox allow-scripts";
 const FIELD_CAP = 32_000;
 

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // Footer tones. Green is only a fact the payload supports.
 // A connected node is not treated as a fully synced index.
 

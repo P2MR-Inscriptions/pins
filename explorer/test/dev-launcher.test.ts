@@ -1,9 +1,14 @@
+// SPDX-License-Identifier: Apache-2.0
+
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createServer, type AddressInfo, type Server } from "node:net";
 import { test } from "node:test";
 import { devChildEnv, parseDevPorts } from "../scripts/dev.ts";
+
+const packageVersion = (JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { version: string }).version;
 
 function hold(port = 0): Promise<Server> {
   return new Promise((resolve, reject) => {
@@ -124,7 +129,7 @@ test("nondefault ports serve the mock, and SIGINT stops only those processes", a
     const probe = () => {
       fetch(`http://127.0.0.1:${explorerPort}/api/status`).then(async (response) => {
         const body = await response.json() as { explorer?: { version?: string }; indexer?: { mock?: boolean } };
-        if (body.indexer?.mock === true && body.explorer?.version === "1.0.1") {
+        if (body.indexer?.mock === true && body.explorer?.version === packageVersion) {
           clearTimeout(timer);
           resolve(true);
           return;

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // How a P2MR Inscription body may be shown. The server uses the same rules.
 // Unknown types stay downloadable. Nothing here fetches or executes content.
 

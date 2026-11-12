@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 export function normalizeHash(hash: string | null | undefined): string;
 export function isDetailHash(hash: string): boolean;
 export function isTransientHash(hash: string): boolean;

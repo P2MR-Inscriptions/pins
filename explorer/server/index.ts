@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { handleApi } from "./api.ts";
 import { config } from "./config.ts";
 import { cache } from "./index-cache.ts";
-import { hostAllowed, hostnameOf, isLoopbackHost } from "./net.ts";
+import { forwardedClient, hostAllowed, hostnameOf, isLoopbackHost } from "./net.ts";
 
 const PUBLIC = resolve(fileURLToPath(new URL("../public", import.meta.url)));
 const TYPES: Record<string, string> = {
@@ -29,8 +29,8 @@ let inflight = 0;
 function clientAddress(req: IncomingMessage): string {
   const remote = req.socket.remoteAddress ?? "";
   if (config.trustProxy && isLoopbackHost(hostnameOf(remote)) ) {
-    const forwarded = req.headers["x-forwarded-for"];
-    if (typeof forwarded === "string" && forwarded.trim()) return forwarded.split(",")[0]!.trim();
+    const forwarded = forwardedClient(req.headers["x-forwarded-for"]);
+    if (forwarded) return forwarded;
   }
   return remote || "unknown";
 }

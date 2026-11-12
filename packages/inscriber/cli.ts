@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * Mint CLI. `plan` and `broadcast` may use a regtest node. `sign` and `keygen`
- * must not be given an RPC URL. The default network is regtest.
+ * Mint CLI. `broadcast` and `preflight` talk to a node through `--rpc`. `plan`, `sign`, `assign`,
+ * `address`, `keygen` and `price` are offline and refuse a node URL where they would otherwise use it.
+ * The default network is regtest. `plan`, `sign` and `preflight` take `--single` for one stand-alone
+ * inscription (a body file and its content type) instead of a collection.
  */
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -24,6 +26,7 @@ import {
   genesisChecks,
   genesisFieldFromLeaf,
   nodeChecks,
+  type Check,
   parsePrice,
   pricePlanField,
   priceSigningChecks,
@@ -33,11 +36,13 @@ import {
   requiredBits,
   rootCheck,
   signedBodyChecks,
+  singleChecks,
   weightChecks,
 } from "./preflight.ts";
 import { createKeyfile, openKeyfile, readPassphrase, writeKeyfile, zeroSecrets } from "./keyfile.ts";
 import { assertBroadcastNetwork, parseNetwork } from "./network.ts";
-import { buildPlan, type MintPlan, type PlanContent } from "./plan.ts";
+import { buildPlan, buildSinglePlan, type MintPlan, type PlanContent } from "./plan.ts";
+import { assertSingleFlags, readSingleContent } from "./single.ts";
 import { signPlan } from "./sign.ts";
 import { assertReserveSize, assertRoot, holderFlag, merkleRoot, leafPreimage } from "./verify.ts";
 import { groupsOf, loadCanonical, type MintShape } from "../../scripts/canonical-batch.ts";
@@ -65,6 +70,7 @@ function text(flag: Record<string, string | boolean>, name: string): string {
 }
 
 function summary(plan: MintPlan, showMarker = false): string {
+  if (plan.single === true) return singleSummary(plan, showMarker);
   const fees = [BigInt(plan.fanout.fee), ...plan.reveals.map((reveal) => BigInt(reveal.fee))];
   const total = fees.reduce((sum, fee) => sum + fee, 0n);
   const lines = [
@@ -82,6 +88,25 @@ function summary(plan: MintPlan, showMarker = false): string {
     formatMarkerLine(plan.marker, showMarker),
   ];
   return lines.join("\n");
+}
+
+/** The summary of a single inscription: its id is the txid of the reveal and index 0. */
+function singleSummary(plan: MintPlan, showMarker: boolean): string {
+  const reveal = plan.reveals[0];
+  const total = BigInt(plan.fanout.fee) + BigInt(reveal.fee);
+  return [
+    `network ${plan.network}`,
+    `fee rate ${plan.feeRate} bit/vB`,
+    "single inscription (no collection, no genesis, no number)",
+    `fan-out ${plan.fanout.txid} fee ${plan.fanout.fee} bits`,
+    `${reveal.name} ${reveal.txid} weight ${reveal.weight} fee ${reveal.fee} bits`,
+    `inscription id ${reveal.txid}i0`,
+    `total fee ${total} bits`,
+    "postage 10000 bits on the inscription output",
+    `owner ${plan.creator}`,
+    `change ${plan.change}`,
+    formatMarkerLine(plan.marker, showMarker),
+  ].join("\n");
 }
 
 type CollectionProfile = {
@@ -159,11 +184,139 @@ function assertNoSaleAssignment(assignment: { reserve?: number[]; sale?: number[
   }
 }
 
+type FundingFile = { txid: string; vout: number; value: string; script: string };
+
+/** `plan` and `sign` of one stand-alone inscription. Offline. The files, not the plan, decide what is signed. */
+async function runSingle(command: "plan" | "sign", flag: Record<string, string | boolean>): Promise<void> {
+  const content = await readSingleContent(flag);
+  const network = parseNetwork(typeof flag.network === "string" ? flag.network : undefined);
+  const marker = parseMarker(typeof flag.marker === "string" ? flag.marker : undefined);
+  assertMarkerForNetwork(marker, network);
+  if (command === "plan") {
+    const pubs = JSON.parse(readFileSync(text(flag, "pub"), "utf8")) as { issuerPublic: string; recoveryPublic: string };
+    const utxo = JSON.parse(readFileSync(text(flag, "utxo"), "utf8")) as FundingFile;
+    const plan = buildSinglePlan({
+      network,
+      marker,
+      feeRate: Number(text(flag, "fee-rate")),
+      issuerPublic: Buffer.from(pubs.issuerPublic, "hex"),
+      recoveryPublic: Buffer.from(pubs.recoveryPublic, "hex"),
+      creator: text(flag, "creator"),
+      change: text(flag, "change"),
+      utxo: { txid: utxo.txid, vout: utxo.vout, value: BigInt(utxo.value), script: Buffer.from(utxo.script, "hex") },
+      inscription: content.single,
+    });
+    process.stdout.write(`${summary(plan, flag["show-marker"] === true)}\n`);
+    if (flag["dry-run"]) return;
+    writeFileSync(text(flag, "out"), `${JSON.stringify(plan)}\n`);
+    return;
+  }
+  await init();
+  const passphrase = await readPassphrase("Keyfile passphrase: ");
+  const secrets = openKeyfile(text(flag, "key"), passphrase);
+  passphrase.fill(0);
+  try {
+    const plan = JSON.parse(readFileSync(text(flag, "plan"), "utf8")) as MintPlan;
+    if (secrets.issuerPublic !== plan.issuerPublic) throw new Error("keyfile does not match the plan");
+    const utxo = JSON.parse(readFileSync(text(flag, "utxo"), "utf8")) as { txid?: unknown; vout?: unknown };
+    if (typeof utxo.txid !== "string" || typeof utxo.vout !== "number") throw new Error("--utxo must be the funding file, with txid and vout");
+    const signed = signPlan(plan, secrets.issuerSecret, new Set(), {
+      fundingTxid: utxo.txid,
+      fundingVout: utxo.vout,
+      creator: text(flag, "creator"),
+      sale: null,
+      holder: null,
+      change: text(flag, "change"),
+    }, undefined, undefined, content);
+    process.stdout.write(`${summary(signed, flag["show-marker"] === true)}\n`);
+    if (flag["dry-run"]) return;
+    writeFileSync(text(flag, "out"), `${JSON.stringify(signed)}\n`);
+  } finally {
+    zeroSecrets(secrets);
+  }
+}
+
+/** The rows that ask the node about itself. A failed call fails all three rows. */
+async function nodeRows(rpc: ReturnType<typeof httpRpc>, network: ReturnType<typeof parseNetwork>): Promise<Check[]> {
+  try {
+    const info = await rpc.call<{ chain: string; blocks: number; headers: number; initialblockdownload: boolean }>("getblockchaininfo");
+    const version = await rpc.call<{ subversion: string }>("getnetworkinfo");
+    return nodeChecks({ ...info, subversion: version.subversion }, network);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "node call failed";
+    return [
+      { name: "node chain", pass: false, detail: message },
+      { name: "node synced", pass: false, detail: message },
+      { name: "node version", pass: false, detail: message },
+    ];
+  }
+}
+
+/** The rows for the funding output, looked up on the node. */
+async function fundingRows(rpc: ReturnType<typeof httpRpc>, utxo: FundingFile, signed: MintPlan): Promise<Check[]> {
+  let found = false;
+  let confirmations = 0;
+  let valueBits: bigint | null = null;
+  let scriptHex: string | null = null;
+  try {
+    const tx = await rpc.call<{ confirmations?: number; vout?: { value: number; scriptPubKey: { hex: string } }[] }>("getrawtransaction", [utxo.txid, true]);
+    found = true;
+    confirmations = tx.confirmations ?? 0;
+    const output = tx.vout?.[utxo.vout];
+    if (output) {
+      valueBits = bitsFromQbt(output.value);
+      scriptHex = output.scriptPubKey.hex;
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (!message.includes("No such")) return [{ name: "funding utxo", pass: false, detail: message || "lookup failed" }];
+  }
+  return fundingChecks({
+    found,
+    confirmations,
+    valueBits,
+    scriptHex,
+    fileValueBits: BigInt(utxo.value),
+    requiredBits: requiredBits(signed),
+    expectedScriptHex: signed.fanout.spentScript,
+  });
+}
+
+/** `preflight --single`: the node, the funding, the addresses, the fee, and the files against the signed plan. */
+async function preflightSingle(flag: Record<string, string | boolean>): Promise<void> {
+  const network = parseNetwork(typeof flag.network === "string" ? flag.network : undefined);
+  assertBroadcastNetwork(network, typeof flag["confirm-network"] === "string" ? flag["confirm-network"] : undefined);
+  const unsigned = JSON.parse(readFileSync(text(flag, "plan"), "utf8")) as MintPlan;
+  const signed = JSON.parse(readFileSync(text(flag, "signed"), "utf8")) as MintPlan;
+  const utxo = JSON.parse(readFileSync(text(flag, "utxo"), "utf8")) as FundingFile;
+  const pubs = JSON.parse(readFileSync(text(flag, "pub"), "utf8")) as { issuerPublic: string };
+  const content = await readSingleContent(flag);
+  const checks: Check[] = [];
+  const agree = signed.network === network && unsigned.network === network;
+  checks.push({ name: "plan network", pass: agree, detail: agree ? network : `unsigned ${unsigned.network}, signed ${signed.network}, asked ${network}` });
+  const rpc = httpRpc(text(flag, "rpc"), text(flag, "rpc-user"), text(flag, "rpc-password"));
+  checks.push(...await nodeRows(rpc, network));
+  const funding = fundingAddress(Buffer.from(pubs.issuerPublic, "hex"), network);
+  checks.push(...addressChecks(network, signed.creator, null, signed.change, funding));
+  checks.push(...await fundingRows(rpc, utxo, signed));
+  checks.push(feeRateCheck(signed.feeRate));
+  checks.push(...weightChecks(signed));
+  checks.push(...signedBodyChecks(unsigned, signed));
+  checks.push(...singleChecks(unsigned, signed, content, pubs.issuerPublic));
+  process.stdout.write(formatReport(checks));
+  if (!reportOk(checks)) process.exitCode = 1;
+}
+
 async function main(): Promise<void> {
   const [command, ...rest] = process.argv.slice(2);
   const flag = flags(rest);
   if (command === "sign" || command === "keygen" || command === "assign" || command === "address" || command === "price") {
     if (flag.rpc || flag["rpc-user"] || flag["rpc-password"]) throw new Error("this step is offline and refuses an RPC URL");
+  }
+  const single = assertSingleFlags(command, flag);
+  if (single && command !== "preflight") {
+    await runSingle(command as "plan" | "sign", flag);
+    return;
   }
   if (command === "address") {
     const pubs = JSON.parse(readFileSync(text(flag, "pub"), "utf8")) as { issuerPublic: string };
@@ -385,6 +538,10 @@ async function main(): Promise<void> {
     process.stdout.write(`${JSON.stringify(result)}\n`);
     return;
   }
+  if (command === "preflight" && single) {
+    await preflightSingle(flag);
+    return;
+  }
   if (command === "preflight") {
     const network = parseNetwork(typeof flag.network === "string" ? flag.network : undefined);
     assertBroadcastNetwork(network, typeof flag["confirm-network"] === "string" ? flag["confirm-network"] : undefined);
@@ -408,16 +565,7 @@ async function main(): Promise<void> {
       checks.push({ name: "plan network", pass: true, detail: network });
     }
     const rpc = httpRpc(text(flag, "rpc"), text(flag, "rpc-user"), text(flag, "rpc-password"));
-    try {
-      const info = await rpc.call<{ chain: string; blocks: number; headers: number; initialblockdownload: boolean }>("getblockchaininfo");
-      const version = await rpc.call<{ subversion: string }>("getnetworkinfo");
-      checks.push(...nodeChecks({ ...info, subversion: version.subversion }, network));
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "node call failed";
-      checks.push({ name: "node chain", pass: false, detail: message });
-      checks.push({ name: "node synced", pass: false, detail: message });
-      checks.push({ name: "node version", pass: false, detail: message });
-    }
+    checks.push(...await nodeRows(rpc, network));
     checks.push(rootCheck(root, profile.root));
     checks.push(...quotaChecks(assignment.reserve, pieces, profile.reserveGroups, profile.reserveExtra));
     const funding = fundingAddress(Buffer.from(pubs.issuerPublic, "hex"), network);
@@ -431,36 +579,7 @@ async function main(): Promise<void> {
       });
     }
     checks.push(...addressChecks(network, signed.creator, signed.noSale ? null : signed.sale, signed.change, funding, signed.holder));
-    let found = false;
-    let confirmations = 0;
-    let valueBits: bigint | null = null;
-    let scriptHex: string | null = null;
-    try {
-      const tx = await rpc.call<{ confirmations?: number; vout?: { value: number; scriptPubKey: { hex: string } }[] }>("getrawtransaction", [utxo.txid, true]);
-      found = true;
-      confirmations = tx.confirmations ?? 0;
-      const output = tx.vout?.[utxo.vout];
-      if (output) {
-        valueBits = bitsFromQbt(output.value);
-        scriptHex = output.scriptPubKey.hex;
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "";
-      if (!message.includes("No such")) {
-        checks.push({ name: "funding utxo", pass: false, detail: message || "lookup failed" });
-      }
-    }
-    if (!checks.some((check) => check.name === "funding utxo")) {
-      checks.push(...fundingChecks({
-        found,
-        confirmations,
-        valueBits,
-        scriptHex,
-        fileValueBits: BigInt(utxo.value),
-        requiredBits: requiredBits(signed),
-        expectedScriptHex: signed.fanout.spentScript,
-      }));
-    }
+    checks.push(...await fundingRows(rpc, utxo, signed));
     checks.push(feeRateCheck(signed.feeRate));
     checks.push(...weightChecks(signed));
     checks.push(...signedBodyChecks(unsigned, signed));

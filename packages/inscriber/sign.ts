@@ -13,7 +13,7 @@ import { parseTransaction } from "../indexer/chain.ts";
 import { commitTree, rawWitnessTransaction, recoveryFor, revealWitness } from "./reveal.ts";
 import { assertMarkerForNetwork, isPinsMarker, parseMarker } from "./marker.ts";
 import { assertHolder, assertRevealWeight, assertRoot, assertSeparateChange, POSTAGE_BITS } from "./verify.ts";
-import { groupLeaf, revealGroups, type MintPlan, type PlanContent, type RevealPlan } from "./plan.ts";
+import { groupLeaf, isSingleContent, revealGroups, type MintPlan, type PlanContent, type RevealPlan, type SingleContent } from "./plan.ts";
 import { priceContentOf } from "./preflight.ts";
 import { destinationsOf, itemAddress } from "./destination.ts";
 
@@ -139,23 +139,24 @@ function assertRaw(plan: MintPlan, reveal: RevealPlan, reserve: Set<number>, fan
  * rule sends it: the reserve assignment pays an output by its item number, so an output that carried
  * another number could send a sale item to the creator or the reverse.
  */
-function assertContent(plan: MintPlan, content: PlanContent, marker: Uint8Array, reserve: Set<number>): void {
+function assertContent(plan: MintPlan, content: PlanContent | SingleContent, marker: Uint8Array, reserve: Set<number>): void {
   const groups = revealGroups(content);
   if (groups.length !== plan.reveals.length) {
-    throw new Error(`plan has ${plan.reveals.length} reveals, the canonical zip makes ${groups.length}`);
+    throw new Error(`plan has ${plan.reveals.length} reveals, the ${isSingleContent(content) ? "inscription files make" : "canonical zip makes"} ${groups.length}`);
   }
   const issuer = bytes(plan.issuerPublic);
   const destinations = destinationsOf(plan, reserve);
+  const source = isSingleContent(content) ? "inscription files" : "canonical zip";
   groups.forEach((group, index) => {
     const reveal = plan.reveals[index];
-    if (reveal.name !== group.name) throw new Error(`reveal ${index} is named ${reveal.name}, the canonical zip makes ${group.name}`);
+    if (reveal.name !== group.name) throw new Error(`reveal ${index} is named ${reveal.name}, the ${source} make${isSingleContent(content) ? "" : "s"} ${group.name}`);
     if (!sameBytes(groupLeaf(issuer, group, marker), bytes(reveal.leaf))) {
-      throw new Error(`${reveal.name} leaf does not match the canonical zip`);
+      throw new Error(`${reveal.name} leaf does not match the ${source}`);
     }
     const expected = [...group.items.map((item) => item.number), null];
     const found = reveal.outputs.map((output) => output.item);
     if (expected.length !== found.length || expected.some((item, at) => item !== found[at])) {
-      throw new Error(`${reveal.name} outputs do not carry the items of the canonical zip`);
+      throw new Error(`${reveal.name} outputs do not carry the items of the ${source}`);
     }
     reveal.outputs.forEach((output, at) => {
       const want = at === reveal.outputs.length - 1 ? plan.change : itemAddress(destinations, output.item);
@@ -186,7 +187,7 @@ function assertExpectations(plan: MintPlan, expected: SignExpectations): void {
  * group counts and `reserveExtra` of its profile. There is no default. A plan with a sale that uses the
  * `pins` marker is refused when the count is not given. A plan with no sale never takes a reserve.
  */
-export function verifyPlan(plan: MintPlan, reserve: Set<number>, expected: SignExpectations, expectedRoot?: string, reserveCount?: number, content?: PlanContent): void {
+export function verifyPlan(plan: MintPlan, reserve: Set<number>, expected: SignExpectations, expectedRoot?: string, reserveCount?: number, content?: PlanContent | SingleContent): void {
   assertExpectations(plan, expected);
   if (plan.noSale && (reserve.size > 0 || (reserveCount ?? 0) > 0)) throw new Error("a plan with no sale has no reserve");
   if (reserveCount !== undefined && (!Number.isInteger(reserveCount) || reserveCount < 0)) throw new Error("reserve count must be a non-negative integer");
@@ -194,7 +195,18 @@ export function verifyPlan(plan: MintPlan, reserve: Set<number>, expected: SignE
   const marker = parseMarker(plan.marker);
   assertMarkerForNetwork(marker, plan.network);
   const rebuilt = priceContentOf(plan) ?? content;
-  if (isPinsMarker(marker)) {
+  // The operator decides whether this is a single inscription, by passing its body. The plan must agree, so a
+  // plan cannot move itself into the path that has no collection root by claiming to be single.
+  const singleContent = content !== undefined && isSingleContent(content);
+  if (plan.single !== undefined && plan.single !== true) throw new Error("plan single flag is not true");
+  if (plan.single === true && !singleContent) throw new Error("this plan is a single inscription: sign needs its body and content type (--single)");
+  if (plan.single !== true && singleContent) throw new Error("this plan is not a single inscription");
+  if (plan.single === true) {
+    if (!plan.noSale) throw new Error("a single inscription has no sale");
+    if (plan.root !== "") throw new Error("a single inscription has no collection root");
+    if (expectedRoot) throw new Error("a single inscription has no collection root to check");
+    if (plan.holder !== undefined) throw new Error("a single inscription has no holder: it goes to the creator address");
+  } else if (isPinsMarker(marker)) {
     if (!expectedRoot) throw new Error("a pins plan needs the collection profile root");
     if (!rebuilt) throw new Error("a pins plan needs the canonical zip to rebuild its reveals");
     assertRoot(plan.root, expectedRoot);
@@ -244,7 +256,7 @@ export function verifyPlan(plan: MintPlan, reserve: Set<number>, expected: SignE
 }
 
 /** Returns a signed copy. The caller zeros the secret. */
-export function signPlan(plan: MintPlan, issuerSecret: Uint8Array, reserve: Set<number>, expected: SignExpectations, expectedRoot?: string, reserveCount?: number, content?: PlanContent): MintPlan {
+export function signPlan(plan: MintPlan, issuerSecret: Uint8Array, reserve: Set<number>, expected: SignExpectations, expectedRoot?: string, reserveCount?: number, content?: PlanContent | SingleContent): MintPlan {
   verifyPlan(plan, reserve, expected, expectedRoot, reserveCount, content);
   const signed: MintPlan = { ...plan, reveals: plan.reveals.map((reveal) => ({ ...reveal })), signed: true };
   signed.fanout = { ...plan.fanout };

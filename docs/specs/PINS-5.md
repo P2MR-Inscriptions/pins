@@ -218,6 +218,13 @@ blocks in a span of 24 (161948 to 161971).
   inscription can become an authentic item, even one signed by `K_iss`.
 - It MUST NOT contain `sale_secret` (that would reveal the sale order before the sale; see §8).
 
+The reference indexer takes as the closing of `G` the first inscription, in chain order (PINS-2 §4.1),
+that comes after `G`, whose reveal leaf starts with `<issuer> OP_CHECKSIGPQC`, that is not a
+`reinscription` and not `opaque`, and whose field 5 has exactly the keys `schema`, `root` and `count`,
+in that order. `schema` is `pins-close/1`, `root` is a 32-byte byte string equal to the `root` of `G`,
+and `count` is an unsigned integer equal to `supply`. It sets no condition on the content type or the
+body. An inscription that comes after the closing in chain order is not an item of `G`.
+
 ## 8. Creator reserve and sale order
 
 ### 8.1 Reserve
@@ -311,6 +318,13 @@ At close the issuer publishes a separate inscription. Field 5 is
 The reveal leaf starts with `<K_iss> OP_CHECKSIGPQC`. Anyone checks `SHA256(sale_secret)` against
 `sale_commitment`, rebuilds the reserve and `order`, and compares `order` with the sale transactions.
 
+The reference indexer takes as the sale reveal of `G` the first inscription, in chain order, that
+comes after `G`, whose reveal leaf starts with `<issuer> OP_CHECKSIGPQC`, that is not a `reinscription`
+and not `opaque`, and whose field 5 has exactly the keys `schema`, `root` and `sale_secret`, in that
+order. `schema` is `pins-sale-reveal/1`, `root` is a 32-byte byte string equal to the `root` of `G`, and
+`sale_secret` is a 32-byte byte string whose SHA-256 equals `sale_commitment`. An inscription whose
+body is the bare secret is not a sale reveal. It sets no condition on the content type or the body.
+
 Unsold sale items are then transferred to `unsold_address`, a P2MR address used only for that.
 The concrete address is not chosen in this revision. Before close, the issuer MUST commit it in
 another inscription, field 5
@@ -319,6 +333,9 @@ where `address` is the bech32m text of a witness-v2 P2MR address. That inscripti
 commitment. It MUST exist before close and MUST NOT be replaced afterward. Reserve items already
 in the creator's wallet are not part of this transfer.
 
+The reference indexer does not read the `pins-unsold-address/1` commitment, and it does not compare
+sale transactions with `order`. Both checks are left to the reader of the chain.
+
 ## 9. Authenticity rule
 
 An inscription `I` is the authentic item `n` of collection `G` if and only if all hold:
@@ -326,7 +343,7 @@ An inscription `I` is the authentic item `n` of collection `G` if and only if al
 1. `G` is a genesis inscription as in section 3, not `opaque`, with a well-formed `pins-collection/1`
    map;
 2. `I` is confirmed after `G` in chain order (PINS-2 §4.1) and before the closing inscription of `G`,
-   if one exists;
+   if one exists (section 7);
 3. `I`'s reveal leaf starts with `<issuer> OP_CHECKSIGPQC`, `issuer` taken from `G`;
 4. `I`'s `content_type` equals `item_type`, and `meta.name` is `name_prefix` + decimal `n` with
    `first ≤ n < first + supply`;
@@ -337,6 +354,9 @@ An inscription `I` is the authentic item `n` of collection `G` if and only if al
 
 Copies of the images inscribed by anyone else fail rule 3. Re-inscriptions of the same item by the
 issuer fail rule 7. The closing inscription freezes the set.
+
+The reference indexer checks rule 5 against the leaf list (section 6) only. This revision defines no
+inscription that carries a Merkle proof.
 
 ## 10. Security considerations
 

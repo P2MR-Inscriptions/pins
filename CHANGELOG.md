@@ -13,6 +13,7 @@ This file records the reference tools and the repository layout. Specification e
 - Indexer: an input counts as carrying inscriptions only when the control block has leaf version 0xc0 and the spent output is not known to be something other than P2MR (PINS-1 §4.2). The store keeps the output type, and an existing database is upgraded in place; its older outputs are not checked.
 - Indexer: a P2MR spend without witness items stops the indexer with `witness pruned` (PINS-2 §2). The guard existed but was never called.
 - Indexer: the block subsidy comes from the schedule of PINS-2 §5.1 and the height, not from the coinbase. A coinbase that claims less than the subsidy and the fees now leaves a lost tail, as PINS-3 §6 says, instead of shifting every fee bit.
+- Indexer: the sale reveal is the PINS-5 §8.5 inscription: signed by the issuer key, after the genesis, with field 5 `pins-sale-reveal/1`, the genesis root, and the committed secret. An inscription whose body is the bare secret no longer reveals the sale order. The closing inscription of PINS-5 §7 is read, and an item inscribed after it is not authentic. `/collection` reports it as `closingId`.
 - Specifications: clarifications that match the deployed format and the reference indexer. No valid inscription becomes invalid. See [docs/specs/CHANGELOG.md](docs/specs/CHANGELOG.md).
 
 ## 1.0.0

@@ -162,11 +162,18 @@ test("a quota shortfall stays on the collection view instead of failing the requ
     body: new TextEncoder().encode("{\"name\":\"Shadow\"}"),
     createdHeight: 4,
   }));
+  const head = (major: number, length: number) => Buffer.from(length < 24 ? [(major << 5) | length] : [(major << 5) | 24, length]);
+  const text = (value: string) => Buffer.concat([head(3, value.length), Buffer.from(value)]);
+  const bytes = (value: Buffer) => Buffer.concat([head(2, value.length), value]);
   indexer.inscriptions.set("seed", item({
     id: "seed",
-    metadata: null,
-    contentType: "application/octet-stream",
-    body: new Uint8Array(seed),
+    metadata: Buffer.concat([
+      Buffer.from([0xa3]),
+      text("schema"), text("pins-sale-reveal/1"),
+      text("root"), bytes(Buffer.alloc(32, 0xab)),
+      text("sale_secret"), bytes(seed),
+    ]),
+    contentType: "text/plain",
     createdHeight: 5,
   }));
   const view = await collectionView(indexer, { tipHeight: 20, blockHash: () => null });

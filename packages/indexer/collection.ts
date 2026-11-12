@@ -128,6 +128,8 @@ export type CollectionView = {
   issuer?: string;
   itemType?: string;
   leafListId?: string;
+  /** The closing inscription of PINS-5 §7. Items inscribed after it are not authentic. */
+  closingId?: string;
   seedRevealed?: boolean;
   reserveMode?: "configured" | "declared" | "none";
   reserveVerified?: boolean | null;
@@ -347,6 +349,62 @@ function leafListOf(indexer: Indexer, genesis: Genesis): Inscription | undefined
   return undefined;
 }
 
+/** Field 5 of an inscription that is not a reinscription or opaque, as a map. Other values are not records of the collection. */
+function recordOf(item: Inscription): Record<string, unknown> | null {
+  if (!item.metadata || item.flags.includes("reinscription") || item.flags.includes("opaque")) return null;
+  try {
+    const decoded = decodeCbor(item.metadata);
+    return isRecord(decoded) ? decoded : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The issuer's inscriptions after the genesis whose field 5 is a map of three keys (`0xa3`), in chain order. */
+function recordCandidates(indexer: Indexer, genesis: Genesis): Inscription[] {
+  return [...indexer.inscriptions.values()]
+    .filter((item) => item.metadata?.[0] === 0xa3 && item.leafIssuer === genesis.issuer && after(genesis, item))
+    .sort(chainOrder);
+}
+
+function bytes32(value: unknown): Buffer | null {
+  return value instanceof Uint8Array && value.length === 32 ? Buffer.from(value) : null;
+}
+
+/**
+ * PINS-5 §8.5: the sale reveal is signed by the issuer key, comes after the genesis, and has
+ * field 5 `{ schema: "pins-sale-reveal/1", root, sale_secret }` with `root` the genesis root
+ * and `SHA256(sale_secret)` equal to `sale_commitment`. The first one in chain order counts.
+ */
+function saleRevealOf(indexer: Indexer, genesis: Genesis): { inscription: Inscription; secret: Buffer } | null {
+  if (!genesis.saleCommitment) return null;
+  for (const item of recordCandidates(indexer, genesis)) {
+    const record = recordOf(item);
+    if (!record || Object.keys(record).join(",") !== "schema,root,sale_secret" || record.schema !== "pins-sale-reveal/1") continue;
+    const root = bytes32(record.root);
+    const secret = bytes32(record.sale_secret);
+    if (!root || root.toString("hex") !== genesis.root || !secret || sha256(secret).toString("hex") !== genesis.saleCommitment) continue;
+    return { inscription: item, secret };
+  }
+  return null;
+}
+
+/**
+ * PINS-5 §7: the closing inscription is signed by the issuer key, comes after the genesis, and
+ * has field 5 `{ schema: "pins-close/1", root, count }` with `root` the genesis root and `count`
+ * the supply. The first one in chain order counts. No inscription after it is an item.
+ */
+function closingOf(indexer: Indexer, genesis: Genesis): Inscription | null {
+  for (const item of recordCandidates(indexer, genesis)) {
+    const record = recordOf(item);
+    if (!record || Object.keys(record).join(",") !== "schema,root,count" || record.schema !== "pins-close/1") continue;
+    const root = bytes32(record.root);
+    if (!root || root.toString("hex") !== genesis.root || record.count !== genesis.supply) continue;
+    return item;
+  }
+  return null;
+}
+
 function after(genesis: Genesis, item: Inscription): boolean {
   if (item.createdHeight !== genesis.inscription.createdHeight) return item.createdHeight > genesis.inscription.createdHeight;
   if (item.createdIndex !== genesis.inscription.createdIndex) return item.createdIndex > genesis.inscription.createdIndex;
@@ -395,11 +453,12 @@ export async function collectionView(indexer: Indexer, cursor: ChainCursor, prof
   const genesis = genesisOf(indexer);
   if (!genesis) return { status: "absent", ...base };
   const leafList = leafListOf(indexer, genesis);
-  const seed = [...indexer.inscriptions.values()].find((item) =>
-    item.contentType === "application/octet-stream" && item.body.length === 32 && sha256(item.body).toString("hex") === genesis.saleCommitment);
+  const seed = saleRevealOf(indexer, genesis);
+  const closing = closingOf(indexer, genesis);
   const claimed = new Map<number, Inscription>();
   const candidates = [...indexer.inscriptions.values()]
     .filter((item) => item !== genesis.inscription && item !== leafList && item.leafIssuer === genesis.issuer && after(genesis, item))
+    .filter((item) => !closing || chainOrder(item, closing) < 0)
     .sort((left, right) => left.createdHeight - right.createdHeight || left.createdIndex - right.createdIndex || left.n - right.n);
   for (const item of candidates) {
     const meta = metaOf(item);
@@ -458,7 +517,7 @@ export async function collectionView(indexer: Indexer, cursor: ChainCursor, prof
       ? { groups: genesis.reserve.groups, extra: genesis.reserve.extra }
       : { groups: profile!.reserveGroups, extra: profile!.reserveExtra };
     try {
-      const selected = reserve.selectReserve(traits, Buffer.from(seed.body), groups);
+      const selected = reserve.selectReserve(traits, seed.secret, groups);
       const expectedCount = reserveMode === "configured"
         ? profile!.reserveCount
         : genesis.reserve!.groups.reduce((sum, group) => sum + group.count, 0) + genesis.reserve!.extra;
@@ -483,7 +542,7 @@ export async function collectionView(indexer: Indexer, cursor: ChainCursor, prof
       orderPendingReason = `block ${orderBlockHeight} is indexed but not final`;
     } else {
       const reserve = await reserveModule();
-      const mixed = reserve.saleSeed(Buffer.from(seed.body), internalBlockHash(orderBlockHash));
+      const mixed = reserve.saleSeed(seed.secret, internalBlockHash(orderBlockHash));
       order = reserve.saleOrder(saleIds, mixed);
       orderVerified = true;
       orderStatus = "ready";
@@ -514,6 +573,7 @@ export async function collectionView(indexer: Indexer, cursor: ChainCursor, prof
     issuer: genesis.issuer,
     itemType: genesis.itemType,
     leafListId: leafList?.id,
+    closingId: closing?.id,
     seedRevealed: Boolean(seed),
     reserveMode,
     reserveVerified,

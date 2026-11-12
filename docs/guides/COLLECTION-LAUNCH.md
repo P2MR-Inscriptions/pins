@@ -70,3 +70,7 @@ A price is optional, and it belongs to a sale. A collection with no sale has non
 The indexer takes `--collection` when you want `reserveMode` `configured`. Without it, the indexer still marks an inscription authentic when the leaf matches. It does not invent a collection.
 
 Command lines are in [the inscriber guide](../inscriber/README.md) and in the repository [README](../../README.md).
+
+## After the mint: the sale
+
+The inscriber mints and puts the items where the profile says. It does not run the sale. With a sale, the items for sale sit at the `--sale` address and the issuer publishes the price (`price`, above). A buyer then takes an item with a PSBT trade (PINS-6 §6): the sale server builds it, and the buyer checks it before signing. The code for both is `packages/sale`, a library with no command line, described in [its README](../../packages/sale/README.md). A collection with no sale has nothing to run: its items belong to the creator or the holder, who can sell any of them the same way.

@@ -387,10 +387,10 @@ that shares an unconfirmed ancestor is rejected
 
 | Vector | Content | Status |
 |---|---|---|
-| TV1-1 | Minimal envelope: `content_type` `text/plain;charset=utf-8`, body `hello` | TODO-regtest |
+| TV1-1 | Minimal envelope: `content_type` `text/plain;charset=utf-8`, body `hello` | `vectors/envelope.json` (script level; the regtest run is not done) |
 | TV1-2 | 24×24 PNG with CBOR metadata (field 5) | TODO-regtest |
-| TV1-3 | Batch of 3 envelopes with pointers 0, 10,000, 20,000 | TODO-regtest |
-| TV1-4 | Body of exactly 520, 521 and 1,040 bytes (chunk boundaries) | TODO-regtest |
+| TV1-3 | Batch of 3 envelopes with pointers 0, 10,000, 20,000 | `vectors/envelope.json` (script level; the regtest run is not done) |
+| TV1-4 | Body of exactly 520, 521 and 1,040 bytes (chunk boundaries) | `vectors/envelope.json` (script level; the regtest run is not done) |
 | TV1-5 | Invalid: wrong marker, missing `OP_ENDIF`, non-push inside, reserved leaf version | TODO-regtest |
 | TV1-6 | Flags: unknown even tag, duplicate `content_type`, dangling tag, bad pointer | TODO-regtest |
 | TV1-7 | Recovery-leaf abort spend | TODO-regtest |

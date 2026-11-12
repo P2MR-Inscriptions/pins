@@ -1,0 +1,51 @@
+{
+  "description": "Root of a leaf list body, PINS-5 §6: the 32-byte leaves back to back, folded as in PINS-5 §5.1. A body that is empty or whose length is not a multiple of 32 has no root. The leaves are SHA-256 of the text `leaf <index>`.",
+  "spec": "PINS-5 §6",
+  "cases": [
+    {
+      "name": "1 leaves",
+      "body_hex": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad",
+      "root": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad"
+    },
+    {
+      "name": "2 leaves",
+      "body_hex": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96adccbf76d20974e563eb51d22ff1171a30472e0ae643b17863befd53614e7fefad",
+      "root": "06f4672c8871ec3b0085b38a1682a938005d5fa05ef1366bf23b5f9eb46ff543"
+    },
+    {
+      "name": "3 leaves",
+      "body_hex": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96adccbf76d20974e563eb51d22ff1171a30472e0ae643b17863befd53614e7fefadbac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+      "root": "c510d5199b4003dda65f532d7fd66c26045f7d3174bf98f42ab67c61e431c6ad"
+    },
+    {
+      "name": "5 leaves",
+      "body_hex": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96adccbf76d20974e563eb51d22ff1171a30472e0ae643b17863befd53614e7fefadbac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5fca6e6588d55d58a70e0b4de60c2dab1e4574bb97d68fa88679852a5daaa9db025036d5415fd89f22c593f3a7a10348af3c87b3f13d73373a42f8768e377da3e9",
+      "root": "712b91a5991b66385c63789e1a536c7ba797df3a3466590b3d0e59621651fc74"
+    },
+    {
+      "name": "8 leaves",
+      "body_hex": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96adccbf76d20974e563eb51d22ff1171a30472e0ae643b17863befd53614e7fefadbac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5fca6e6588d55d58a70e0b4de60c2dab1e4574bb97d68fa88679852a5daaa9db025036d5415fd89f22c593f3a7a10348af3c87b3f13d73373a42f8768e377da3e95df183a7928a0b9a8a923c39009e89847ab5f53d07547a362bd2b30e26ee2e16e94f5850717db06bc4e0bd7444389dd11eb57caf8e60502cc633081a636510d03fc6f659908e60026f20aeb6f1a90a14cacb8a27d870aec882a0529f2c829bb2",
+      "root": "17e5a30b2009ae465765a480ef3edc46cc1f4f037a5d9ccc69701db0968a9704"
+    },
+    {
+      "name": "empty body",
+      "body_hex": "",
+      "root": null
+    },
+    {
+      "name": "31 bytes",
+      "body_hex": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96",
+      "root": null
+    },
+    {
+      "name": "33 bytes",
+      "body_hex": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad00",
+      "root": null
+    },
+    {
+      "name": "two leaves and one byte",
+      "body_hex": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96adccbf76d20974e563eb51d22ff1171a30472e0ae643b17863befd53614e7fefad00",
+      "root": null
+    }
+  ]
+}

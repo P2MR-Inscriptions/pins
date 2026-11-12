@@ -108,8 +108,9 @@ parent   = SHA256( left || right )                                     # 64-byte
 - a level with an odd number of nodes duplicates its last node (`parent = SHA256(x || x)`);
 - `root` is the single node of the top level.
 
-There is no separate leaf function. `packages/collection/canonical.mjs` builds each 68-byte preimage
-and folds the tree inside the private function `merkleRoot`. That function is not exported. Leaves
+The reference code has one implementation of the leaf, the root and the proof: `packages/protocol/merkle.mjs`.
+The inscriber, the indexer and the collection builder all call it. Test vectors for it are in
+[vectors](vectors/README.md). Leaves
 and internal nodes are domain-separated by preimage length (68 vs 64 bytes). The duplicated-last-node
 ambiguity (two trees with the same root) cannot be exploited because `supply` is fixed in the genesis
 and every leaf commits to its own number: a proof for a position `≥ supply` or a leaf whose number
@@ -390,12 +391,12 @@ inscription that carries a Merkle proof.
 
 | Vector | Content | Status |
 |---|---|---|
-| TV5-1 | Root for a 5-item toy collection (odd-level duplication) | TODO-spec |
+| TV5-1 | Root for a 5-item toy collection (odd-level duplication) | `vectors/merkle-root.json` |
 | TV5-2 | Root of a caller-supplied item set, computed by §5.1 | not fixed in this document |
 | TV5-3 | Forged copy signed by another key rejected | TODO-regtest |
 | TV5-4 | Item inscribed after closing rejected | TODO-regtest |
 | TV5-5 | Reserve set for the dummy seed in §8.3. Digest `a4c10796…6c193d`. Not the launch secret | `selectReserve` in `packages/protocol/reserve.mjs` |
-| TV5-6 | Leaf of item 1 from TV4-1/TV4-2 hashes | TODO-spec |
+| TV5-6 | Leaf of one item from its body and metadata hashes | `vectors/merkle-leaf.json` |
 | TV5-7 | Sale order of ids 1..5 with `sale_secret` 32×`0x11` and block hash 32×`0x22` is `1,3,4,5,2` | `saleOrder` in `packages/protocol/reserve.mjs` |
 
 ## 12. Copyright

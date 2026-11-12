@@ -54,6 +54,8 @@ Qbit's witness version 2 output is Pay-to-Merkle-Root (P2MR): a 32-byte program,
 | [PINS-5](docs/specs/PINS-5.md) | Collections: issuer key, Merkle root, reserve, sale order |
 | [PINS-6](docs/specs/PINS-6.md) | PSBT trades and Qbit Wallet limits |
 
+Test vectors for the Merkle tree, the genesis, the field 5 reader and the envelope are in [docs/specs/vectors](docs/specs/vectors/README.md).
+
 ## How a mint is shaped
 
 ```mermaid

@@ -1,0 +1,522 @@
+{
+  "description": "Proofs of a leaf at a position in a tree of `count` leaves. `path` lists the sibling hashes from the leaf up, as hex. A verifier takes the leaf, the position, the count, the path and the root. It refuses a position at or after the count, and a path whose length is not the depth of that tree (ceil(log2(count)) levels, none for one leaf).",
+  "spec": "PINS-5 §5.1",
+  "valid": [
+    {
+      "count": 1,
+      "index": 0,
+      "leaf": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad",
+      "path": [],
+      "root": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad",
+      "valid": true
+    },
+    {
+      "count": 2,
+      "index": 0,
+      "leaf": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad",
+      "path": [
+        "ccbf76d20974e563eb51d22ff1171a30472e0ae643b17863befd53614e7fefad"
+      ],
+      "root": "06f4672c8871ec3b0085b38a1682a938005d5fa05ef1366bf23b5f9eb46ff543",
+      "valid": true
+    },
+    {
+      "count": 2,
+      "index": 1,
+      "leaf": "ccbf76d20974e563eb51d22ff1171a30472e0ae643b17863befd53614e7fefad",
+      "path": [
+        "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad"
+      ],
+      "root": "06f4672c8871ec3b0085b38a1682a938005d5fa05ef1366bf23b5f9eb46ff543",
+      "valid": true
+    },
+    {
+      "count": 3,
+      "index": 0,
+      "leaf": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad",
+      "path": [
+        "ccbf76d20974e563eb51d22ff1171a30472e0ae643b17863befd53614e7fefad",
+        "0ec8af1e5398c8039faa8c057bb354765c434d11a5978a5646f7b8f4e0159fb0"
+      ],
+      "root": "c510d5199b4003dda65f532d7fd66c26045f7d3174bf98f42ab67c61e431c6ad",
+      "valid": true
+    },
+    {
+      "count": 3,
+      "index": 1,
+      "leaf": "ccbf76d20974e563eb51d22ff1171a30472e0ae643b17863befd53614e7fefad",
+      "path": [
+        "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad",
+        "0ec8af1e5398c8039faa8c057bb354765c434d11a5978a5646f7b8f4e0159fb0"
+      ],
+      "root": "c510d5199b4003dda65f532d7fd66c26045f7d3174bf98f42ab67c61e431c6ad",
+      "valid": true
+    },
+    {
+      "count": 3,
+      "index": 2,
+      "leaf": "bac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+      "path": [
+        "bac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+        "06f4672c8871ec3b0085b38a1682a938005d5fa05ef1366bf23b5f9eb46ff543"
+      ],
+      "root": "c510d5199b4003dda65f532d7fd66c26045f7d3174bf98f42ab67c61e431c6ad",
+      "valid": true
+    },
+    {
+      "count": 4,
+      "index": 0,
+      "leaf": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad",
+      "path": [
+        "ccbf76d20974e563eb51d22ff1171a30472e0ae643b17863befd53614e7fefad",
+        "2fcef62bd8d4ae5262fc17f35f07ba637c87169cfb7f27d5bf5dc5438a88b4ac"
+      ],
+      "root": "e912c730a1e4726d70d2b02628e68440b78373a09fbfeffe43263500f3300a3c",
+      "valid": true
+    },
+    {
+      "count": 4,
+      "index": 1,
+      "leaf": "ccbf76d20974e563eb51d22ff1171a30472e0ae643b17863befd53614e7fefad",
+      "path": [
+        "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad",
+        "2fcef62bd8d4ae5262fc17f35f07ba637c87169cfb7f27d5bf5dc5438a88b4ac"
+      ],
+      "root": "e912c730a1e4726d70d2b02628e68440b78373a09fbfeffe43263500f3300a3c",
+      "valid": true
+    },
+    {
+      "count": 4,
+      "index": 2,
+      "leaf": "bac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+      "path": [
+        "ca6e6588d55d58a70e0b4de60c2dab1e4574bb97d68fa88679852a5daaa9db02",
+        "06f4672c8871ec3b0085b38a1682a938005d5fa05ef1366bf23b5f9eb46ff543"
+      ],
+      "root": "e912c730a1e4726d70d2b02628e68440b78373a09fbfeffe43263500f3300a3c",
+      "valid": true
+    },
+    {
+      "count": 4,
+      "index": 3,
+      "leaf": "ca6e6588d55d58a70e0b4de60c2dab1e4574bb97d68fa88679852a5daaa9db02",
+      "path": [
+        "bac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+        "06f4672c8871ec3b0085b38a1682a938005d5fa05ef1366bf23b5f9eb46ff543"
+      ],
+      "root": "e912c730a1e4726d70d2b02628e68440b78373a09fbfeffe43263500f3300a3c",
+      "valid": true
+    },
+    {
+      "count": 5,
+      "index": 0,
+      "leaf": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad",
+      "path": [
+        "ccbf76d20974e563eb51d22ff1171a30472e0ae643b17863befd53614e7fefad",
+        "2fcef62bd8d4ae5262fc17f35f07ba637c87169cfb7f27d5bf5dc5438a88b4ac",
+        "8df832fb9f43f231eef6c65e283dc093ca591625ff60555c524dbee620708943"
+      ],
+      "root": "712b91a5991b66385c63789e1a536c7ba797df3a3466590b3d0e59621651fc74",
+      "valid": true
+    },
+    {
+      "count": 5,
+      "index": 1,
+      "leaf": "ccbf76d20974e563eb51d22ff1171a30472e0ae643b17863befd53614e7fefad",
+      "path": [
+        "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad",
+        "2fcef62bd8d4ae5262fc17f35f07ba637c87169cfb7f27d5bf5dc5438a88b4ac",
+        "8df832fb9f43f231eef6c65e283dc093ca591625ff60555c524dbee620708943"
+      ],
+      "root": "712b91a5991b66385c63789e1a536c7ba797df3a3466590b3d0e59621651fc74",
+      "valid": true
+    },
+    {
+      "count": 5,
+      "index": 2,
+      "leaf": "bac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+      "path": [
+        "ca6e6588d55d58a70e0b4de60c2dab1e4574bb97d68fa88679852a5daaa9db02",
+        "06f4672c8871ec3b0085b38a1682a938005d5fa05ef1366bf23b5f9eb46ff543",
+        "8df832fb9f43f231eef6c65e283dc093ca591625ff60555c524dbee620708943"
+      ],
+      "root": "712b91a5991b66385c63789e1a536c7ba797df3a3466590b3d0e59621651fc74",
+      "valid": true
+    },
+    {
+      "count": 5,
+      "index": 3,
+      "leaf": "ca6e6588d55d58a70e0b4de60c2dab1e4574bb97d68fa88679852a5daaa9db02",
+      "path": [
+        "bac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+        "06f4672c8871ec3b0085b38a1682a938005d5fa05ef1366bf23b5f9eb46ff543",
+        "8df832fb9f43f231eef6c65e283dc093ca591625ff60555c524dbee620708943"
+      ],
+      "root": "712b91a5991b66385c63789e1a536c7ba797df3a3466590b3d0e59621651fc74",
+      "valid": true
+    },
+    {
+      "count": 5,
+      "index": 4,
+      "leaf": "5036d5415fd89f22c593f3a7a10348af3c87b3f13d73373a42f8768e377da3e9",
+      "path": [
+        "5036d5415fd89f22c593f3a7a10348af3c87b3f13d73373a42f8768e377da3e9",
+        "7a51b11736ddcc3a03fa788582c5dc508271ecf6b5b09dd11333fa31cd4e65a8",
+        "e912c730a1e4726d70d2b02628e68440b78373a09fbfeffe43263500f3300a3c"
+      ],
+      "root": "712b91a5991b66385c63789e1a536c7ba797df3a3466590b3d0e59621651fc74",
+      "valid": true
+    },
+    {
+      "count": 7,
+      "index": 0,
+      "leaf": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad",
+      "path": [
+        "ccbf76d20974e563eb51d22ff1171a30472e0ae643b17863befd53614e7fefad",
+        "2fcef62bd8d4ae5262fc17f35f07ba637c87169cfb7f27d5bf5dc5438a88b4ac",
+        "32551316dd404bdaee6e4255f0547e0e76ef9515bc885199ae33f8075d5978e0"
+      ],
+      "root": "c14c84ce9167cb9f99b900c413e25e1c94580efca0553ed53f42551c54211f4a",
+      "valid": true
+    },
+    {
+      "count": 7,
+      "index": 1,
+      "leaf": "ccbf76d20974e563eb51d22ff1171a30472e0ae643b17863befd53614e7fefad",
+      "path": [
+        "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad",
+        "2fcef62bd8d4ae5262fc17f35f07ba637c87169cfb7f27d5bf5dc5438a88b4ac",
+        "32551316dd404bdaee6e4255f0547e0e76ef9515bc885199ae33f8075d5978e0"
+      ],
+      "root": "c14c84ce9167cb9f99b900c413e25e1c94580efca0553ed53f42551c54211f4a",
+      "valid": true
+    },
+    {
+      "count": 7,
+      "index": 2,
+      "leaf": "bac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+      "path": [
+        "ca6e6588d55d58a70e0b4de60c2dab1e4574bb97d68fa88679852a5daaa9db02",
+        "06f4672c8871ec3b0085b38a1682a938005d5fa05ef1366bf23b5f9eb46ff543",
+        "32551316dd404bdaee6e4255f0547e0e76ef9515bc885199ae33f8075d5978e0"
+      ],
+      "root": "c14c84ce9167cb9f99b900c413e25e1c94580efca0553ed53f42551c54211f4a",
+      "valid": true
+    },
+    {
+      "count": 7,
+      "index": 3,
+      "leaf": "ca6e6588d55d58a70e0b4de60c2dab1e4574bb97d68fa88679852a5daaa9db02",
+      "path": [
+        "bac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+        "06f4672c8871ec3b0085b38a1682a938005d5fa05ef1366bf23b5f9eb46ff543",
+        "32551316dd404bdaee6e4255f0547e0e76ef9515bc885199ae33f8075d5978e0"
+      ],
+      "root": "c14c84ce9167cb9f99b900c413e25e1c94580efca0553ed53f42551c54211f4a",
+      "valid": true
+    },
+    {
+      "count": 7,
+      "index": 4,
+      "leaf": "5036d5415fd89f22c593f3a7a10348af3c87b3f13d73373a42f8768e377da3e9",
+      "path": [
+        "5df183a7928a0b9a8a923c39009e89847ab5f53d07547a362bd2b30e26ee2e16",
+        "578998fe29dc4910198c3620ac80e90e1d71423f5e7e2799e829d14fa042d901",
+        "e912c730a1e4726d70d2b02628e68440b78373a09fbfeffe43263500f3300a3c"
+      ],
+      "root": "c14c84ce9167cb9f99b900c413e25e1c94580efca0553ed53f42551c54211f4a",
+      "valid": true
+    },
+    {
+      "count": 7,
+      "index": 5,
+      "leaf": "5df183a7928a0b9a8a923c39009e89847ab5f53d07547a362bd2b30e26ee2e16",
+      "path": [
+        "5036d5415fd89f22c593f3a7a10348af3c87b3f13d73373a42f8768e377da3e9",
+        "578998fe29dc4910198c3620ac80e90e1d71423f5e7e2799e829d14fa042d901",
+        "e912c730a1e4726d70d2b02628e68440b78373a09fbfeffe43263500f3300a3c"
+      ],
+      "root": "c14c84ce9167cb9f99b900c413e25e1c94580efca0553ed53f42551c54211f4a",
+      "valid": true
+    },
+    {
+      "count": 7,
+      "index": 6,
+      "leaf": "e94f5850717db06bc4e0bd7444389dd11eb57caf8e60502cc633081a636510d0",
+      "path": [
+        "e94f5850717db06bc4e0bd7444389dd11eb57caf8e60502cc633081a636510d0",
+        "d819dd309810db51069bd16199bf9daf5d07f17e58d76a860dcf10f151881f44",
+        "e912c730a1e4726d70d2b02628e68440b78373a09fbfeffe43263500f3300a3c"
+      ],
+      "root": "c14c84ce9167cb9f99b900c413e25e1c94580efca0553ed53f42551c54211f4a",
+      "valid": true
+    },
+    {
+      "count": 9,
+      "index": 0,
+      "leaf": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad",
+      "path": [
+        "ccbf76d20974e563eb51d22ff1171a30472e0ae643b17863befd53614e7fefad",
+        "2fcef62bd8d4ae5262fc17f35f07ba637c87169cfb7f27d5bf5dc5438a88b4ac",
+        "104d5d190f63021bb4fb4648c04db702d7d05fcbde795bde34b8cc5b01db86b3",
+        "e2c32bd66d6a6fdf3ddc614325e3922f3ac59bc1e828893de2e091d0cf003ebb"
+      ],
+      "root": "46d88afae1d1ea908abeb2827287000c02bcac900e40e80f88b81c2952b63189",
+      "valid": true
+    },
+    {
+      "count": 9,
+      "index": 1,
+      "leaf": "ccbf76d20974e563eb51d22ff1171a30472e0ae643b17863befd53614e7fefad",
+      "path": [
+        "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad",
+        "2fcef62bd8d4ae5262fc17f35f07ba637c87169cfb7f27d5bf5dc5438a88b4ac",
+        "104d5d190f63021bb4fb4648c04db702d7d05fcbde795bde34b8cc5b01db86b3",
+        "e2c32bd66d6a6fdf3ddc614325e3922f3ac59bc1e828893de2e091d0cf003ebb"
+      ],
+      "root": "46d88afae1d1ea908abeb2827287000c02bcac900e40e80f88b81c2952b63189",
+      "valid": true
+    },
+    {
+      "count": 9,
+      "index": 2,
+      "leaf": "bac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+      "path": [
+        "ca6e6588d55d58a70e0b4de60c2dab1e4574bb97d68fa88679852a5daaa9db02",
+        "06f4672c8871ec3b0085b38a1682a938005d5fa05ef1366bf23b5f9eb46ff543",
+        "104d5d190f63021bb4fb4648c04db702d7d05fcbde795bde34b8cc5b01db86b3",
+        "e2c32bd66d6a6fdf3ddc614325e3922f3ac59bc1e828893de2e091d0cf003ebb"
+      ],
+      "root": "46d88afae1d1ea908abeb2827287000c02bcac900e40e80f88b81c2952b63189",
+      "valid": true
+    },
+    {
+      "count": 9,
+      "index": 3,
+      "leaf": "ca6e6588d55d58a70e0b4de60c2dab1e4574bb97d68fa88679852a5daaa9db02",
+      "path": [
+        "bac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+        "06f4672c8871ec3b0085b38a1682a938005d5fa05ef1366bf23b5f9eb46ff543",
+        "104d5d190f63021bb4fb4648c04db702d7d05fcbde795bde34b8cc5b01db86b3",
+        "e2c32bd66d6a6fdf3ddc614325e3922f3ac59bc1e828893de2e091d0cf003ebb"
+      ],
+      "root": "46d88afae1d1ea908abeb2827287000c02bcac900e40e80f88b81c2952b63189",
+      "valid": true
+    },
+    {
+      "count": 9,
+      "index": 4,
+      "leaf": "5036d5415fd89f22c593f3a7a10348af3c87b3f13d73373a42f8768e377da3e9",
+      "path": [
+        "5df183a7928a0b9a8a923c39009e89847ab5f53d07547a362bd2b30e26ee2e16",
+        "1bde94e992cf4041461fe85f6b8824de6cb109520fc665fc297e6665d372229e",
+        "e912c730a1e4726d70d2b02628e68440b78373a09fbfeffe43263500f3300a3c",
+        "e2c32bd66d6a6fdf3ddc614325e3922f3ac59bc1e828893de2e091d0cf003ebb"
+      ],
+      "root": "46d88afae1d1ea908abeb2827287000c02bcac900e40e80f88b81c2952b63189",
+      "valid": true
+    },
+    {
+      "count": 9,
+      "index": 5,
+      "leaf": "5df183a7928a0b9a8a923c39009e89847ab5f53d07547a362bd2b30e26ee2e16",
+      "path": [
+        "5036d5415fd89f22c593f3a7a10348af3c87b3f13d73373a42f8768e377da3e9",
+        "1bde94e992cf4041461fe85f6b8824de6cb109520fc665fc297e6665d372229e",
+        "e912c730a1e4726d70d2b02628e68440b78373a09fbfeffe43263500f3300a3c",
+        "e2c32bd66d6a6fdf3ddc614325e3922f3ac59bc1e828893de2e091d0cf003ebb"
+      ],
+      "root": "46d88afae1d1ea908abeb2827287000c02bcac900e40e80f88b81c2952b63189",
+      "valid": true
+    },
+    {
+      "count": 9,
+      "index": 6,
+      "leaf": "e94f5850717db06bc4e0bd7444389dd11eb57caf8e60502cc633081a636510d0",
+      "path": [
+        "3fc6f659908e60026f20aeb6f1a90a14cacb8a27d870aec882a0529f2c829bb2",
+        "d819dd309810db51069bd16199bf9daf5d07f17e58d76a860dcf10f151881f44",
+        "e912c730a1e4726d70d2b02628e68440b78373a09fbfeffe43263500f3300a3c",
+        "e2c32bd66d6a6fdf3ddc614325e3922f3ac59bc1e828893de2e091d0cf003ebb"
+      ],
+      "root": "46d88afae1d1ea908abeb2827287000c02bcac900e40e80f88b81c2952b63189",
+      "valid": true
+    },
+    {
+      "count": 9,
+      "index": 7,
+      "leaf": "3fc6f659908e60026f20aeb6f1a90a14cacb8a27d870aec882a0529f2c829bb2",
+      "path": [
+        "e94f5850717db06bc4e0bd7444389dd11eb57caf8e60502cc633081a636510d0",
+        "d819dd309810db51069bd16199bf9daf5d07f17e58d76a860dcf10f151881f44",
+        "e912c730a1e4726d70d2b02628e68440b78373a09fbfeffe43263500f3300a3c",
+        "e2c32bd66d6a6fdf3ddc614325e3922f3ac59bc1e828893de2e091d0cf003ebb"
+      ],
+      "root": "46d88afae1d1ea908abeb2827287000c02bcac900e40e80f88b81c2952b63189",
+      "valid": true
+    },
+    {
+      "count": 9,
+      "index": 8,
+      "leaf": "3779790b00cf4dd355ba895adf36838158baa398f0e70fce7018503dbade253d",
+      "path": [
+        "3779790b00cf4dd355ba895adf36838158baa398f0e70fce7018503dbade253d",
+        "e521d13eee67347e982abc0c3200b340010b52a92576dd5ecf8e82448b041be9",
+        "ad8692f59d16ec4d3b1bf36b808fb05bda562f8ec8ebe638ec4e15fac06c606b",
+        "17e5a30b2009ae465765a480ef3edc46cc1f4f037a5d9ccc69701db0968a9704"
+      ],
+      "root": "46d88afae1d1ea908abeb2827287000c02bcac900e40e80f88b81c2952b63189",
+      "valid": true
+    },
+    {
+      "name": "the proof of the third of three leaves also proves the fourth of four leaves whose last two are equal",
+      "count": 4,
+      "index": 3,
+      "leaf": "bac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+      "path": [
+        "bac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+        "06f4672c8871ec3b0085b38a1682a938005d5fa05ef1366bf23b5f9eb46ff543"
+      ],
+      "root": "c510d5199b4003dda65f532d7fd66c26045f7d3174bf98f42ab67c61e431c6ad",
+      "valid": true
+    }
+  ],
+  "invalid": [
+    {
+      "name": "wrong root",
+      "leaf": "bac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+      "index": 2,
+      "count": 5,
+      "path": [
+        "ca6e6588d55d58a70e0b4de60c2dab1e4574bb97d68fa88679852a5daaa9db02",
+        "06f4672c8871ec3b0085b38a1682a938005d5fa05ef1366bf23b5f9eb46ff543",
+        "8df832fb9f43f231eef6c65e283dc093ca591625ff60555c524dbee620708943"
+      ],
+      "root": "012b91a5991b66385c63789e1a536c7ba797df3a3466590b3d0e59621651fc74",
+      "valid": false
+    },
+    {
+      "name": "leaf changed",
+      "leaf": "0ac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+      "index": 2,
+      "count": 5,
+      "path": [
+        "ca6e6588d55d58a70e0b4de60c2dab1e4574bb97d68fa88679852a5daaa9db02",
+        "06f4672c8871ec3b0085b38a1682a938005d5fa05ef1366bf23b5f9eb46ff543",
+        "8df832fb9f43f231eef6c65e283dc093ca591625ff60555c524dbee620708943"
+      ],
+      "root": "712b91a5991b66385c63789e1a536c7ba797df3a3466590b3d0e59621651fc74",
+      "valid": false
+    },
+    {
+      "name": "a sibling changed",
+      "leaf": "bac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+      "index": 2,
+      "count": 5,
+      "path": [
+        "0a6e6588d55d58a70e0b4de60c2dab1e4574bb97d68fa88679852a5daaa9db02",
+        "06f4672c8871ec3b0085b38a1682a938005d5fa05ef1366bf23b5f9eb46ff543",
+        "8df832fb9f43f231eef6c65e283dc093ca591625ff60555c524dbee620708943"
+      ],
+      "root": "712b91a5991b66385c63789e1a536c7ba797df3a3466590b3d0e59621651fc74",
+      "valid": false
+    },
+    {
+      "name": "position changed to its neighbour",
+      "leaf": "bac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+      "index": 3,
+      "count": 5,
+      "path": [
+        "ca6e6588d55d58a70e0b4de60c2dab1e4574bb97d68fa88679852a5daaa9db02",
+        "06f4672c8871ec3b0085b38a1682a938005d5fa05ef1366bf23b5f9eb46ff543",
+        "8df832fb9f43f231eef6c65e283dc093ca591625ff60555c524dbee620708943"
+      ],
+      "root": "712b91a5991b66385c63789e1a536c7ba797df3a3466590b3d0e59621651fc74",
+      "valid": false
+    },
+    {
+      "name": "path too short",
+      "leaf": "bac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+      "index": 2,
+      "count": 5,
+      "path": [
+        "ca6e6588d55d58a70e0b4de60c2dab1e4574bb97d68fa88679852a5daaa9db02",
+        "06f4672c8871ec3b0085b38a1682a938005d5fa05ef1366bf23b5f9eb46ff543"
+      ],
+      "root": "712b91a5991b66385c63789e1a536c7ba797df3a3466590b3d0e59621651fc74",
+      "valid": false
+    },
+    {
+      "name": "path too long",
+      "leaf": "bac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+      "index": 2,
+      "count": 5,
+      "path": [
+        "ca6e6588d55d58a70e0b4de60c2dab1e4574bb97d68fa88679852a5daaa9db02",
+        "06f4672c8871ec3b0085b38a1682a938005d5fa05ef1366bf23b5f9eb46ff543",
+        "8df832fb9f43f231eef6c65e283dc093ca591625ff60555c524dbee620708943",
+        "ca6e6588d55d58a70e0b4de60c2dab1e4574bb97d68fa88679852a5daaa9db02"
+      ],
+      "root": "712b91a5991b66385c63789e1a536c7ba797df3a3466590b3d0e59621651fc74",
+      "valid": false
+    },
+    {
+      "name": "position equal to the count",
+      "leaf": "5036d5415fd89f22c593f3a7a10348af3c87b3f13d73373a42f8768e377da3e9",
+      "index": 5,
+      "count": 5,
+      "path": [
+        "5036d5415fd89f22c593f3a7a10348af3c87b3f13d73373a42f8768e377da3e9",
+        "7a51b11736ddcc3a03fa788582c5dc508271ecf6b5b09dd11333fa31cd4e65a8",
+        "e912c730a1e4726d70d2b02628e68440b78373a09fbfeffe43263500f3300a3c"
+      ],
+      "root": "712b91a5991b66385c63789e1a536c7ba797df3a3466590b3d0e59621651fc74",
+      "valid": false
+    },
+    {
+      "name": "negative position",
+      "leaf": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad",
+      "index": -1,
+      "count": 5,
+      "path": [
+        "ccbf76d20974e563eb51d22ff1171a30472e0ae643b17863befd53614e7fefad",
+        "2fcef62bd8d4ae5262fc17f35f07ba637c87169cfb7f27d5bf5dc5438a88b4ac",
+        "8df832fb9f43f231eef6c65e283dc093ca591625ff60555c524dbee620708943"
+      ],
+      "root": "712b91a5991b66385c63789e1a536c7ba797df3a3466590b3d0e59621651fc74",
+      "valid": false
+    },
+    {
+      "name": "count of zero",
+      "leaf": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad",
+      "index": 0,
+      "count": 0,
+      "path": [],
+      "root": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad",
+      "valid": false
+    },
+    {
+      "name": "one leaf with a path",
+      "leaf": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad",
+      "index": 0,
+      "count": 1,
+      "path": [
+        "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad"
+      ],
+      "root": "20e325f06280f9d0d193fed01a0eda5bef79063f2e602d93e3605cbe825d96ad",
+      "valid": false
+    },
+    {
+      "name": "duplicated last node of three leaves, claimed as a fourth item",
+      "leaf": "bac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+      "index": 3,
+      "count": 3,
+      "path": [
+        "bac57df66fe6368188d1d4521bcffaecee76a03a50ff297a13439f7164de0a5f",
+        "06f4672c8871ec3b0085b38a1682a938005d5fa05ef1366bf23b5f9eb46ff543"
+      ],
+      "root": "c510d5199b4003dda65f532d7fd66c26045f7d3174bf98f42ab67c61e431c6ad",
+      "valid": false
+    }
+  ]
+}

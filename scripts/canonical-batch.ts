@@ -4,12 +4,12 @@
  * Envelope sizes for the zip passed by the caller. The zip is read locally.
  * This module does not connect to a node and does not write the source files.
  */
-import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { itemEnvelope, type RevealItem } from "../packages/inscriber/reveal.ts";
+import { leafHash } from "../packages/protocol/merkle.mjs";
 
 type CanonicalModule = {
   decodePng: (buf: Uint8Array) => { rgba: Uint8Array; width: number; height: number };
@@ -62,14 +62,6 @@ function packItems(items: RevealItem[]): Batch[] {
     start += count;
   }
   return batches;
-}
-
-function leafHash(id: number, png: Uint8Array, cbor: Uint8Array): Buffer {
-  const preimage = Buffer.alloc(68);
-  preimage.writeUInt32BE(id, 0);
-  createHash("sha256").update(png).digest().copy(preimage, 4);
-  createHash("sha256").update(cbor).digest().copy(preimage, 36);
-  return createHash("sha256").update(preimage).digest();
 }
 
 /**

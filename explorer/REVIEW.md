@@ -52,6 +52,6 @@ The indexer HTTP API in `scripts/indexer-run.ts` starts after the first catch-up
 
 ## Not checked
 
-A synced mainnet node, the 10,000 Flatbits, a restart of a real index, and a live reorg were not run for this package. An earlier build was observed at height 165925 with 10002 inscriptions. This build does not repeat that observation and does not decide whether a collection is authentic.
+A synced mainnet node, a full 10,000-item collection, a restart of a real index, and a live reorg were not run for this package. An earlier build was observed at height 165925 with 10002 inscriptions. This build does not repeat that observation and does not decide whether a collection is authentic.
 
 Chrome 156 played WAV, MP3, Ogg Vorbis, WebM Opus, WebM VP8, and MP4 H.264 with AAC on synthetic fixtures. It did not play Ogg Theora. That is not a claim about every codec, site, or game. The sandbox does not cap processor time.

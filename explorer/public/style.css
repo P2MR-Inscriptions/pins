@@ -1,5 +1,4 @@
-/* Colors are the Flatbits sale site tokens from src/styles.css,
-   plus the warn pair in site-chrome.tsx. The face is self-hosted Chakra Petch. */
+/* Color tokens for this page, with a warn pair. The face is self-hosted Chakra Petch. */
 @font-face {
   font-family: "Chakra Petch";
   font-style: normal;

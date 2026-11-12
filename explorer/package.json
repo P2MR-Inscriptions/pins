@@ -1,9 +1,9 @@
 {
-  "name": "flatbits-explorer",
+  "name": "pins-explorer",
   "version": "1.0.1",
   "private": true,
   "type": "module",
-  "description": "Read-only loopback explorer for the Flatbits collection on PINS.",
+  "description": "Read-only loopback explorer for PINS.",
   "license": "Apache-2.0",
   "engines": {
     "node": ">=22.12 <23"

@@ -52,7 +52,7 @@ test("the guide matches the local scripts and does not leak a setup shortcut", (
   assert.match(text, /authentic set to true/);
   assert.match(text, /node -v/);
   assert.equal(/https?:\/\/(?!127\.0\.0\.1)/.test(text), false);
-  for (const banned of ["/home/", "/Users/", "/agent", "npm install -g", "npm install flatbits", "rpcpassword=", "password:", "edit qbit.conf", "add to qbit.conf"]) {
+  for (const banned of ["/home/", "/Users/", "/agent", "npm install -g", "rpcpassword=", "password:", "edit qbit.conf", "add to qbit.conf"]) {
     assert.equal(text.includes(banned), false, banned);
   }
 });

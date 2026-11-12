@@ -2,12 +2,12 @@
 
 /**
  * Creator reserve and sale order for P2MR Inscriptions (PINS-5 §8).
- * The launch secret is never created here. RESERVE_TEST_SEED is a dummy.
+ * No sale secret is created here. RESERVE_TEST_SEED is a dummy.
  */
 import { createHash } from "node:crypto";
 import { RESERVE_DOMAIN, SALE_DOMAIN } from "./index.mjs";
 
-/** 32 ASCII bytes. A test vector only. Not the launch secret. */
+/** 32 ASCII bytes. A test vector only. Not a real sale secret. */
 export const RESERVE_TEST_SEED = Buffer.from("PINS RESERVE TEST SEED!!NOT REAL", "ascii");
 
 function assertSeed(seed) {

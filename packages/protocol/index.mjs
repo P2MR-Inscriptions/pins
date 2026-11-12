@@ -26,11 +26,10 @@ export const RESERVE_DOMAIN = 0x01;
 /** Domain byte inside the sale permutation draw. */
 export const SALE_DOMAIN = 0x02;
 
-/** Primary sale length, in whole days of 86,400 seconds, from the genesis block time. */
-export const SALE_DURATION_DAYS = 30;
-
-/** Creator revenue in USD per piece, fixed in QBT once at launch. */
-export const CREATOR_REVENUE_USD = 1;
+/*
+ * Sale terms (length, price) are not constants of this package. PINS-5 §8.5 and PINS-6 §5.1 specify
+ * them. A collection's profile and its price inscription carry the values the tools use.
+ */
 
 /** Marketplace finality. A sale is final after this many confirmations. */
 export const CONFIRMATIONS_FINAL = 6;

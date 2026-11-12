@@ -89,7 +89,7 @@ before(async () => {
     }
     if (path === "/collection") {
       res.setHeader("content-type", "application/json");
-      res.end(JSON.stringify({ status: "present", name: "Flatbits", supply: 2, first: 1, genesisId: leafId, root: "00", issuer: "ab", itemType: "image/png", authentic: 0 }));
+      res.end(JSON.stringify({ status: "present", name: "Example", supply: 2, first: 1, genesisId: leafId, root: "00", issuer: "ab", itemType: "image/png", authentic: 0 }));
       return;
     }
     if (path === "/pieces?offset=0&limit=100") {

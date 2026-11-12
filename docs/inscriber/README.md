@@ -38,7 +38,7 @@ Four mint commands. Only `plan` and `broadcast` touch a network. `price` is also
    three addresses and the same funding file passed to `plan`. They are not read from
    the plan. Copying them out of the plan does not check anything. `sign` refuses an RPC URL.
 4. `broadcast` runs online. It sends the fan-out and waits for one confirmation.
-   With `--mine` (regtest only) it then sends all 17 reveals before mining any of them.
+   With `--mine` (regtest only) it then sends all the reveals before mining any of them.
    They sit in the mempool together, and a block holds at most five. `prioritisetransaction`
    makes the regtest miner take the genesis reveal first and the batches in number order.
    That extra priority is not a fee. Without `--mine`, each reveal is confirmed before

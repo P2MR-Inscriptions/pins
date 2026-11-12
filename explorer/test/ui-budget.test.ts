@@ -16,11 +16,11 @@ test("page assets stay on this origin except the Qbit link", () => {
   assert.match(html, /rel="noopener noreferrer"/);
   assert.match(html, /PINS Explorer/);
   assert.match(html, /href="#\/inscriptions">Latest P2MR Inscriptions</);
-  assert.match(html, /id="nav-collection">FLATBITS collection</);
+  assert.match(html, /id="nav-collection">Collection</);
   assert.match(html, /class="top-cluster"/);
   assert.match(html, /How it works/);
-  assert.ok(html.indexOf("Latest P2MR Inscriptions") < html.indexOf("FLATBITS collection"));
-  assert.ok(html.indexOf("FLATBITS collection") < html.indexOf("How it works"));
+  assert.ok(html.indexOf("Latest P2MR Inscriptions") < html.indexOf('id="nav-collection">Collection<'));
+  assert.ok(html.indexOf('id="nav-collection">Collection<') < html.indexOf("How it works"));
   assert.ok(html.indexOf("How it works?") < html.indexOf(">What is Qbit?<"));
   assert.match(html, /class="icon-sun"/);
   assert.match(html, /class="icon-moon"/);
@@ -83,7 +83,7 @@ test("warmup retries do not rebuild the page and home paints once", () => {
   assert.match(home, /class: "home-side"/);
   assert.match(home, /class: "home-links"/);
   assert.match(home, /Browse all P2MR Inscriptions →/);
-  assert.match(home, /Open the \$\{brand\.collectionNav\} collection →/);
+  assert.match(home, /Open the collection →/);
   assert.equal(/page\.get\([`'"]\/collection/.test(home), false);
   assert.match(src, /data-warmup/);
   assert.match(src, /Reading the index\. This can take a few minutes\./);

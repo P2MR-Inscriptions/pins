@@ -10,7 +10,7 @@ test("the menu button is width-based and stays out of the desktop row", () => {
   assert.match(html, /aria-controls="explorer-nav"/);
   assert.match(html, /aria-expanded="false"/);
   assert.match(html, /id="explorer-nav"/);
-  assert.ok(html.indexOf("Latest P2MR Inscriptions") < html.indexOf("FLATBITS collection"));
+  assert.ok(html.indexOf("Latest P2MR Inscriptions") < html.indexOf('id="nav-collection">Collection<'));
   assert.ok(html.indexOf("How it works?") < html.indexOf(">What is Qbit?<"));
   assert.match(css, /#nav-toggle \{ display: none; \}/);
   assert.match(css, /@media \(max-width: 79\.999rem\)/);

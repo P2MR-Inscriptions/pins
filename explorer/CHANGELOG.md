@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- The page no longer carries the name of one collection. The collection menu entry reads "Collection", search and the item number box say "item", and an item page is `#/item/12` instead of a collection-specific path. The theme preference is stored under `pins-theme` only. The package is named `pins-explorer`.
+- No manifest is a default any more. `config/manifest.flatbits.json` moved to `config/examples/flatbits.json`, and `.env.example` names it as an example. Without `MANIFEST` the explorer reads `config/manifest.json` and features no collection if that file is absent. The official PINS avatar is unchanged.
 - The width and height hint of an image comes from the manifest `image`, reported by `/api/status` as `artSize`. The page no longer assumes 24 by 24. Without `image` in the manifest the images have no hint.
 - The explorer uses the indexer in `packages/` of this repository. `npm run indexer` starts it from the repository root, and the indexer is started with the genesis id of the manifest as `--genesis`.
 - The separate copy of an older indexer commit, its patches, and `npm run setup` are removed. An existing install no longer uses `vendor/pins`. Run `npm --prefix .. ci --ignore-scripts` once, then restart the indexer. `.env` and `data/` are not touched.

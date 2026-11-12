@@ -68,6 +68,8 @@ node --experimental-strip-types packages/inscriber/cli.ts price --pub issuer.key
 
 `sign` checks each unsigned raw transaction against `--creator`, `--sale`, and `--change`, and checks the fan-out input against `--utxo`. The address strings inside the plan are not a second source. The reveal control block must be a valid P2MR path from the reveal leaf to the commit root. The fan-out control block must match the issuer recovery leaf. A plan whose addresses or funding outpoint were replaced is refused while those four inputs stay the ones you passed to `plan`. `sign` does not accept a plan that omits them. A library call to `signPlan` requires the same `SignExpectations` object. There is no default that reads the plan.
 
+`sign` also signs the plan that `price` writes. That plan has no item and no reserve, so `sign` needs `--collection` and `--assignment` and no `--zip`. The price field does not carry the sale commitment. `sign` takes it from the assignment, which `assign` wrote, and refuses the plan unless the hash of the keyfile's sale secret equals it. It also checks that the price field is well formed with the price schema of the collection.
+
 `--dry-run` on `plan` or `sign` prints the summary and does not write the output file.
 
 The passphrase is read from the terminal with echo off. Tests may set `PINS_KEY_PASSPHRASE`. Do not set

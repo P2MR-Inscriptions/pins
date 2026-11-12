@@ -12,7 +12,7 @@ import { parseEnvelopes } from "./script.ts";
 import { parseMarker } from "./marker.ts";
 import { rpcChainName, type MintNetwork } from "./network.ts";
 import type { MintPlan } from "./plan.ts";
-import { LAUNCH_PRICE_SCHEMA } from "./price.ts";
+import { LAUNCH_PRICE_SCHEMA, priceSchemaFor } from "./price.ts";
 
 export { LAUNCH_COLLECTION_SCHEMA, LAUNCH_PRICE_SCHEMA, PRICE_BODY, priceBody, priceSchemaFor } from "./price.ts";
 
@@ -507,6 +507,64 @@ export function genesisFieldFromLeaf(leafHex: string, markerHex: string): Record
   const decoded = decodeCbor(field.value);
   if (!decoded || typeof decoded !== "object" || Array.isArray(decoded)) return null;
   return decoded as Record<string, unknown>;
+}
+
+const PRICE_FIELD_KEYS = "schema,genesis,price_bits,price_sources,price_time";
+
+/**
+ * The price record of a plan that inscribes only a price (PINS-6 §5.1), or null for any other plan.
+ * Such a plan has one reveal, `genesis`, with one inscription and the change output, and no numbered item.
+ * Its field 5 is not a collection genesis. It has no `sale_commitment` and no reserve, so the seed checks
+ * made for a mint do not apply to it. A plan of any other shape returns null and is checked as a mint.
+ */
+export function pricePlanField(plan: Pick<MintPlan, "marker" | "reveals">): Record<string, unknown> | null {
+  if (plan.reveals.length !== 1) return null;
+  const reveal = plan.reveals[0];
+  if (reveal.name !== "genesis" || reveal.outputs.length !== 2 || reveal.outputs.some((output) => output.item !== null)) return null;
+  const field = genesisFieldFromLeaf(reveal.leaf, plan.marker);
+  return field && Object.keys(field).join(",") === PRICE_FIELD_KEYS ? field : null;
+}
+
+/**
+ * Checks before the issuer signs a price plan. The sale secret is the collection's, and its hash must be
+ * the `sale_commitment` of that collection. The plan does not carry it, so the caller passes the one the
+ * assignment recorded. A wrong secret, or no commitment, fails. The price field must be a well-formed
+ * price record for this collection schema.
+ */
+export function priceSigningChecks(input: {
+  seed: Buffer;
+  commitment: string | undefined;
+  field: Record<string, unknown>;
+  collectionSchema: string;
+}): Check[] {
+  const hash = createHash("sha256").update(input.seed).digest("hex");
+  const hashOk = typeof input.commitment === "string" && /^[0-9a-f]{64}$/.test(input.commitment) && input.commitment === hash;
+  let form = "well formed";
+  try {
+    parsePrice(input.field);
+  } catch (error) {
+    form = error instanceof Error ? error.message : "malformed";
+  }
+  const schema = priceSchemaFor(input.collectionSchema);
+  const genesis = input.field.genesis;
+  return [
+    {
+      name: "seed hash",
+      pass: hashOk,
+      detail: hashOk ? "the sale secret matches the sale commitment of the assignment" : "the hash of the sale secret is not the sale commitment of the assignment",
+    },
+    {
+      name: "price schema",
+      pass: input.field.schema === schema,
+      detail: input.field.schema === schema ? schema : `the price field has schema ${String(input.field.schema)}, not ${schema}`,
+    },
+    {
+      name: "price genesis",
+      pass: typeof genesis === "string" && /^[0-9a-f]{64}i[0-9]+$/.test(genesis),
+      detail: typeof genesis === "string" ? genesis : "missing",
+    },
+    { name: "price fields", pass: form === "well formed", detail: form },
+  ];
 }
 
 export function genesisChecks(field: Record<string, unknown> | null, profile: GenesisProfile): Check[] {

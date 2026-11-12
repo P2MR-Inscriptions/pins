@@ -30,6 +30,10 @@ today becomes invalid.
 - PINS-1 §4.1, §5.1 and §8. An empty push in a value position is a value, and only an empty push in a
   tag position is the body separator. A tag of more than one byte is unknown, and one whose first byte
   is even makes the inscription opaque. A leading U+FEFF in `content_type` is kept.
+- PINS-1 §4.2. In restricted-output mode the only spendable output that is not P2MR is PayToAnchor, so
+  the spent-output rule excludes only that spend.
+- PINS-2 §2. An input that spends a P2MR output with no witness items is a gap in the witness data,
+  and the indexer must stop.
 - PINS-4 §2.1. A leading U+FEFF in a text string is kept, and a map key named `__proto__` is an
   ordinary key.
 

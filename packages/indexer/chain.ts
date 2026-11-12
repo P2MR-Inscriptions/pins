@@ -7,6 +7,7 @@
  */
 import { hexToBytes } from "@qbit-oss/protocol";
 import { readCompactSize } from "../inscriber/compact.ts";
+import { isP2mr } from "./address.ts";
 import type { ChainBlock, ChainTx } from "./pins.ts";
 
 export type RpcTransaction = {
@@ -89,30 +90,53 @@ export function parseTransaction(raw: Uint8Array): Parsed {
   return { inputs: vins, outputs: vouts };
 }
 
+/**
+ * PINS-1 §4.2: the leaf script is the second-to-last witness item once an annex is removed,
+ * and the control block, the last item, must carry leaf version 0xc0. A reserved version
+ * is not an inscription.
+ */
 function leafScript(witness: Uint8Array[]): Uint8Array | undefined {
   if (witness.length < 2) return undefined;
   const end = witness[witness.length - 1]?.[0] === 0x50 ? witness.length - 1 : witness.length;
-  return end >= 2 ? witness[end - 2] : undefined;
+  if (end < 2) return undefined;
+  const control = witness[end - 1];
+  if (control.length === 0 || (control[0] & 0xfe) !== 0xc0) return undefined;
+  return witness[end - 2];
 }
 
 /**
  * `lookup` returns an output value this indexer has already stored.
+ * `p2mr` says whether a stored output is P2MR, and returns undefined when this indexer
+ * has no record of its script. An input that spends a known non-P2MR output has no leaf script.
  * Outputs created earlier in the same block are visible to later transactions.
  */
-export function toChainBlock(block: RpcBlock, lookup: (txid: string, vout: number) => bigint | undefined): ChainBlock {
-  const seen = new Map<string, bigint>();
+export function toChainBlock(
+  block: RpcBlock,
+  lookup: (txid: string, vout: number) => bigint | undefined,
+  p2mr: (txid: string, vout: number) => boolean | undefined = () => undefined,
+): ChainBlock {
+  const seen = new Map<string, { value: bigint; p2mr: boolean }>();
   const txs: ChainTx[] = [];
   for (const tx of block.tx) {
     const parsed = parseTransaction(hexToBytes(tx.hex));
     const inputs = parsed.inputs.map((input, index) => {
       if (input.coinbase) return { coinbase: true, value: 0n };
       const key = `${input.prevTxid}:${input.prevVout}`;
-      const value = seen.get(key) ?? lookup(input.prevTxid ?? "", input.prevVout ?? -1);
+      const earlier = seen.get(key);
+      const value = earlier?.value ?? lookup(input.prevTxid ?? "", input.prevVout ?? -1);
       if (value === undefined) throw new Error(`output ${key} has no stored value`);
+      const spendsP2mr = earlier?.p2mr ?? p2mr(input.prevTxid ?? "", input.prevVout ?? -1);
       const witness = input.witness.length > 0 ? input.witness : (tx.vin[index]?.txinwitness ?? []).map((item) => hexToBytes(item));
-      return { prevTxid: input.prevTxid, prevVout: input.prevVout, value, leafScript: leafScript(witness) };
+      return {
+        prevTxid: input.prevTxid,
+        prevVout: input.prevVout,
+        value,
+        leafScript: spendsP2mr === false ? undefined : leafScript(witness),
+        p2mr: spendsP2mr,
+        witnessItems: witness.length,
+      };
     });
-    parsed.outputs.forEach((output, vout) => seen.set(`${tx.txid}:${vout}`, output.value));
+    parsed.outputs.forEach((output, vout) => seen.set(`${tx.txid}:${vout}`, { value: output.value, p2mr: isP2mr(output.script) }));
     txs.push({
       txid: tx.txid,
       inputs,

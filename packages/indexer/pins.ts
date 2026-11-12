@@ -51,8 +51,12 @@ export type ChainInput = {
   prevTxid?: string;
   prevVout?: number;
   value: bigint;
-  /** Leaf script from the witness, when this input spends P2MR. */
+  /** Leaf script from the witness, when this input spends P2MR through a leaf of version 0xc0. */
   leafScript?: Uint8Array;
+  /** True when the spent output is P2MR, false when it is not. Absent when the source does not know. */
+  p2mr?: boolean;
+  /** Number of witness items of this input. Absent when the source does not report it. */
+  witnessItems?: number;
 };
 
 export type ChainOutput = { value: bigint; script: Uint8Array };
@@ -119,15 +123,19 @@ export class Indexer {
     return this.inscriptions.get(id);
   }
 
-  /** Refuse a source that dropped witnesses. The caller detects that. */
+  /**
+   * PINS-2 §2.2: a block whose witnesses are missing is not a block without inscriptions.
+   * A P2MR spend always carries a script and a control block, so an empty witness on one
+   * means the source dropped it.
+   */
   static requireWitness(tx: ChainTx): void {
-    const spent = tx.inputs.some((input) => !input.coinbase && input.leafScript === undefined && input.value > 0n);
-    if (spent && tx.inputs.every((input) => input.leafScript === undefined)) {
-      throw new Error("witness pruned: refusing to index a transaction without its leaf scripts");
+    if (tx.inputs.some((input) => !input.coinbase && input.p2mr === true && input.witnessItems === 0)) {
+      throw new Error(`witness pruned: transaction ${tx.txid} spends P2MR without a witness`);
     }
   }
 
   applyBlock(block: ChainBlock): void {
+    for (const tx of block.txs.slice(1)) Indexer.requireWitness(tx);
     const created: string[] = [];
     this.height = block.height;
     const prior: UndoEntry["prior"] = [];

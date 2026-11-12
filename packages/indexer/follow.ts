@@ -10,6 +10,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { hexToBytes } from "@qbit-oss/protocol";
+import { isP2mr } from "./address.ts";
 import { parseTransaction, toChainBlock, type RpcBlock } from "./chain.ts";
 import { rpcChainName, type FollowNetwork } from "./chains.ts";
 import { curlRpcInvocation, redactSecrets } from "./rpc-curl.ts";
@@ -99,10 +100,10 @@ export async function follow(store: Store, rpc: Rpc, activationHeight = 0, netwo
         const parent = parseTransaction(hexToBytes(prev.hex));
         const output = parent.outputs[input.prevVout];
         if (!output) throw new Error(`output ${input.prevTxid}:${input.prevVout} is missing`);
-        store.saveOutput(input.prevTxid, input.prevVout, output.value);
+        store.saveOutput(input.prevTxid, input.prevVout, output.value, isP2mr(output.script));
       }
     }
-    const chainBlock = toChainBlock(block, (txid, vout) => store.outputValue(txid, vout));
+    const chainBlock = toChainBlock(block, (txid, vout) => store.outputValue(txid, vout), (txid, vout) => store.outputIsP2mr(txid, vout));
     store.commit(chainBlock);
   }
   const tip = store.tip();

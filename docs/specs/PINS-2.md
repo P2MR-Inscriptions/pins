@@ -28,7 +28,8 @@ overlay derived exactly from Qbit's subsidy schedule.
    blocks deeper than the coinbase maturity (1,000 blocks) and cannot be combined with `-txindex`
    (`src/init.cpp:492,991-992`). An indexer's node MUST NOT run with `-prunewitnesses=1`. An indexer
    MUST NOT treat a block whose witnesses are missing as having no inscriptions; it MUST stop and
-   report the gap.
+   report the gap. A spend of a P2MR output always carries a leaf script and a control block, so an
+   input that spends one with no witness items is such a gap.
 3. An indexer MAY use `-txindex`; it is not required by this standard.
 4. Indexers SHOULD expose the activation height, the last indexed block hash and the PINS standard
    versions they implement.

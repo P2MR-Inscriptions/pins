@@ -137,7 +137,7 @@ npm run inscribe -- preflight --network regtest --plan plan.json --signed plan.s
 npm run inscribe -- broadcast --plan plan.signed.json --rpc http://127.0.0.1:18443/ --rpc-user YOUR_RPC_USER --rpc-password YOUR_RPC_PASSWORD --mine
 ```
 
-`--mine` is regtest only. `utxo.json` is one object: `txid`, `vout`, `value` (bits, as a decimal string), and `script` (hex). The output must be the issuer key's own P2MR address. `price` builds the sale-open inscription and does not broadcast.
+`--mine` is regtest only. `utxo.json` is one object: `txid`, `vout`, `value` (bits, as a decimal string), and `script` (hex). The output must be the issuer key's own P2MR address. `price` is optional and for a collection with a sale. It builds the sale-open inscription from the `--price` file and does not broadcast.
 
 The air gap and the same commands without the npm wrapper are in [docs/inscriber/README.md](docs/inscriber/README.md).
 

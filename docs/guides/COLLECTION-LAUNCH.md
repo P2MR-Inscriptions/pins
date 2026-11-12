@@ -21,7 +21,7 @@ This repository is the protocol. It does not name a collection, a Merkle root, o
 | `reserveGroups` | non-empty array. Each group has `trait_type`, `value`, and a positive `count`. Not allowed with `sale: false` |
 | `reserveExtra` | non-negative integer. Extra items taken after the groups. Not allowed with `sale: false` |
 
-`reserveCount` is not a field you write. The parser sets it to the sum of the group counts plus `reserveExtra`, and refuses a sum larger than `supply`.
+`reserveCount` is not a field you write. The parser sets it to the sum of the group counts plus `reserveExtra`, and refuses a sum larger than `supply`. It is the only reserve size the tools use. There is no default size: `plan` refuses an assignment of another size, and `sign` refuses a plan with a sale and the `pins` marker when it is not given the profile.
 
 The groups are collection configuration. This repository does not list them.
 
@@ -58,6 +58,8 @@ Offline again: `sign` with the same profile and zip. `sign` refuses an RPC URL.
 Online: `preflight`, then `broadcast`. Testnet4 and mainnet need `--confirm-network` equal to `--network`.
 
 `price` is a later offline command. It builds the sale-open inscription and does not broadcast. Omit `--schema` on mainnet. The launch text stays `pins-price/1`.
+
+A price is optional, and it belongs to a sale. A collection with no sale has none: `price` refuses a profile with `"sale": false`, and the indexer reads no price inscription for a genesis without `sale_commitment` (PINS-6 §5.1). The tool holds no price value. `price_bits`, `price_sources`, and `price_time` come from the file given with `--price`, and the tool and the indexer check only that they are well formed.
 
 The indexer takes `--collection` when you want `reserveMode` `configured`. Without it, the indexer still marks an inscription authentic when the leaf matches. It does not invent a collection.
 

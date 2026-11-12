@@ -253,6 +253,10 @@ Where an indexer gets the groups:
 
 The genesis inscribed on mainnet has no `reserve` key, so for it the groups are configuration (case 2).
 
+The protocol fixes no reserve size and no group size. The reserve has as many items as the groups
+and the extra count of the collection add up to. A tool that builds or checks a mint takes that
+number from the collection's own groups, and never from a built-in value.
+
 The creator reserve is the set chosen by §8.3. The creator keeps those items. At mint they are sent
 to the creator's wallet. That assignment is public, and that is intended. The items not reserved are
 the sale set, held by `K_sale`. What the creator later does with the reserve is out of scope.

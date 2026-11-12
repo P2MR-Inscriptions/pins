@@ -37,7 +37,7 @@ import { createKeyfile, openKeyfile, readPassphrase, writeKeyfile, zeroSecrets }
 import { assertBroadcastNetwork, parseNetwork } from "./network.ts";
 import { buildPlan, type MintPlan } from "./plan.ts";
 import { signPlan } from "./sign.ts";
-import { assertRoot, merkleRoot, leafPreimage } from "./verify.ts";
+import { assertReserveSize, assertRoot, merkleRoot, leafPreimage } from "./verify.ts";
 import { loadCanonical } from "../../scripts/canonical-batch.ts";
 
 function flags(argv: string[]): Record<string, string | boolean> {
@@ -209,6 +209,9 @@ async function main(): Promise<void> {
       if (noSale) {
         if (flag.sale !== undefined) throw new Error("the collection profile declares no sale, so plan takes no --sale");
         assertNoSaleAssignment(assignment);
+      } else if (profile) {
+        // The profile declares the reserve size. An assignment of another size would fail at `sign`, so refuse it here.
+        assertReserveSize(assignment.reserve, profile.reserveCount);
       }
       const plan = buildPlan({
         network,
@@ -470,6 +473,8 @@ async function main(): Promise<void> {
     const genesis = text(flag, "genesis");
     if (!/^[0-9a-f]{64}i[0-9]+$/.test(genesis)) throw new Error("--genesis must be an inscription id");
     const profile = await readProfile(flag, false);
+    // A price opens a sale (PINS-6 §5.1). A collection that declares no sale has none to open.
+    if (profile && !profile.sale) throw new Error("the collection profile declares no sale, so there is no price inscription to build");
     const root = profile?.root ?? text(flag, "root");
     if (!/^[0-9a-f]{64}$/.test(root)) throw new Error("--root must be 64 hex characters");
     const field5 = await encodePriceField({ genesis, price, schema });

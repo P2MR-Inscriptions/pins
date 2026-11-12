@@ -4,7 +4,10 @@
 
 The reference minter builds one confirmed fan-out, then the reveals. Postage is 10,000 bits.
 A reveal heavier than 400,000 bytes is refused. How many pieces are reserved is the
-collection profile, not a default in this tool.
+collection profile, not a default in this tool. The reserve size is the sum of the profile's
+`reserveGroups` counts and `reserveExtra`. No command and no library call assumes a size.
+`plan` refuses an assignment whose reserve is not that size, and `sign` refuses a plan that
+uses the `pins` marker unless the profile gives it that size.
 
 The sale stays closed until a wallet can complete a pre-signed offer. The tool still
 assigns the profile's reserve ids to the creator address, the rest to a sale holding
@@ -59,7 +62,7 @@ node --experimental-strip-types packages/inscriber/cli.ts preflight --network ma
 node --experimental-strip-types packages/inscriber/cli.ts price --pub issuer.key.pub.json --price price.json --genesis <txid>i0 --utxo utxo.json --creator <address> --sale <address> --change <address> --fee-rate 1 --network regtest --root <64 hex> --out price-plan.json
 ```
 
-`npm run mainnet:preflight` is the preflight command. It reads `--key`, re-runs the reserve selection the indexer will run, checks the sale-secret hash against `sale_commitment`, and wipes the secret. Without `--key` those rows fail. Every row must be `PASS` before broadcast. `plan` does not take a price file. `price` builds the sale-open inscription and does not broadcast. `--schema` on `price` is the rehearsal mask, the same value the indexer takes (`c/1` derives price text `p/1`). Omit it on mainnet. The launch text stays `pins-price/1`.
+`npm run mainnet:preflight` is the preflight command. It reads `--key`, re-runs the reserve selection the indexer will run, checks the sale-secret hash against `sale_commitment`, and wipes the secret. Without `--key` those rows fail. Every row must be `PASS` before broadcast. `plan` does not take a price file. A price is optional. It belongs to a collection that declares a sale, and `price` refuses a `--collection` profile with `"sale": false`. `price` builds the sale-open inscription and does not broadcast. The tool holds no price: `price_bits`, `price_sources`, and `price_time` are read from the `--price` file, and only their form is checked. `--schema` on `price` is the rehearsal mask, the same value the indexer takes (`c/1` derives price text `p/1`). Omit it on mainnet. The launch text stays `pins-price/1`.
 
 `--creator`, `--sale`, and `--change` are Reserve, Sale, and Change. The funding address is the issuer address from `address`. Revenue is a fifth wallet. It receives buyer payments and is not a flag on `plan` or `preflight`. Do not pass it as `--sale` or as the funding address.
 

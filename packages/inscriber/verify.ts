@@ -47,3 +47,9 @@ export function assertPostage(value: bigint, name: string): void {
 export function assertSeparateChange(creator: string, sale: string | null, change: string): void {
   if (!change || change === creator || change === sale) throw new Error("mint change must be its own address");
 }
+
+/** The reserve an assignment carries must be the size the collection profile declares. Repeated ids count once. */
+export function assertReserveSize(reserve: readonly number[], declared: number): void {
+  const size = new Set(reserve).size;
+  if (size !== declared) throw new Error(`the assignment reserves ${size} items, but the collection profile declares ${declared}`);
+}

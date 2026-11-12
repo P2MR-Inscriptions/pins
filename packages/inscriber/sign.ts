@@ -144,17 +144,20 @@ function assertExpectations(plan: MintPlan, expected: SignExpectations): void {
 }
 
 /**
- * `reserveCount` is the size the reserve must have. Left out, it is 500 for a plan with a sale, as before,
- * and 0 for a plan with no sale. A plan with no sale never takes a reserve.
+ * `reserveCount` is the size the reserve must have. It is the collection's own number: the sum of the
+ * group counts and `reserveExtra` of its profile. There is no default. A plan with a sale that uses the
+ * `pins` marker is refused when the count is not given. A plan with no sale never takes a reserve.
  */
 export function verifyPlan(plan: MintPlan, reserve: Set<number>, expected: SignExpectations, expectedRoot?: string, reserveCount?: number): void {
   assertExpectations(plan, expected);
   if (plan.noSale && (reserve.size > 0 || (reserveCount ?? 0) > 0)) throw new Error("a plan with no sale has no reserve");
-  reserveCount ??= plan.noSale ? 0 : 500;
+  if (reserveCount !== undefined && (!Number.isInteger(reserveCount) || reserveCount < 0)) throw new Error("reserve count must be a non-negative integer");
+  if (plan.noSale) reserveCount = 0;
   const marker = parseMarker(plan.marker);
   if (isPinsMarker(marker)) {
     if (!expectedRoot) throw new Error("a pins plan needs the collection profile root");
     assertRoot(plan.root, expectedRoot);
+    if (reserveCount === undefined) throw new Error("a plan with a sale needs its reserve count: pass the collection profile, which declares the reserve groups");
     if (reserve.size !== reserveCount) throw new Error(`reserve has ${reserve.size} ids, not ${reserveCount}`);
   } else if (expectedRoot && plan.root === expectedRoot) {
     throw new Error("a rehearsal plan must not carry the collection root");

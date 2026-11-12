@@ -141,6 +141,10 @@ prices ascending. If the count is odd, the median `M` is the middle price. If th
 `M` is the arithmetic mean of the two central prices. `price_bits` is the integer closest to
 `100,000,000 / M` (a tie rounds away from zero). That is the QBT amount of 1 USD, in bits.
 
+No tool and no indexer computes the median or checks `price_bits` against `price_sources`. The issuer
+fills the three fields, and a reader checks only that they are well formed (below). The protocol fixes
+no price.
+
 A price inscription belongs to a sale, so it counts only for a genesis that declares one, that is, one
 that carries `sale_commitment` (PINS-5 §3). For a genesis without it, indexers read no price
 inscription, and `/collection` reports `priceStatus` `none`.

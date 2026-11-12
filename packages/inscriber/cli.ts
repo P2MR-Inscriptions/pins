@@ -25,6 +25,8 @@ import {
   genesisFieldFromLeaf,
   nodeChecks,
   parsePrice,
+  pricePlanField,
+  priceSigningChecks,
   quotaChecks,
   reserveReproductionChecks,
   reportOk,
@@ -160,7 +162,10 @@ async function main(): Promise<void> {
     const profile = command === "sign" ? await readProfile(flag, false) : await readProfile(flag, true);
     // A rehearsal sign passes --assignment and no collection profile. It must
     // not need the collection zip. Every other path recomputes the root.
-    const signWithoutZip = command === "sign" && !profile && typeof flag.assignment === "string";
+    // A plan that inscribes only a price has no item and no reserve. It is signed without the zip.
+    const earlyPlan = command === "sign" && typeof flag.plan === "string" ? JSON.parse(readFileSync(flag.plan, "utf8")) as MintPlan : null;
+    const priceField = profile && earlyPlan ? pricePlanField(earlyPlan) : null;
+    const signWithoutZip = command === "sign" && (priceField !== null || (!profile && typeof flag.assignment === "string"));
     const canonical = signWithoutZip ? null : await loadCanonical(text(flag, "zip"));
     const root = canonical
       ? merkleRoot(canonical.items.map((item, index) => leafPreimage(index + 1, item.body, item.metadata ?? new Uint8Array())))
@@ -244,7 +249,7 @@ async function main(): Promise<void> {
     const secrets = openKeyfile(text(flag, "key"), passphrase);
     passphrase.fill(0);
     try {
-      const plan = JSON.parse(readFileSync(text(flag, "plan"), "utf8")) as MintPlan;
+      const plan = earlyPlan ?? JSON.parse(readFileSync(text(flag, "plan"), "utf8")) as MintPlan;
       const noSale = plan.noSale === true;
       if (profile && profile.sale === noSale) throw new Error("the plan and the collection profile disagree about the sale");
       if (noSale && flag.sale !== undefined) throw new Error("this plan has no sale, so sign takes no --sale");
@@ -256,7 +261,20 @@ async function main(): Promise<void> {
           traitPieces.push({ id: i + 1, attributes: await attributesOf(canonical.items[i].metadata ?? new Uint8Array()) });
         }
       }
-      if (noSale) {
+      if (priceField && profile) {
+        // The reserve and the sale list belong to the mint, not to the price. What the price needs from the
+        // assignment is the sale commitment, an independent record of the hash of this collection's secret.
+        if (typeof flag.assignment !== "string") throw new Error("a price plan needs --assignment, the file from assign, to check the sale secret against its sale commitment");
+        const recorded = JSON.parse(readFileSync(flag.assignment, "utf8")) as { saleCommitment?: string };
+        const seed = Buffer.from(saleSecretOf(secrets));
+        try {
+          const failed = priceSigningChecks({ seed, commitment: recorded.saleCommitment, field: priceField, collectionSchema: profile.schema }).filter((check) => !check.pass);
+          if (failed.length) throw new Error(failed.map((check) => `${check.name}: ${check.detail}`).join("; "));
+        } finally {
+          seed.fill(0);
+        }
+        reserveIds = [];
+      } else if (noSale) {
         if (typeof flag.assignment === "string") assertNoSaleAssignment(JSON.parse(readFileSync(flag.assignment, "utf8")) as { reserve?: number[]; sale?: number[]; saleCommitment?: string });
         reserveIds = [];
       } else if (typeof flag.assignment === "string") {
@@ -303,7 +321,7 @@ async function main(): Promise<void> {
         creator: text(flag, "creator"),
         sale: noSale ? null : text(flag, "sale"),
         change: text(flag, "change"),
-      }, profile?.root, profile?.reserveCount);
+      }, profile?.root, priceField ? 0 : profile?.reserveCount);
       process.stdout.write(`${summary(signed, flag["show-marker"] === true)}\n`);
       if (flag["dry-run"]) return;
       writeFileSync(text(flag, "out"), `${JSON.stringify(signed)}\n`);

@@ -57,7 +57,7 @@ Offline again: `sign` with the same profile and zip. `sign` refuses an RPC URL.
 
 Online: `preflight`, then `broadcast`. Testnet4 and mainnet need `--confirm-network` equal to `--network`.
 
-`price` is a later offline command. It builds the sale-open inscription and does not broadcast. Omit `--schema` on mainnet. The launch text stays `pins-price/1`.
+`price` is a later offline command. It builds the sale-open inscription and does not broadcast. Sign its plan with `sign`, using the same profile and the assignment from `assign`. No zip is needed for it. Omit `--schema` on mainnet. The launch text stays `pins-price/1`.
 
 A price is optional, and it belongs to a sale. A collection with no sale has none: `price` refuses a profile with `"sale": false`, and the indexer reads no price inscription for a genesis without `sale_commitment` (PINS-6 §5.1). The tool holds no price value. `price_bits`, `price_sources`, and `price_time` come from the file given with `--price`, and the tool and the indexer check only that they are well formed.
 

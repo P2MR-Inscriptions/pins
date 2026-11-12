@@ -93,7 +93,7 @@ flowchart LR
 
 ## Requirements
 
-Node.js 22. `node -v` must start with `v22`. Qbit Core `v1.0.0`, or a later 1.x release you have checked against its own checksums, is the node this code was written for.
+Node.js 22. `node -v` must start with `v22`. The inscriber reads the collection zip with the system `unzip` (Info-ZIP) program, which must be on the PATH; it is already there on most Linux and macOS systems. Qbit Core `v1.0.0`, or a later 1.x release you have checked against its own checksums, is the node this code was written for.
 
 ```text
 npm ci

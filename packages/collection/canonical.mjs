@@ -21,7 +21,7 @@
  */
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, lstatSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { crc32, deflateSync, inflateSync } from "node:zlib";
@@ -408,13 +408,97 @@ function merkleRoot(items) {
   return merkleRootOf(items.map((item) => leafFromDigests(item.id, Buffer.from(item.canonicalImageSha256, "hex"), Buffer.from(item.canonicalMetadataSha256, "hex"))));
 }
 
-function unzip(zip, dest) {
-  const listing = execFileSync("unzip", ["-Z1", zip], { encoding: "utf8" });
-  for (const line of listing.split("\n")) {
-    if (!line) continue;
-    if (line.startsWith("/") || line.split("/").includes("..")) throw new Error(`Refusing zip entry ${line}.`);
+/**
+ * What a collection zip may hold. The numbers are far above a real collection (a 10,000 item zip has about 20,000
+ * entries and 16 MB) and far below what could fill a disk. A caller may pass its own.
+ */
+export const DEFAULT_ZIP_LIMITS = Object.freeze({
+  maxEntries: 200_000,
+  maxTotalBytes: 2 ** 30,
+  maxEntryBytes: 2 ** 26,
+});
+
+const ZIPINFO_LINE = /^([-dlcbps?])[-rwxsStT]{9}\s+\S+\s+\S+\s+(\d+)\s+\S+\s+\S+\s+\S+\s+\S+\s(.*)$/;
+
+/**
+ * The entries of a zip, read with the system `unzip` (Info-ZIP, `unzip -Z`). It must be on the PATH.
+ * Nothing is extracted. Each entry is `{ kind, size, name }` and `kind` is the first character of its Unix mode:
+ * `-` file, `d` directory, `l` symbolic link, anything else a special file.
+ */
+export function listZip(zip) {
+  let text;
+  try {
+    text = execFileSync("unzip", ["-Z", zip], { encoding: "utf8", maxBuffer: 64 * 2 ** 20, stdio: ["ignore", "pipe", "pipe"] });
+  } catch (error) {
+    if (error && error.code === "ENOENT") throw new Error("The `unzip` program (Info-ZIP) is required and was not found on the PATH.", { cause: error });
+    throw new Error(`unzip could not read ${basename(zip)}: ${String(error && error.message).split("\n")[0]}`, { cause: error });
   }
-  execFileSync("unzip", ["-q", "-o", zip, "-d", dest], { stdio: "pipe" });
+  const declared = /number of entries: (\d+)/.exec(text);
+  const entries = [];
+  for (const line of text.split("\n")) {
+    const match = ZIPINFO_LINE.exec(line);
+    if (match) entries.push({ kind: match[1], size: Number(match[2]), name: match[3] });
+  }
+  if (!declared || Number(declared[1]) !== entries.length) throw new Error("The zip listing could not be read in full. Refusing the zip.");
+  return entries;
+}
+
+function hasControlCharacter(text) {
+  for (let i = 0; i < text.length; i += 1) {
+    const code = text.charCodeAt(i);
+    if (code < 32 || code === 127) return true;
+  }
+  return false;
+}
+
+/** Refuse a zip entry that could land outside the folder, replace another entry, or is not a plain file or folder. */
+export function checkZipEntries(entries, limits = DEFAULT_ZIP_LIMITS) {
+  if (entries.length > limits.maxEntries) throw new Error(`Refusing the zip: ${entries.length} entries, the limit is ${limits.maxEntries}.`);
+  const seen = new Set();
+  let total = 0;
+  for (const { kind, size, name } of entries) {
+    const shown = JSON.stringify(name.slice(0, 80));
+    if (name.length === 0 || name.startsWith("/") || name.includes("\\") || /^[A-Za-z]:/.test(name) || hasControlCharacter(name)) throw new Error(`Refusing zip entry ${shown}.`);
+    if (name.split("/").includes("..")) throw new Error(`Refusing zip entry ${shown}.`);
+    if (kind !== "-" && kind !== "d") throw new Error(`Refusing zip entry ${shown}: it is a link or a special file.`);
+    if (seen.has(name)) throw new Error(`Refusing the zip: ${shown} appears twice.`);
+    seen.add(name);
+    if (size > limits.maxEntryBytes) throw new Error(`Refusing zip entry ${shown}: ${size} bytes, the limit is ${limits.maxEntryBytes}.`);
+    total += size;
+    if (total > limits.maxTotalBytes) throw new Error(`Refusing the zip: more than ${limits.maxTotalBytes} bytes in all.`);
+  }
+}
+
+/** After extraction: only plain files and folders, and no more bytes than the limit. */
+function checkExtracted(root, limits) {
+  let total = 0;
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) walk(path);
+      else if (entry.isFile()) {
+        total += lstatSync(path).size;
+        if (total > limits.maxTotalBytes) throw new Error(`Refusing the zip: it extracts to more than ${limits.maxTotalBytes} bytes.`);
+      } else throw new Error(`Refusing the zip: ${JSON.stringify(entry.name)} extracted as a link or a special file.`);
+    }
+  };
+  walk(root);
+}
+
+/**
+ * Extract `zip` into the new, empty folder `dest`. The entries are checked before anything is written (see
+ * `checkZipEntries`), `unzip` is told never to overwrite (`-n`), and the result is checked once more.
+ * It needs the system `unzip` (Info-ZIP) on the PATH. The zip itself is only read.
+ */
+export function extractZip(zip, dest, limits = DEFAULT_ZIP_LIMITS) {
+  if (readdirSync(dest).length > 0) throw new Error("The extraction folder must be empty.");
+  checkZipEntries(listZip(zip), limits);
+  try {
+    execFileSync("unzip", ["-q", "-n", zip, "-d", dest], { stdio: "pipe" });
+  } catch (error) {
+    throw new Error(`unzip could not extract ${basename(zip)}: ${String(error && error.message).split("\n")[0]}`, { cause: error });
+  }
+  checkExtracted(dest, limits);
 }
 
 function findLayout(root) {
@@ -441,7 +525,7 @@ export function buildCanonicalSet({ zipPath, edition, artwork } = {}) {
   const sourceZipSha256 = sha256(sourceBefore);
   const staging = mkdtempSync(join(tmpdir(), "pins-canonical-"));
   try {
-    unzip(zipPath, staging);
+    extractZip(zipPath, staging);
     const layout = findLayout(staging);
     const collection = canonicalCollectionJson(readFileSync(join(layout, "collection.json")));
     const items = [];

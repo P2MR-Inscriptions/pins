@@ -94,3 +94,5 @@ that variable for a real key: other processes of the same user can see it. The t
 
 A regtest run at 1 bit per vbyte confirmed the fan-out first, then the reveals.
 Fee and weight follow the zip. They are not constants of this tool.
+
+The zip is untrusted input and is only read. The tool lists it with the system `unzip` (Info-ZIP), which must be on the PATH, and refuses it before it writes anything when an entry has an absolute path, a `..` segment, a backslash or a drive letter, is a link or a special file, or repeats another entry's name. It also refuses more than 200,000 entries, an entry above 64 MiB, or more than 1 GiB in all. A real collection is far below that (a zip of 10,000 items has about 20,000 entries and 16 MB). It extracts into an empty folder and never overwrites. `plan` and `sign` do this for the zip they read.

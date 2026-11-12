@@ -30,7 +30,7 @@ proves that buyers received items in an order fixed before the sale. Everything 
 | Creator wallet | receives the creator's fixed items (section 8.1) | creator's own P2MR wallet, separate from `K_iss` and `K_sale` |
 
 `K_iss` signs the reveal transactions of the mint, then the closing and the sale reveal. In the
-regtest size measurement of §6.1 that is 17 reveals. The count follows the batching. It is not a
+plan of §6.1 that is 17 reveals. The count follows the batching. It is not a
 separate consensus limit, and it stays far under the 2^30 limit of SLH-DSA bounded30.
 
 ## 3. Genesis inscription
@@ -49,11 +49,30 @@ separate consensus limit, and it stays far under the 2^30 limit of SLH-DSA bound
 | `issuer` | text | 64 lowercase hex characters. The `K_iss` public key. Not raw bytes | |
 | `item_type` | text | required `content_type` of items | `image/png` |
 | `sale_commitment` | text | 64 lowercase hex characters. `SHA256(sale_secret)` (section 8). Not raw bytes | |
+| `reserve` | map | OPTIONAL. The creator reserve groups (section 8.1). When present it MUST be the last key | |
 
 `root`, `issuer`, and `sale_commitment` are text. Each is 64 lowercase hexadecimal characters (the 32-byte value written in hex). The reference encoder does not wrap them as CBOR byte strings. Readers compare the text.
 
 - The genesis reveal leaf MUST start with `<K_iss> OP_CHECKSIGPQC` (PINS-1 §9.1).
 - Its inscription ID `G` identifies the collection.
+- A reader accepts the map only when its keys are exactly the nine keys above, in that order,
+  optionally followed by `reserve`. A different key set, another order, or `reserve` in any other
+  position makes the inscription not a genesis. `issuer` MUST equal the key at the start of the
+  reveal leaf. `name` MUST be non-empty, `supply` a positive integer, `first` a non-negative integer,
+  and `item_type` non-empty.
+- `reserve`, when present, is `{ "groups": [ { "trait_type": text, "value": text, "count": uint }, ... ],
+  "extra": uint }`. Writers SHOULD write `groups` before `extra`, and `trait_type`, `value`, `count`
+  in that order. The reference reader checks only that `reserve` is a map whose `groups` is an array
+  of maps with text `trait_type`, text `value` and numeric `count`, and that `extra` is numeric. It
+  does not check key order inside `reserve`, ignores other keys inside it, and does not check that
+  the counts can be met. A `reserve` that fails those checks makes the inscription not a genesis.
+  A reserve that cannot be met leaves the genesis and every item's authenticity unchanged. Only the
+  reserve and sale-order checks of section 8 fail. The reference inscriber writes no `reserve` key.
+- More than one valid genesis can exist, because anyone can inscribe a map of this shape under their own
+  key. Authenticity (section 9) is always judged against one chosen `G`. An indexer follows the genesis
+  its operator names. The reference indexer takes that from `--genesis <inscription id>`. Without it,
+  the reference collection view uses the first valid genesis in chain order. Items signed by another
+  issuer are not items of `G` either way (section 9, rule 3).
 - The genesis map MUST NOT contain `price_bits`, `price_sources`, or `price_time`. There is no public
   market price for native QBT to freeze at mint. The price is a separate inscription (PINS-6 §5.1),
   published when the sale opens. A genesis that includes any of those three keys is not valid.
@@ -111,10 +130,28 @@ Indexers link an item to its collection through the issuer key and the leaf, not
 
 - Body: `leaf_first || … || leaf_last` (32 × supply bytes; 320,000 bytes for 10,000 items, inside one
   standard reveal); `content_type` `application/octet-stream`.
-- Field 5: `{ "schema": "pins-leaflist/1", "root": bytes(32) }`.
-- Reveal leaf starts with `<K_iss> OP_CHECKSIGPQC`. It MAY share the reveal transaction of the genesis
-  (genesis first).
+- Field 5: OPTIONAL. When present it is `{ "schema": "pins-leaflist/1", "root": bytes(32) }`, keys in
+  that order, where `root` is a CBOR byte string (not the hex text of section 3) equal to the genesis
+  `root`. The leaf list on mainnet has no field 5: its envelope carries `content_type`
+  (`application/octet-stream`) and `pointer` (PINS-3) and nothing else. The reference inscriber
+  writes no field 5, and writers SHOULD follow it.
+- Reveal leaf starts with `<K_iss> OP_CHECKSIGPQC`. It is inscribed in the reveal transaction of the
+  genesis, after it (genesis first). On mainnet the genesis is `i0` and the leaf list is `i1`.
 - Lets anyone check any item with one lookup (offset `32 × (n - first)`), without Merkle proofs.
+
+The reference indexer takes as the leaf list of `G` the first inscription, in chain order, that is not
+`G` and that:
+
+1. is in the same transaction as `G`, and its reveal leaf starts with `<issuer> OP_CHECKSIGPQC`
+   (`issuer` from `G`);
+2. has `content_type` `application/octet-stream` and a body of exactly `32 × supply` bytes;
+3. is not a `reinscription` and not `opaque`;
+4. has no field 5, or a field 5 that meets the form above, and
+5. has a body whose 32-byte leaves fold, by section 5.1, to the `root` of `G`.
+
+The reference indexer does not check the order of the two inscriptions inside the transaction. It
+looks for the leaf list only in the transaction of `G`. A leaf list inscribed elsewhere is not found.
+A wrong field 5 excludes that candidate, and an absent one does not.
 
 ### 6.1 Funding the mint
 
@@ -129,12 +166,14 @@ document plus the leaf list) and 16 reveals of 625 items. Each reveal spends its
    ancestor and the 404,000-byte descendant limit does not join them together.
 5. Mine them. A block holds at most 2,000,000 weight. In the regtest run each block took 5 reveals
    (block weights 1,779,919, 1,830,674 and 1,820,204) and the last block took the remaining 2
-   (weight 733,422). The 17 reveals take 4 blocks. The fan-out is one more block when it is not
-   already confirmed.
+   (weight 733,422), so the 17 reveals took 4 blocks. Which blocks include the reveals is up to the
+   miners, and a launch can take more blocks (section 6.2). The fan-out is one more block when it is
+   not already confirmed.
 
-Measured on regtest, 2026-11-04, against `1.x.x` commit `b27130a7b913de6516cd172a952cb70776f00d0c`:
+Example measurements, from one regtest run on 2026-11-04 against `1.x.x` commit
+`b27130a7b913de6516cd172a952cb70776f00d0c`. This is not the mainnet record. Section 6.2 has that.
 
-| Piece | Bytes |
+| Piece | Bytes in the regtest run |
 |---|---|
 | Fan-out (17 commit outputs plus change) | 4,548 |
 | 17 reveals | 6,170,171 |
@@ -143,7 +182,7 @@ Measured on regtest, 2026-11-04, against `1.x.x` commit `b27130a7b913de6516cd172
 All 17 reveals were in the mempool together (`getmempoolinfo` `size` 17, `bytes` 6170171) and all
 were mined. Their fees were 1 bit per byte (`total_fee` 0.06170171 QBT).
 
-| Fee rate | Fee for the 6,174,719 bytes |
+| Fee rate | Fee for the 6,174,719 bytes of the regtest run |
 |---|---|
 | 1 bit/vB | 6,174,719 bits = 0.06174719 QBT |
 | 5 bits/vB | 30,873,595 bits = 0.30873595 QBT |
@@ -153,6 +192,23 @@ The minimum relay fee is lower (250 bits per kvB). Postage is not part of this f
 
 A second large reveal that spends the same unconfirmed parent is still rejected. The regtest probe
 recorded `too-long-mempool-chain, exceeds descendant size limit for tx 459f4ebaf47fbfe17b04d2ec8ddbee99c62d2ac1737dd28b69c11296dd456a16 [limit: 404000]`.
+
+### 6.2 Mainnet record
+
+The first 10,000-item mint on mainnet used the plan of section 6.1. These figures were read from the
+chain on 2026-11-12 (`mempool.qbit.org`). Fees are 1 bit per byte for every reveal.
+
+| Transaction | Block | Bytes | Fee in bits |
+|---|---|---|---|
+| Fan-out (17 commit outputs plus change) | 161947 | 4,548 | 4,625 |
+| Genesis reveal: the genesis `i0` and the leaf list `i1` | 161948 | 326,392 | 326,392 |
+| 16 item reveals of 625 items each | one reveal in each of 16 of the 23 blocks 161949 to 161971 | 345,083 to 372,817 each, 5,844,107 together | 5,844,107 together |
+| **Those 18 transactions** | | **6,175,047** | **6,175,124** |
+
+The genesis reveal is 328 bytes larger than in the regtest run (326,392 against 326,064). The fan-out
+has the same size as in the regtest run, and the 16 item reveals have the same range and total. The
+fee of the fan-out is 77 bits above its size. The 17 reveals were not mined together: they took 17
+blocks in a span of 24 (161948 to 161971).
 
 ## 7. Closing inscription
 
@@ -169,6 +225,17 @@ recorded `too-long-mempool-chain, exceeds descendant size limit for tx 459f4ebaf
 A collection does not have to reserve a numeric id range. Before mint it fixes an ordered list of
 groups. Each group is a `trait_type`, a `value`, and a `count`, plus a count of extra items taken
 from whatever is left. Those values are collection configuration. This document does not list them.
+
+Where an indexer gets the groups:
+
+1. A genesis MAY declare them in its `reserve` key (section 3). When it does, those groups are used.
+2. Otherwise they come from configuration given to the indexer. The reference indexer takes a
+   collection profile (`--collection`) and uses it only when its `name`, `supply`, `first`,
+   `name_prefix`, `item_type` and `root` equal those of the genesis.
+3. With neither, the reserve set cannot be derived from chain data. The reference indexer then treats
+   every item as part of the sale set.
+
+The genesis inscribed on mainnet has no `reserve` key, so for it the groups are configuration (case 2).
 
 The creator reserve is the set chosen by §8.3. The creator keeps those items. At mint they are sent
 to the creator's wallet. That assignment is public, and that is intended. The items not reserved are

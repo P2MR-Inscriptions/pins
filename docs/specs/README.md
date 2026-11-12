@@ -52,7 +52,7 @@ These are inputs. This specification does not publish a name, a root, a supply, 
 | Genesis document | canonical `collection.json`, inscribed as JSON (PINS-4 §6, PINS-5 §3) |
 | Merkle root | PINS-5 §5.1, written in the genesis. The inscriber checks it against the profile |
 | Postage | 10,000 bits per item in the reference inscriber (dust threshold 2,855, PINS-1 F14) |
-| Regtest size measurement | one 10,000-item image run: 16 reveals of 625 (345,083–372,817 bytes) plus 1 genesis reveal (326,064 bytes), funded by one confirmed fan-out (PINS-5 §6.1). 6,174,719 bytes with that fan-out, which is 0.06174719 QBT at 1 bit/vB on that measurement. That run is not a mainnet record and it does not fix a supply |
+| Regtest size measurement | one 10,000-item image run: 16 reveals of 625 (345,083–372,817 bytes) plus 1 genesis reveal (326,064 bytes), funded by one confirmed fan-out (PINS-5 §6.1). 6,174,719 bytes with that fan-out, which is 0.06174719 QBT at 1 bit/vB on that measurement. That run is not a mainnet record (PINS-5 §6.2 has the mainnet figures) and it does not fix a supply |
 | Provenance | issuer key + Merkle root + leaf list + closing inscription (PINS-5) |
 | Creator reserve | groups fixed before mint, selected by PINS-5 §8.3. Not a numeric id range. The groups are not listed here |
 | Sale | the items that are not reserved, permutation in PINS-5 §8.4, 30 days, 1 USD per item in QBT from the median rule in PINS-6 §5.1, published later as a `pins-price/1` inscription when the sale opens, final after 6 confirmations |

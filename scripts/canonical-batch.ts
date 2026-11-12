@@ -4,25 +4,25 @@
  * Envelope sizes for the zip passed by the caller. The zip is read locally.
  * This module does not connect to a node and does not write the source files.
  */
-import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { itemEnvelope, type RevealItem } from "../packages/inscriber/reveal.ts";
 import { leafHash } from "../packages/protocol/merkle.mjs";
+import { revealWeight, STANDARD_WEIGHT, type Batch } from "../packages/inscriber/weight.ts";
 
 type CanonicalModule = {
   decodePng: (buf: Uint8Array) => { rgba: Uint8Array; width: number; height: number };
   encodeCanonicalPng: (rgba: Uint8Array, width: number, height: number) => { bytes: Uint8Array };
   canonicalMetadataCbor: (parsed: unknown) => Uint8Array;
   canonicalCollectionJson: (source: Uint8Array) => Uint8Array;
+  extractZip: (zip: string, dest: string) => void;
 };
 
 async function canonicalModule(): Promise<CanonicalModule> {
   const specifier = "../packages/collection/canonical.mjs";
   return (await import(specifier)) as CanonicalModule;
 }
-import { revealWeight, STANDARD_WEIGHT, type Batch } from "../packages/inscriber/weight.ts";
 
 export type CanonicalBatch = {
   items: RevealItem[];
@@ -83,7 +83,7 @@ export function groupsOf(items: RevealItem[], size: number): Batch[] {
 export async function loadCanonical(zipPath: string, shape: MintShape): Promise<CanonicalBatch> {
   const staging = mkdtempSync(join(tmpdir(), "pins-canonical-"));
   try {
-    execFileSync("unzip", ["-q", "-o", zipPath, "-d", staging], { stdio: "pipe" });
+    (await canonicalModule()).extractZip(zipPath, staging);
     return await loadCanonicalDir(findLayout(staging), shape);
   } finally {
     rmSync(staging, { recursive: true, force: true });

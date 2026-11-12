@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 /**
- * Follow a local regtest node. Any other chain name is refused.
- * A reorg is detected when the stored hash at a height is not the node's hash.
- * The indexer disconnects back to the fork and applies the new blocks.
+ * Follow a node of the chain the caller names: regtest unless the caller names testnet4 or mainnet.
+ * The node's chain must match that name, and any other chain is refused.
+ * A reorg is detected when the stored hash at a height is not the node's hash, or when a fetched
+ * block does not build on the stored tip. The indexer disconnects back to the fork and applies the new blocks.
  */
 import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -136,6 +137,7 @@ export async function follow(store: Store, rpc: Rpc, activationHeight = 0, netwo
   if (info.chain !== expected) throw new Error(`refusing chain ${info.chain}; this indexer was asked to follow ${network} (node chain ${expected})`);
   store.bindActivation(activationHeight);
   let disconnects = 0;
+  let parentMisses = 0;
   while (true) {
     const height = await rpc.call<number>("getblockcount");
     const tip = store.tip();
@@ -159,6 +161,14 @@ export async function follow(store: Store, rpc: Rpc, activationHeight = 0, netwo
     if (next > height) break;
     const hash = await rpc.call<string>("getblockhash", [next]);
     const block = await rpc.call<RpcBlock>("getblock", [hash, 3]);
+    // The tip was checked against the node a moment ago, and the chain can move before this block arrives.
+    // A block that does not build on the stored tip is part of another chain: unwind and ask again.
+    if (tip && block.previousblockhash !== undefined && block.previousblockhash !== tip.hash) {
+      store.disconnect();
+      parentMisses += 1;
+      if (parentMisses > 1_000) throw new Error("reorg did not settle after 1000 disconnects");
+      continue;
+    }
     // An output created earlier in this block is not a pre-activation output.
     // Saving it here would collide with the commit of that same outpoint.
     // toChainBlock reads it from the block as it walks the transactions.
@@ -178,6 +188,7 @@ export async function follow(store: Store, rpc: Rpc, activationHeight = 0, netwo
     }
     const chainBlock = toChainBlock(block, (txid, vout) => store.outputValue(txid, vout), network, (txid, vout) => store.outputIsP2mr(txid, vout));
     store.commit(chainBlock);
+    parentMisses = 0;
   }
   const tip = store.tip();
   return { height: tip?.height ?? -1, stateHash: tip?.stateHash ?? null, blocks: tip ? tip.height - activationHeight + 1 : 0 };

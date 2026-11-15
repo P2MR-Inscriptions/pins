@@ -4,6 +4,11 @@
 
 This file records the reference tools and the repository layout. Specification edits are in [docs/specs/CHANGELOG.md](docs/specs/CHANGELOG.md).
 
+## Unreleased
+
+- Documents: a complete mainnet indexer example with a cookie login, a first-sync note (the HTTP API does not listen until catch-up finishes), the Node SQLite warning, how to copy a Qbit data directory, and a deploy guide (`docs/guides/DEPLOY.md`) with systemd units, a reverse-proxy example, LAN firewall advice, and an SSH tunnel.
+- Explorer: default `RATE_PER_MINUTE` is 2000 and `MAX_CONCURRENCY` is 128, so a 104-image gallery page stays under the limits. Failed content previews are retried with backoff and honour `Retry-After`.
+
 ## 1.0.0
 
 First public release of the PINS reference tools and specifications.

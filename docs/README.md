@@ -14,6 +14,7 @@ A map of everything in `docs/`, and of the files at the top of the repository th
 | Rehearse everything on a private node | [Try it on your own regtest node](guides/REGTEST.md) |
 | Sell or trade a P2MR Inscription | [Sell and trade](guides/SALE-AND-TRADE.md) |
 | Connect a tool to my node | [Log in to your node](guides/NODE-LOGIN.md) |
+| Run the tools as services on a machine | [Deploy the node, the indexer, and the explorer](guides/DEPLOY.md) |
 | Read the chain with my own program | [The indexer API](indexer/API.md) |
 | Write my own indexer, inscriber or marketplace | [Implementing PINS independently](IMPLEMENTING.md) |
 | Understand how the code is built | [Architecture](ARCHITECTURE.md) |

@@ -9,3 +9,5 @@ Builds, signs, and broadcasts the P2MR Inscriptions of a collection, or a single
 `keygen`, `address`, `assign`, and `sign` refuse an RPC URL. `broadcast` and `preflight` on testnet4 or mainnet require `--confirm-network` to repeat `--network`.
 
 The air gap and the command list are in `docs/inscriber/README.md`.
+
+Node may print an `ExperimentalWarning` about SQLite when a command starts (including `--help`). The tools use Node's built-in `node:sqlite`. The warning is harmless and can be ignored.

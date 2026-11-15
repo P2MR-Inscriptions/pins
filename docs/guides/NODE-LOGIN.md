@@ -23,10 +23,17 @@ A Qbit Core node that has no `rpcuser` and `rpcpassword` writes a new cookie, `.
 - A cookie is accepted only when `--rpc` is on your own machine (`127.0.0.1`, `::1` or `localhost`). The cookie is a password for a node you can read the files of, and it does not go over a network.
 - A file that is missing, larger than 1 KiB, or not `user:password` on one line is an error that gives the cause (`ENOENT`, `ETOOBIG`, `EMALFORMED`, `EACCES`) and never the content.
 
+A complete copy of a node's data directory can be moved to another machine. Stop the node first, copy the directory, then start the node on the new machine with that directory. The chain data is kept, so the node does not resync. Adjust `qbit.conf` bind addresses if the new machine needs different ones. The cookie file is written again when the node starts; an indexer or explorer that logs in with `--rpc-datadir` or `QBIT_RPC_DATADIR` reads the new cookie on the next call.
+
 ```text
 # regtest node started with -datadir=$HOME/qbit-regtest and no rpcuser
 npm run indexer:serve -- --db index.sqlite --rpc http://127.0.0.1:18452/ --rpc-datadir "$HOME/qbit-regtest" --network regtest
 npm run inscribe -- utxo --pub issuer.key.pub.json --network regtest --rpc http://127.0.0.1:18452/ --rpc-datadir "$HOME/qbit-regtest" --out utxo.json
+```
+
+```text
+# mainnet node with the default data directory and no rpcuser
+npm run indexer:serve -- --db index.sqlite --rpc http://127.0.0.1:8352/ --rpc-datadir ~/.qbit --network mainnet --confirm-network mainnet
 ```
 
 ## User and password

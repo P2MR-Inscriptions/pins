@@ -4,6 +4,7 @@
 // API text is untrusted: it is inserted only with textContent / createTextNode.
 import { brand } from "./brand.js";
 import { mediaKind, normalizeType, PREVIEW_BYTES } from "./content-view.js";
+import { attachImageRetry, fetchWithRetry } from "./content-retry.js";
 import { guideSections, pinsSource } from "./guide.js";
 import { qbitLinks, qbitSections } from "./qbit-page.js";
 import { backHash, isDetailHash, isTransientHash } from "./history.js";
@@ -186,8 +187,9 @@ function fallbackFrame(item, extra, message) {
 
 function imageFrame(item, index, extra) {
   if (item.bodyLength === 0) return fallbackFrame(item, extra, "No content bytes");
-  const img = picture(`/api/content/${item.id}`, `P2MR Inscription ${fmt(item.number)}`, index, extra ? `px ${extra}` : "px");
-  img.addEventListener("error", () => {
+  const url = `/api/content/${item.id}`;
+  const img = picture(url, `P2MR Inscription ${fmt(item.number)}`, index, extra ? `px ${extra}` : "px");
+  attachImageRetry(img, url, () => {
     if (img.isConnected) img.replaceWith(fallbackFrame(item, extra, "Preview unavailable"));
   });
   return img;
@@ -198,7 +200,7 @@ function textFrame(item, extra) {
   const pre = h("pre", { class: "frame-text" }, item.bodyLength === 0 ? "No content bytes" : "Text");
   box.append(pre);
   if (item.bodyLength === 0 || !SAFE_ID.test(item.id)) return box;
-  fetch(`/api/content/${item.id}?preview=1`).then(async (res) => {
+  void fetchWithRetry(`/api/content/${item.id}?preview=1`).then(async (res) => {
     if (!box.isConnected) return;
     if (!res.ok) { pre.textContent = "Preview unavailable"; return; }
     const text = await res.text();
@@ -686,8 +688,9 @@ async function collectionPage(q) {
       const sheet = h("div", { class: "sheet" },
         h("div", { class: "grid" }, list.pieces.map((p, index) => {
           if (!p.inscriptionId) return h("a", { class: "cell", href: `#/${brand.piecePath}/${p.number}` }, h("div", { class: "tile empty" }, "not inscribed"), h("span", { class: "cap" }, `#${fmt(p.number)}`));
-          const img = picture(`/api/content/${p.inscriptionId}`, `${c.name} ${p.number}`, index);
-          img.addEventListener("error", () => { if (img.isConnected) img.replaceWith(h("div", { class: "tile" }, "Preview unavailable")); });
+          const url = `/api/content/${p.inscriptionId}`;
+          const img = picture(url, `${c.name} ${p.number}`, index);
+          attachImageRetry(img, url, () => { if (img.isConnected) img.replaceWith(h("div", { class: "tile" }, "Preview unavailable")); });
           return h("a", { class: "cell", href: `#/inscription/${p.inscriptionId}`, title: p.inscriptionId }, img, h("span", { class: "cap" }, `#${fmt(p.number)}`));
         })),
         pager(list.total, offset, PAGE_SIZE, to));

@@ -48,6 +48,7 @@ A launch on mainnet spends real QBT and cannot be undone: there is no rollback c
 - [ ] **For a collection:** `/collection` has `status` `present`, the `supply` and `root` of your profile, and `authentic` equal to the supply.
 - [ ] **Publish what is public:** the genesis id, the Merkle root, the issuer key, the heights, and the `stateHash` of a block you name. Do not publish the keyfile, the passphrase, the sale secret, a seed, or the plan. [The Flatbits page](../examples/flatbits.md) is the model.
 - [ ] **The sale,** if any, is run by your own program or server: this repository holds no key online and ships no sale server ([What this repository does not do](COLLECTION-LAUNCH.md#what-this-repository-does-not-do)).
+- [ ] **If you leave the indexer or the explorer running,** follow [the deploy guide](DEPLOY.md): systemd units, a reverse proxy, and how to reach the explorer on a LAN without opening the node's RPC.
 
 ## If something is wrong
 

@@ -1,0 +1,306 @@
+{
+  "description": "Reader of field 5, PINS-4 §2.1: definite lengths, shortest integer arguments, text map keys, valid UTF-8, no tags, no floats, no undefined, a depth limit of 32, no bytes after the value. A repeated map key is not an error: the last value replaces the earlier one. `value` is the JSON of the decoded value, with a byte string as {\"bytes\": hex}.",
+  "spec": "PINS-4 §2.1",
+  "accept": [
+    {
+      "name": "unsigned 0",
+      "hex": "00",
+      "value": 0
+    },
+    {
+      "name": "unsigned 23",
+      "hex": "17",
+      "value": 23
+    },
+    {
+      "name": "unsigned 24, one-byte argument",
+      "hex": "1818",
+      "value": 24
+    },
+    {
+      "name": "unsigned 255",
+      "hex": "18ff",
+      "value": 255
+    },
+    {
+      "name": "unsigned 256, two-byte argument",
+      "hex": "190100",
+      "value": 256
+    },
+    {
+      "name": "unsigned 65536, four-byte argument",
+      "hex": "1a00010000",
+      "value": 65536
+    },
+    {
+      "name": "unsigned 4294967296, eight-byte argument",
+      "hex": "1b0000000100000000",
+      "value": 4294967296
+    },
+    {
+      "name": "negative -1",
+      "hex": "20",
+      "value": -1
+    },
+    {
+      "name": "empty text",
+      "hex": "60",
+      "value": ""
+    },
+    {
+      "name": "text",
+      "hex": "6568656c6c6f",
+      "value": "hello"
+    },
+    {
+      "name": "text with a multi-byte character",
+      "hex": "62c3a9",
+      "value": "é"
+    },
+    {
+      "name": "empty byte string",
+      "hex": "40",
+      "value": {
+        "bytes": ""
+      }
+    },
+    {
+      "name": "byte string",
+      "hex": "43010203",
+      "value": {
+        "bytes": "010203"
+      }
+    },
+    {
+      "name": "empty array",
+      "hex": "80",
+      "value": []
+    },
+    {
+      "name": "array of two",
+      "hex": "820102",
+      "value": [
+        1,
+        2
+      ]
+    },
+    {
+      "name": "empty map",
+      "hex": "a0",
+      "value": {}
+    },
+    {
+      "name": "map with a text key",
+      "hex": "a1616101",
+      "value": {
+        "a": 1
+      }
+    },
+    {
+      "name": "false, true, null",
+      "hex": "83f4f5f6",
+      "value": [
+        false,
+        true,
+        null
+      ]
+    },
+    {
+      "name": "nested map and array",
+      "hex": "81a1616b01",
+      "value": [
+        {
+          "k": 1
+        }
+      ]
+    },
+    {
+      "name": "repeated key, the last value wins",
+      "hex": "a2616101616102",
+      "value": {
+        "a": 2
+      }
+    },
+    {
+      "name": "depth 32",
+      "hex": "818181818181818181818181818181818181818181818181818181818181818100",
+      "value": [
+        [
+          [
+            [
+              [
+                [
+                  [
+                    [
+                      [
+                        [
+                          [
+                            [
+                              [
+                                [
+                                  [
+                                    [
+                                      [
+                                        [
+                                          [
+                                            [
+                                              [
+                                                [
+                                                  [
+                                                    [
+                                                      [
+                                                        [
+                                                          [
+                                                            [
+                                                              [
+                                                                [
+                                                                  [
+                                                                    [
+                                                                      0
+                                                                    ]
+                                                                  ]
+                                                                ]
+                                                              ]
+                                                            ]
+                                                          ]
+                                                        ]
+                                                      ]
+                                                    ]
+                                                  ]
+                                                ]
+                                              ]
+                                            ]
+                                          ]
+                                        ]
+                                      ]
+                                    ]
+                                  ]
+                                ]
+                              ]
+                            ]
+                          ]
+                        ]
+                      ]
+                    ]
+                  ]
+                ]
+              ]
+            ]
+          ]
+        ]
+      ]
+    }
+  ],
+  "reject": [
+    {
+      "name": "empty input",
+      "hex": "",
+      "error": true
+    },
+    {
+      "name": "trailing byte",
+      "hex": "0000",
+      "error": true
+    },
+    {
+      "name": "truncated one-byte argument",
+      "hex": "18",
+      "error": true
+    },
+    {
+      "name": "truncated text",
+      "hex": "6268",
+      "error": true
+    },
+    {
+      "name": "declared length longer than the data",
+      "hex": "a1",
+      "error": true
+    },
+    {
+      "name": "one-byte argument for a value below 24",
+      "hex": "1817",
+      "error": true
+    },
+    {
+      "name": "two-byte argument for a value below 256",
+      "hex": "1900ff",
+      "error": true
+    },
+    {
+      "name": "four-byte argument for a value below 65536",
+      "hex": "1a0000ffff",
+      "error": true
+    },
+    {
+      "name": "eight-byte argument for a value below 4294967296",
+      "hex": "1b00000000ffffffff",
+      "error": true
+    },
+    {
+      "name": "indefinite array",
+      "hex": "9fff",
+      "error": true
+    },
+    {
+      "name": "indefinite text",
+      "hex": "7fff",
+      "error": true
+    },
+    {
+      "name": "tag",
+      "hex": "c000",
+      "error": true
+    },
+    {
+      "name": "half-precision float",
+      "hex": "f90000",
+      "error": true
+    },
+    {
+      "name": "double-precision float",
+      "hex": "fb0000000000000000",
+      "error": true
+    },
+    {
+      "name": "undefined",
+      "hex": "f7",
+      "error": true
+    },
+    {
+      "name": "simple value 16",
+      "hex": "f0",
+      "error": true
+    },
+    {
+      "name": "one-byte simple value",
+      "hex": "f814",
+      "error": true
+    },
+    {
+      "name": "integer key",
+      "hex": "a10101",
+      "error": true
+    },
+    {
+      "name": "byte string key",
+      "hex": "a1410101",
+      "error": true
+    },
+    {
+      "name": "invalid UTF-8 in text",
+      "hex": "61ff",
+      "error": true
+    },
+    {
+      "name": "reserved additional information 28",
+      "hex": "1c",
+      "error": true
+    },
+    {
+      "name": "depth 33",
+      "hex": "81818181818181818181818181818181818181818181818181818181818181818100",
+      "error": true
+    }
+  ]
+}

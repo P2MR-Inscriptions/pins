@@ -1,0 +1,45 @@
+{
+  "description": "TV4-2: the canonical PNG of one item, PINS-4 §5, hashed as PINS-5 §5.1. The pixels are a 24 by 24 pattern of four opaque colours in 4 by 4 blocks (palette in `palette`, colour index of pixel (x, y) is ((x >> 2) + (y >> 2)) mod 4). The encoder picks the shortest candidate, so the result is an indexed PNG. `scanlines_sha256` is the SHA-256 of the inflated IDAT data (one filter byte and the packed indices per row): it depends only on the rules of PINS-4 §5 and must match for every conforming encoder. `png_sha256` and `leaf` also depend on the deflate stream (Node zlib level 9, windowBits 15, memLevel 8): a conforming encoder that deflates differently produces another file for the same pixels and must be compared by `scanlines_sha256`, not by `png_sha256`.",
+  "spec": "PINS-4 §5",
+  "width": 24,
+  "height": 24,
+  "palette": [
+    [
+      0,
+      0,
+      0,
+      255
+    ],
+    [
+      220,
+      40,
+      40,
+      255
+    ],
+    [
+      40,
+      180,
+      80,
+      255
+    ],
+    [
+      250,
+      250,
+      250,
+      255
+    ]
+  ],
+  "rgba_sha256": "991f77e9812e43ca63c2089cc7b3cdd3db17e88b625be10a77bd105d1aeb1231",
+  "ihdr_hex": "00000018000000180203000000",
+  "chunk_types": [
+    "IHDR",
+    "PLTE",
+    "IDAT",
+    "IEND"
+  ],
+  "scanlines_sha256": "7338a96ee95f33a2b1d8d82c3c37fb46848c9a8a2e115fed4f04ab04e64b17a5",
+  "png_hex": "89504e470d0a1a0a0000000d49484452000000180000001802030000009d19d56b0000000c504c5445000000dc282828b450fafafadfc649bd000000264944415478da6360085df59f219489010c502988d42aec7260a9ffd8e5c0520cd8e5c8b40f0062cb1169642604e70000000049454e44ae426082",
+  "png_sha256": "3b4cfe585768f4a137843eaa82353a161a765d72552a0a2727a161db25827819",
+  "metadata_hex": "a1646d657461a2646e616d65664974656d23316a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656131",
+  "leaf": "b2bf2d7e23a12d1a19cf858a254951c73b85053ca0138a624077b80e1a15dd1f"
+}

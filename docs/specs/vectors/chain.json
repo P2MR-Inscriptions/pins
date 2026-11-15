@@ -1,0 +1,580 @@
+{
+  "description": "TV2-2 reorganisation and TV2-4 missing witness, PINS-2 §5 and §6. TV2-2 connects a common block and branch A (two blocks), disconnects branch A tip first, connects branch B (three blocks) and ends in the same state as a fresh run of the common block plus branch B: numbers are reused and the state hash matches. TV2-4 feeds a block whose P2MR spend carries no witness: the engine refuses it and its state does not change.",
+  "spec": "PINS-2 §5, §6",
+  "reorg": {
+    "name": "TV2-2 reorganisation of depth 2",
+    "blocks": {
+      "tv2-2 common": {
+        "height": 700,
+        "hash": "813956c388419d29114de7e6741a5ebfa5a3bfa3ed3e5d9f15f237ab7035c26f",
+        "subsidy": "21000000000",
+        "txs": [
+          {
+            "txid": "dea4b1336143e9212bee474570fb87813807e07c6228a816ce032be9b9e20b6e",
+            "inputs": [
+              {
+                "coinbase": true
+              }
+            ],
+            "outputs": [
+              {
+                "value": "21000000000",
+                "script_hex": "5220c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"
+              }
+            ]
+          },
+          {
+            "txid": "57802141ea71735c2fc9c1074360c510032ecf629f349d48592a5d2e55de3a67",
+            "inputs": [
+              {
+                "prevout": "cb8ca7236a3f5d663339a5339af8a7ddfc7756baf27335b8efee22bd1da29345:0",
+                "value": "10000",
+                "p2mr": true,
+                "witness_items": 3,
+                "leaf_script_hex": "200202020202020202020202020202020202020202020202020202020202020202b300630470696e73510a746578742f706c61696e00015068"
+              }
+            ],
+            "outputs": [
+              {
+                "value": "10000",
+                "script_hex": "5220a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"
+              }
+            ]
+          }
+        ]
+      },
+      "tv2-2 a701": {
+        "height": 701,
+        "hash": "c2f88eef58643122a15dca7c87e7af8f2e55e520fd72ed612062b36f8087a7bd",
+        "subsidy": "21000000000",
+        "txs": [
+          {
+            "txid": "40dce6ebed0f5bbc2fc85a06ca4766911634b1aaaeb06cd67dd858579bfd984c",
+            "inputs": [
+              {
+                "coinbase": true
+              }
+            ],
+            "outputs": [
+              {
+                "value": "21000000000",
+                "script_hex": "5220c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"
+              }
+            ]
+          },
+          {
+            "txid": "63555951171dc50823a89eebf60249e02dd210a85d13bf0a6ab53754bd586b36",
+            "inputs": [
+              {
+                "prevout": "57802141ea71735c2fc9c1074360c510032ecf629f349d48592a5d2e55de3a67:0",
+                "value": "10000",
+                "p2mr": true,
+                "witness_items": 2
+              }
+            ],
+            "outputs": [
+              {
+                "value": "10000",
+                "script_hex": "5220a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2"
+              }
+            ]
+          },
+          {
+            "txid": "68c28a19caff33df1a31146a55174db5f3332c41b14db4cb51b5de8f31a83055",
+            "inputs": [
+              {
+                "prevout": "41ba8aeae1a161a2a93426334ac2147be5c0b439d279b0a0e5b743f979174954:0",
+                "value": "10000",
+                "p2mr": true,
+                "witness_items": 3,
+                "leaf_script_hex": "200202020202020202020202020202020202020202020202020202020202020202b300630470696e73510a746578742f706c61696e00015868"
+              }
+            ],
+            "outputs": [
+              {
+                "value": "10000",
+                "script_hex": "5220a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"
+              }
+            ]
+          }
+        ]
+      },
+      "tv2-2 a702": {
+        "height": 702,
+        "hash": "2ff0f3765da3323a69b748704a5a77b9a75f9f9b3e7205a972ee60395bc63b6b",
+        "subsidy": "21000000000",
+        "txs": [
+          {
+            "txid": "6856acf550c6136e301bb5b518b4ae376a4f98bc5c4c2e002134a7405a3045e4",
+            "inputs": [
+              {
+                "coinbase": true
+              }
+            ],
+            "outputs": [
+              {
+                "value": "21000000000",
+                "script_hex": "5220c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"
+              }
+            ]
+          },
+          {
+            "txid": "7e67a7781205a3a1a487549428de4f35a2f056678e081e676ebfbf94c41e64ca",
+            "inputs": [
+              {
+                "prevout": "b848c17166e569575b091616b39467fa3484a511aab9ad37202226baab9424e2:0",
+                "value": "10000",
+                "p2mr": true,
+                "witness_items": 3,
+                "leaf_script_hex": "200202020202020202020202020202020202020202020202020202020202020202b300630470696e73510a746578742f706c61696e00015968"
+              }
+            ],
+            "outputs": [
+              {
+                "value": "10000",
+                "script_hex": "5220a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4"
+              }
+            ]
+          }
+        ]
+      },
+      "tv2-2 b701": {
+        "height": 701,
+        "hash": "dc592b1a3c90fb9e8e791f5e3d3dfa4330d3a4f7d773b88dcf7192ed58ac50f6",
+        "subsidy": "21000000000",
+        "txs": [
+          {
+            "txid": "511b17d9138e83602e0653efcb44ae2697faa5c12fb9db3a72bba103804c6d9e",
+            "inputs": [
+              {
+                "coinbase": true
+              }
+            ],
+            "outputs": [
+              {
+                "value": "21000000000",
+                "script_hex": "5220c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"
+              }
+            ]
+          },
+          {
+            "txid": "79faf67d95a885a3b870b692e33af8e585f7c6b123e44a92c6902fee688868a2",
+            "inputs": [
+              {
+                "prevout": "57cc58e5e1b0ce6647a461b0e6fb179bed14ae795c72fd02c988d7e1fd157828:0",
+                "value": "10000",
+                "p2mr": true,
+                "witness_items": 3,
+                "leaf_script_hex": "200202020202020202020202020202020202020202020202020202020202020202b300630470696e73510a746578742f706c61696e00015768"
+              }
+            ],
+            "outputs": [
+              {
+                "value": "10000",
+                "script_hex": "5220b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3"
+              }
+            ]
+          }
+        ]
+      },
+      "tv2-2 b702": {
+        "height": 702,
+        "hash": "5a53f1587ce6a9e72b59bdfeac7f6e809b348514025e38bd17a59354d9f698da",
+        "subsidy": "21000000000",
+        "txs": [
+          {
+            "txid": "95a1ebeb6485a64b774c5bce3c84fd1f5c6194dc02e4af382485aca04377c3b3",
+            "inputs": [
+              {
+                "coinbase": true
+              }
+            ],
+            "outputs": [
+              {
+                "value": "21000000000",
+                "script_hex": "5220c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"
+              }
+            ]
+          },
+          {
+            "txid": "55f7b7b4c27087e66d75a83ea487a00f57892767033a15e247bfc4e70e462015",
+            "inputs": [
+              {
+                "prevout": "cdc2a287f47320592feb6d77d36fd3a9d85756f777eb4a9b3975aae28ac2c964:0",
+                "value": "10000",
+                "p2mr": true,
+                "witness_items": 3,
+                "leaf_script_hex": "200202020202020202020202020202020202020202020202020202020202020202b300630470696e73510a746578742f706c61696e00015668"
+              }
+            ],
+            "outputs": [
+              {
+                "value": "10000",
+                "script_hex": "5220b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4"
+              }
+            ]
+          }
+        ]
+      },
+      "tv2-2 b703": {
+        "height": 703,
+        "hash": "73c31250b529bca600dec36446d3d33d7f1bf55b38a71c8059ac444b1cb9a5f0",
+        "subsidy": "21000000000",
+        "txs": [
+          {
+            "txid": "86d588298e41ea93e35a95ae32cbb8ed655a0e58187eb4a4cc8e75af3275b0d9",
+            "inputs": [
+              {
+                "coinbase": true
+              }
+            ],
+            "outputs": [
+              {
+                "value": "21000000000",
+                "script_hex": "5220c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "steps": [
+      {
+        "action": "connect",
+        "block": "tv2-2 common",
+        "table": [
+          {
+            "number": 0,
+            "id": "57802141ea71735c2fc9c1074360c510032ecf629f349d48592a5d2e55de3a67i0",
+            "location": "57802141ea71735c2fc9c1074360c510032ecf629f349d48592a5d2e55de3a67:0:0",
+            "owner_script_hex": "5220a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+            "owner_address": "qb1z5xs6rgdp5xs6rgdp5xs6rgdp5xs6rgdp5xs6rgdp5xs6rgdp5xssq4aqkf",
+            "location_height": 700,
+            "flags": [],
+            "content_type": "text/plain",
+            "body_sha256": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2"
+          }
+        ],
+        "state_hash": "8dd3579c755682e992f90f2c6d5272d8796f753a03f4c769fc75a57d04bbbd05"
+      },
+      {
+        "action": "connect",
+        "block": "tv2-2 a701",
+        "table": [
+          {
+            "number": 0,
+            "id": "57802141ea71735c2fc9c1074360c510032ecf629f349d48592a5d2e55de3a67i0",
+            "location": "63555951171dc50823a89eebf60249e02dd210a85d13bf0a6ab53754bd586b36:0:0",
+            "owner_script_hex": "5220a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2",
+            "owner_address": "qb1z52329g4z52329g4z52329g4z52329g4z52329g4z52329g4z523qdr68rp",
+            "location_height": 701,
+            "flags": [],
+            "content_type": "text/plain",
+            "body_sha256": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2"
+          },
+          {
+            "number": 1,
+            "id": "68c28a19caff33df1a31146a55174db5f3332c41b14db4cb51b5de8f31a83055i0",
+            "location": "68c28a19caff33df1a31146a55174db5f3332c41b14db4cb51b5de8f31a83055:0:0",
+            "owner_script_hex": "5220a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3",
+            "owner_address": "qb1z5w368gar5w368gar5w368gar5w368gar5w368gar5w368gar5w3sg3ra4r",
+            "location_height": 701,
+            "flags": [],
+            "content_type": "text/plain",
+            "body_sha256": "4b68ab3847feda7d6c62c1fbcbeebfa35eab7351ed5e78f4ddadea5df64b8015"
+          }
+        ],
+        "state_hash": "e37fd67a9fb0fe5f8ad84bf7aff8cee24caf3d1ca3f127300e3f2f82e27a5872"
+      },
+      {
+        "action": "connect",
+        "block": "tv2-2 a702",
+        "table": [
+          {
+            "number": 0,
+            "id": "57802141ea71735c2fc9c1074360c510032ecf629f349d48592a5d2e55de3a67i0",
+            "location": "63555951171dc50823a89eebf60249e02dd210a85d13bf0a6ab53754bd586b36:0:0",
+            "owner_script_hex": "5220a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2",
+            "owner_address": "qb1z52329g4z52329g4z52329g4z52329g4z52329g4z52329g4z523qdr68rp",
+            "location_height": 701,
+            "flags": [],
+            "content_type": "text/plain",
+            "body_sha256": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2"
+          },
+          {
+            "number": 1,
+            "id": "68c28a19caff33df1a31146a55174db5f3332c41b14db4cb51b5de8f31a83055i0",
+            "location": "68c28a19caff33df1a31146a55174db5f3332c41b14db4cb51b5de8f31a83055:0:0",
+            "owner_script_hex": "5220a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3",
+            "owner_address": "qb1z5w368gar5w368gar5w368gar5w368gar5w368gar5w368gar5w3sg3ra4r",
+            "location_height": 701,
+            "flags": [],
+            "content_type": "text/plain",
+            "body_sha256": "4b68ab3847feda7d6c62c1fbcbeebfa35eab7351ed5e78f4ddadea5df64b8015"
+          },
+          {
+            "number": 2,
+            "id": "7e67a7781205a3a1a487549428de4f35a2f056678e081e676ebfbf94c41e64cai0",
+            "location": "7e67a7781205a3a1a487549428de4f35a2f056678e081e676ebfbf94c41e64ca:0:0",
+            "owner_script_hex": "5220a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4",
+            "owner_address": "qb1z5jj2ff9y5jj2ff9y5jj2ff9y5jj2ff9y5jj2ff9y5jj2ff9y5jjqeadr3y",
+            "location_height": 702,
+            "flags": [],
+            "content_type": "text/plain",
+            "body_sha256": "18f5384d58bcb1bba0bcd9e6a6781d1a6ac2cc280c330ecbab6cb7931b721552"
+          }
+        ],
+        "state_hash": "99e8e51aa443ae2d75776558833a1994d30f1ecc8d4474aaf0a773b1a16ee1a2"
+      },
+      {
+        "action": "disconnect",
+        "block": "tv2-2 a702",
+        "table": [
+          {
+            "number": 0,
+            "id": "57802141ea71735c2fc9c1074360c510032ecf629f349d48592a5d2e55de3a67i0",
+            "location": "63555951171dc50823a89eebf60249e02dd210a85d13bf0a6ab53754bd586b36:0:0",
+            "owner_script_hex": "5220a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2",
+            "owner_address": "qb1z52329g4z52329g4z52329g4z52329g4z52329g4z52329g4z523qdr68rp",
+            "location_height": 701,
+            "flags": [],
+            "content_type": "text/plain",
+            "body_sha256": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2"
+          },
+          {
+            "number": 1,
+            "id": "68c28a19caff33df1a31146a55174db5f3332c41b14db4cb51b5de8f31a83055i0",
+            "location": "68c28a19caff33df1a31146a55174db5f3332c41b14db4cb51b5de8f31a83055:0:0",
+            "owner_script_hex": "5220a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3",
+            "owner_address": "qb1z5w368gar5w368gar5w368gar5w368gar5w368gar5w368gar5w3sg3ra4r",
+            "location_height": 701,
+            "flags": [],
+            "content_type": "text/plain",
+            "body_sha256": "4b68ab3847feda7d6c62c1fbcbeebfa35eab7351ed5e78f4ddadea5df64b8015"
+          }
+        ]
+      },
+      {
+        "action": "disconnect",
+        "block": "tv2-2 a701",
+        "table": [
+          {
+            "number": 0,
+            "id": "57802141ea71735c2fc9c1074360c510032ecf629f349d48592a5d2e55de3a67i0",
+            "location": "57802141ea71735c2fc9c1074360c510032ecf629f349d48592a5d2e55de3a67:0:0",
+            "owner_script_hex": "5220a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+            "owner_address": "qb1z5xs6rgdp5xs6rgdp5xs6rgdp5xs6rgdp5xs6rgdp5xs6rgdp5xssq4aqkf",
+            "location_height": 700,
+            "flags": [],
+            "content_type": "text/plain",
+            "body_sha256": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2"
+          }
+        ]
+      },
+      {
+        "action": "connect",
+        "block": "tv2-2 b701",
+        "table": [
+          {
+            "number": 0,
+            "id": "57802141ea71735c2fc9c1074360c510032ecf629f349d48592a5d2e55de3a67i0",
+            "location": "57802141ea71735c2fc9c1074360c510032ecf629f349d48592a5d2e55de3a67:0:0",
+            "owner_script_hex": "5220a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+            "owner_address": "qb1z5xs6rgdp5xs6rgdp5xs6rgdp5xs6rgdp5xs6rgdp5xs6rgdp5xssq4aqkf",
+            "location_height": 700,
+            "flags": [],
+            "content_type": "text/plain",
+            "body_sha256": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2"
+          },
+          {
+            "number": 1,
+            "id": "79faf67d95a885a3b870b692e33af8e585f7c6b123e44a92c6902fee688868a2i0",
+            "location": "79faf67d95a885a3b870b692e33af8e585f7c6b123e44a92c6902fee688868a2:0:0",
+            "owner_script_hex": "5220b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3",
+            "owner_address": "qb1zkwem8vankwem8vankwem8vankwem8vankwem8vankwem8vankweskkk2f0",
+            "location_height": 701,
+            "flags": [],
+            "content_type": "text/plain",
+            "body_sha256": "fcb5f40df9be6bae66c1d77a6c15968866a9e6cbd7314ca432b019d17392f6f4"
+          }
+        ],
+        "state_hash": "5acb5102f79c85cae436620a4e5f1b9471e9d1ce759915da4654caa75287145d"
+      },
+      {
+        "action": "connect",
+        "block": "tv2-2 b702",
+        "table": [
+          {
+            "number": 0,
+            "id": "57802141ea71735c2fc9c1074360c510032ecf629f349d48592a5d2e55de3a67i0",
+            "location": "57802141ea71735c2fc9c1074360c510032ecf629f349d48592a5d2e55de3a67:0:0",
+            "owner_script_hex": "5220a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+            "owner_address": "qb1z5xs6rgdp5xs6rgdp5xs6rgdp5xs6rgdp5xs6rgdp5xs6rgdp5xssq4aqkf",
+            "location_height": 700,
+            "flags": [],
+            "content_type": "text/plain",
+            "body_sha256": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2"
+          },
+          {
+            "number": 1,
+            "id": "79faf67d95a885a3b870b692e33af8e585f7c6b123e44a92c6902fee688868a2i0",
+            "location": "79faf67d95a885a3b870b692e33af8e585f7c6b123e44a92c6902fee688868a2:0:0",
+            "owner_script_hex": "5220b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3",
+            "owner_address": "qb1zkwem8vankwem8vankwem8vankwem8vankwem8vankwem8vankweskkk2f0",
+            "location_height": 701,
+            "flags": [],
+            "content_type": "text/plain",
+            "body_sha256": "fcb5f40df9be6bae66c1d77a6c15968866a9e6cbd7314ca432b019d17392f6f4"
+          },
+          {
+            "number": 2,
+            "id": "55f7b7b4c27087e66d75a83ea487a00f57892767033a15e247bfc4e70e462015i0",
+            "location": "55f7b7b4c27087e66d75a83ea487a00f57892767033a15e247bfc4e70e462015:0:0",
+            "owner_script_hex": "5220b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4",
+            "owner_address": "qb1zkj6tfd95kj6tfd95kj6tfd95kj6tfd95kj6tfd95kj6tfd95kj6q86c5dg",
+            "location_height": 702,
+            "flags": [],
+            "content_type": "text/plain",
+            "body_sha256": "de5a6f78116eca62d7fc5ce159d23ae6b889b365a1739ad2cf36f925a140d0cc"
+          }
+        ],
+        "state_hash": "1ca4bc02a3f8463d81a681bbd685b180ccc313d9a7592592f025bcc909cbcc9b"
+      },
+      {
+        "action": "connect",
+        "block": "tv2-2 b703",
+        "table": [
+          {
+            "number": 0,
+            "id": "57802141ea71735c2fc9c1074360c510032ecf629f349d48592a5d2e55de3a67i0",
+            "location": "57802141ea71735c2fc9c1074360c510032ecf629f349d48592a5d2e55de3a67:0:0",
+            "owner_script_hex": "5220a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+            "owner_address": "qb1z5xs6rgdp5xs6rgdp5xs6rgdp5xs6rgdp5xs6rgdp5xs6rgdp5xssq4aqkf",
+            "location_height": 700,
+            "flags": [],
+            "content_type": "text/plain",
+            "body_sha256": "5c62e091b8c0565f1bafad0dad5934276143ae2ccef7a5381e8ada5b1a8d26d2"
+          },
+          {
+            "number": 1,
+            "id": "79faf67d95a885a3b870b692e33af8e585f7c6b123e44a92c6902fee688868a2i0",
+            "location": "79faf67d95a885a3b870b692e33af8e585f7c6b123e44a92c6902fee688868a2:0:0",
+            "owner_script_hex": "5220b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3b3",
+            "owner_address": "qb1zkwem8vankwem8vankwem8vankwem8vankwem8vankwem8vankweskkk2f0",
+            "location_height": 701,
+            "flags": [],
+            "content_type": "text/plain",
+            "body_sha256": "fcb5f40df9be6bae66c1d77a6c15968866a9e6cbd7314ca432b019d17392f6f4"
+          },
+          {
+            "number": 2,
+            "id": "55f7b7b4c27087e66d75a83ea487a00f57892767033a15e247bfc4e70e462015i0",
+            "location": "55f7b7b4c27087e66d75a83ea487a00f57892767033a15e247bfc4e70e462015:0:0",
+            "owner_script_hex": "5220b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4b4",
+            "owner_address": "qb1zkj6tfd95kj6tfd95kj6tfd95kj6tfd95kj6tfd95kj6tfd95kj6q86c5dg",
+            "location_height": 702,
+            "flags": [],
+            "content_type": "text/plain",
+            "body_sha256": "de5a6f78116eca62d7fc5ce159d23ae6b889b365a1739ad2cf36f925a140d0cc"
+          }
+        ],
+        "state_hash": "684cf508e90f4239507e6ade730ac4516017c7cd4e0593ca7e40c6c78eb8fe42"
+      }
+    ],
+    "fresh_state_hash_equals_final": true
+  },
+  "missing_witness": {
+    "name": "TV2-4 P2MR spend without a witness",
+    "applied_before": {
+      "height": 799,
+      "hash": "0c3ec0643f558ac8e26b32e3310b74ca466505f59fd1c2229537587881ea4674",
+      "subsidy": "21000000000",
+      "txs": [
+        {
+          "txid": "67759b34d4baa4fecd82626d91f0dc94287f3a9d5cdec9d61300189fb1e87288",
+          "inputs": [
+            {
+              "coinbase": true
+            }
+          ],
+          "outputs": [
+            {
+              "value": "21000000000",
+              "script_hex": "5220c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"
+            }
+          ]
+        },
+        {
+          "txid": "327ae44ef19a3eacaf28bdfcb9fd254c10bfe6698056bff6b19c7345cd63d97a",
+          "inputs": [
+            {
+              "prevout": "5f5c7dabb26304573dc5a46bfd555abcb59db4a357d27439835c1d5261e1ac6f:0",
+              "value": "10000",
+              "p2mr": true,
+              "witness_items": 3,
+              "leaf_script_hex": "200202020202020202020202020202020202020202020202020202020202020202b300630470696e73510a746578742f706c61696e00066265666f726568"
+            }
+          ],
+          "outputs": [
+            {
+              "value": "10000",
+              "script_hex": "5220a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2"
+            }
+          ]
+        }
+      ]
+    },
+    "refused_block": {
+      "height": 800,
+      "hash": "b9b297bb61cac2290c38a7e7df869e3aae280937f9791f954d8f03e0068266bf",
+      "subsidy": "21000000000",
+      "txs": [
+        {
+          "txid": "8ffe89bac3bd7467ff45f6222dce8458af1eed31b809e21c21c092fc5babdc4a",
+          "inputs": [
+            {
+              "coinbase": true
+            }
+          ],
+          "outputs": [
+            {
+              "value": "21000000000",
+              "script_hex": "5220c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"
+            }
+          ]
+        },
+        {
+          "txid": "8eef4782dc6ab4033975dc6e5c95207e3968248fa4fa8dcd6c8264f879b211eb",
+          "inputs": [
+            {
+              "prevout": "8398470744eaf6f1858ccc1c3dc4dc25b1c651c7edd0a032e91f5975bdd657cb:0",
+              "value": "10000",
+              "p2mr": true,
+              "witness_items": 0
+            }
+          ],
+          "outputs": [
+            {
+              "value": "10000",
+              "script_hex": "5220a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"
+            }
+          ]
+        }
+      ]
+    },
+    "error": "witness pruned: transaction 8eef4782dc6ab4033975dc6e5c95207e3968248fa4fa8dcd6c8264f879b211eb spends P2MR without a witness",
+    "table_unchanged": [
+      {
+        "number": 0,
+        "id": "327ae44ef19a3eacaf28bdfcb9fd254c10bfe6698056bff6b19c7345cd63d97ai0",
+        "location": "327ae44ef19a3eacaf28bdfcb9fd254c10bfe6698056bff6b19c7345cd63d97a:0:0",
+        "owner_script_hex": "5220a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2",
+        "owner_address": "qb1z52329g4z52329g4z52329g4z52329g4z52329g4z52329g4z523qdr68rp",
+        "location_height": 799,
+        "flags": [],
+        "content_type": "text/plain",
+        "body_sha256": "6db7d803e74f1ffa7d8f5adc0bf95b3e15bf4c8373fffadf546227cc6c6742cb"
+      }
+    ]
+  }
+}

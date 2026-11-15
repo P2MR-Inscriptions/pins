@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: Apache-2.0
+
+version: 2
+updates:
+  # Actions are pinned by commit SHA with the version in a comment. Dependabot moves both together.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # A major update is a deliberate change, made by hand in one pull request for the root and the explorer
+      # together (see CONTRIBUTING.md). Version updates skip them. Security updates are not affected by this rule.
+      # This also keeps "@types/node" on 22, where the supported Node range starts.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: npm
+    directory: /explorer
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Same rule as the root.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]

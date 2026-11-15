@@ -1,0 +1,133 @@
+{
+  "description": "Canonical metadata of an item, PINS-4 §2: the JSON record `{ meta: { name, attributes } }`, with an optional `file` key that is not encoded, becomes definite-length CBOR with the keys in this order: meta, name, attributes, and trait_type then value for each attribute. The input is the JSON.",
+  "spec": "PINS-4 §2",
+  "accept": [
+    {
+      "name": "name and no attribute",
+      "input": {
+        "meta": {
+          "name": "Item#1",
+          "attributes": []
+        }
+      },
+      "cbor_hex": "a1646d657461a2646e616d65664974656d23316a6174747269627574657380"
+    },
+    {
+      "name": "one attribute",
+      "input": {
+        "meta": {
+          "name": "Item#2",
+          "attributes": [
+            {
+              "trait_type": "Tone",
+              "value": "0"
+            }
+          ]
+        }
+      },
+      "cbor_hex": "a1646d657461a2646e616d65664974656d23326a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656130"
+    },
+    {
+      "name": "two attributes",
+      "input": {
+        "meta": {
+          "name": "Item#3",
+          "attributes": [
+            {
+              "trait_type": "Tone",
+              "value": "1"
+            },
+            {
+              "trait_type": "Shape",
+              "value": "round"
+            }
+          ]
+        }
+      },
+      "cbor_hex": "a1646d657461a2646e616d65664974656d23336a6174747269627574657382a26a74726169745f7479706564546f6e656576616c75656131a26a74726169745f747970656553686170656576616c756565726f756e64"
+    },
+    {
+      "name": "a file key is dropped",
+      "input": {
+        "file": "3.png",
+        "meta": {
+          "name": "Item#3",
+          "attributes": []
+        }
+      },
+      "cbor_hex": "a1646d657461a2646e616d65664974656d23336a6174747269627574657380"
+    },
+    {
+      "name": "the record in a one-element array",
+      "input": [
+        {
+          "meta": {
+            "name": "Item#4",
+            "attributes": []
+          }
+        }
+      ],
+      "cbor_hex": "a1646d657461a2646e616d65664974656d23346a6174747269627574657380"
+    }
+  ],
+  "reject": [
+    {
+      "name": "meta keys out of order",
+      "input": {
+        "meta": {
+          "attributes": [],
+          "name": "Item#1"
+        }
+      },
+      "error": true
+    },
+    {
+      "name": "an unknown key beside meta",
+      "input": {
+        "meta": {
+          "name": "Item#1",
+          "attributes": []
+        },
+        "extra": 1
+      },
+      "error": true
+    },
+    {
+      "name": "attribute keys out of order",
+      "input": {
+        "meta": {
+          "name": "Item#1",
+          "attributes": [
+            {
+              "value": "0",
+              "trait_type": "Tone"
+            }
+          ]
+        }
+      },
+      "error": true
+    },
+    {
+      "name": "a numeric attribute value",
+      "input": {
+        "meta": {
+          "name": "Item#1",
+          "attributes": [
+            {
+              "trait_type": "Tone",
+              "value": 0
+            }
+          ]
+        }
+      },
+      "error": true
+    },
+    {
+      "name": "no meta",
+      "input": {
+        "file": "1.png"
+      },
+      "error": true
+    }
+  ]
+}

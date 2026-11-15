@@ -1,0 +1,24 @@
+Chakra Petch Latin woff2 files in this directory
+  chakra-petch-latin-400-normal.woff2
+  chakra-petch-latin-500-normal.woff2
+  chakra-petch-latin-700-normal.woff2
+
+Family name in the font: Chakra Petch.
+Google Fonts records the designer as Cadson Demak.
+The upstream README also names Theerawat Pojvibulsiri as the designer of the face.
+The name table credits Katatrad Aksorn Co.,Ltd.
+Copyright 2018 The Chakra Petch Project Authors (https://github.com/m4rc1e/Chakra-Petch.git).
+
+Source files, unmodified before subsetting:
+  https://github.com/google/fonts/tree/main/ofl/chakrapetch
+  ChakraPetch-Regular.ttf (weight 400)
+  ChakraPetch-Medium.ttf (weight 500)
+  ChakraPetch-Bold.ttf (weight 700)
+Google Fonts upstream_info.md says that tree tracks https://github.com/m4rc1e/Chakra-Petch,
+which is the working fork of the original https://github.com/cadsondemak/Chakra-Petch.
+
+License: SIL Open Font License 1.1. The full text is OFL.txt in this directory.
+
+These woff2 files are a Latin subset of those three weights, made locally with fontTools.
+The subset keeps ASCII and the rest of Latin-1, plus the usual Latin punctuation range.
+No other weights are shipped. The page loads these files from this origin only.

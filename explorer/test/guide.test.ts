@@ -1,0 +1,59 @@
+// SPDX-License-Identifier: Apache-2.0
+
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+import { guideSections } from "../public/guide.js";
+
+const text = guideSections.map((section) => JSON.stringify(section)).join("\n");
+
+test("How it works is a menu route with a section for each topic", () => {
+  const html = readFileSync("public/index.html", "utf8");
+  const app = readFileSync("public/app.js", "utf8");
+  const css = readFileSync("public/style.css", "utf8");
+  assert.match(html, /id="nav-guide" href="#\/how-it-works"|href="#\/how-it-works" id="nav-guide"/);
+  assert.match(app, /#\/how-it-works/);
+  assert.match(app, /fn === guidePage/);
+  assert.match(css, /\.top nav \{ flex-wrap: wrap;/);
+  assert.match(css, /\.guide-toc \{ display: flex; flex-wrap: wrap;/);
+  const ids = guideSections.map((section) => section.id);
+  assert.deepEqual(ids, [
+    "prerequisites", "configuration", "fresh-setup", "two-processes",
+    "snapshot", "read-only", "status", "authenticity", "troubleshooting",
+  ]);
+  assert.equal(new Set(ids).size, ids.length);
+  assert.equal(ids.length, 9);
+  assert.match(app, new RegExp(`guide-\\$\\{section\\.id\\}|guide-\\$\\{slug\\}`));
+  assert.match(app, new RegExp(`#/how-it-works/\\$\\{section\\.id\\}`));
+  assert.match(app, /function scrollGuideHeading/);
+  assert.match(app, /headerOffset\(\)/);
+  assert.equal(app.includes("scrollIntoView"), false);
+  assert.match(css, /\.guide h2 \{[^}]*scroll-margin-top: var\(--header-offset, 5\.5rem\)/);
+});
+
+test("the guide matches the local scripts and does not leak a setup shortcut", () => {
+  assert.match(text, /22\.13 up to 24/);
+  assert.equal(/curl/i.test(text), false);
+  assert.equal(/22\.12 or newer|earlier version|vendor\/pins/.test(text), false);
+  assert.match(text, /QBIT_RPC_DATADIR/);
+  assert.match(text, /witness scripts/);
+  assert.equal(text.includes("not pruned"), false);
+  assert.equal(text.includes("input index"), false);
+  assert.match(text, /witness pruned/);
+  assert.match(text, /QBIT_CONF/);
+  assert.match(text, /Do not change qbit\.conf/);
+  assert.equal(text.includes("npm run setup"), false);
+  assert.equal(/patch|3e014f4/.test(text), false);
+  assert.match(text, /npm --prefix \.\. ci --ignore-scripts/);
+  assert.match(text, /npm run indexer/);
+  assert.match(text, /npm start/);
+  assert.match(text, /127\.0\.0\.1:8787/);
+  assert.match(text, /127\.0\.0\.1:8080/);
+  assert.match(text, /getblockcount, getblockhash, getblockheader, and getrawtransaction/);
+  assert.match(text, /authentic set to true/);
+  assert.match(text, /node -v/);
+  assert.equal(/https?:\/\/(?!127\.0\.0\.1)/.test(text), false);
+  for (const banned of ["/home/", "/Users/", "/agent", "npm install -g", "rpcpassword=", "password:", "edit qbit.conf", "add to qbit.conf"]) {
+    assert.equal(text.includes(banned), false, banned);
+  }
+});

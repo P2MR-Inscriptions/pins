@@ -1,0 +1,621 @@
+{
+  "item_set_root": {
+    "name": "TV5-2 root of an item set",
+    "description": "The three items of the cases below, numbers 1 to 3. The root is the PINS-5 §5.1 fold of their leaves in number order, and `leaf_list_hex` is the leaves back to back, the body of the leaf list (PINS-5 §6).",
+    "items": [
+      {
+        "number": 1,
+        "body_hex": "626f6479206f66206974656d2031",
+        "metadata_hex": "a1646d657461a2646e616d65664974656d23316a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656131",
+        "leaf": "351c3ffc35264e974f6bd377312c92d7736baacdd52937e79022a5b84af0bcd2"
+      },
+      {
+        "number": 2,
+        "body_hex": "626f6479206f66206974656d2032",
+        "metadata_hex": "a1646d657461a2646e616d65664974656d23326a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656132",
+        "leaf": "b5e7e0b29286ceb99fd0ff33707143b3593e5d7cc5a1de8a4dcbb98ab4c5e3e7"
+      },
+      {
+        "number": 3,
+        "body_hex": "626f6479206f66206974656d2033",
+        "metadata_hex": "a1646d657461a2646e616d65664974656d23336a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656133",
+        "leaf": "93ed7963ac131ab5bba294a2608306ecea720bb783d10783304710fbdddc6f1e"
+      }
+    ],
+    "leaf_list_hex": "351c3ffc35264e974f6bd377312c92d7736baacdd52937e79022a5b84af0bcd2b5e7e0b29286ceb99fd0ff33707143b3593e5d7cc5a1de8a4dcbb98ab4c5e3e793ed7963ac131ab5bba294a2608306ecea720bb783d10783304710fbdddc6f1e",
+    "root": "7cc592407c9b07ff1c39ccb1157082264a6f867109e24338737c97af534aee55"
+  },
+  "description": "Authenticity of items, PINS-5 §9. A collection of three items (numbers 1 to 3, name prefix `Item#`, content type `image/png`) is built from a genesis, a leaf list and the listed P2MR Inscriptions, in the order given. `expected_pieces` is what the reference indexer reports for each number. A piece is authentic when a P2MR Inscription of the issuer key, after the genesis and before any closing, with the right content type and name, has a leaf equal to the leaf list entry. Only the first one that qualifies for a number counts.",
+  "spec": "PINS-5 §9",
+  "cases": [
+    {
+      "name": "TV5-3 forged copy signed by another key",
+      "description": "Another key inscribes a byte-for-byte copy of item 2 first. It is not an item: its reveal key is not the issuer. The issuer's own item 2 afterwards still takes the piece.",
+      "genesis_field5_hex": "a866736368656d617170696e732d636f6c6c656374696f6e2f31646e616d65674578616d706c6566737570706c7903656669727374016b6e616d655f707265666978654974656d2364726f6f7478403763633539323430376339623037666631633339636362313135373038323236346136663836373130396532343333383733376339376166353334616565353566697373756572784061626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162696974656d5f7479706569696d6167652f706e67",
+      "leaf_list_hex": "351c3ffc35264e974f6bd377312c92d7736baacdd52937e79022a5b84af0bcd2b5e7e0b29286ceb99fd0ff33707143b3593e5d7cc5a1de8a4dcbb98ab4c5e3e793ed7963ac131ab5bba294a2608306ecea720bb783d10783304710fbdddc6f1e",
+      "items": [
+        {
+          "label": "genesis",
+          "id": "aeebad4a796fcc2e15dc4c6061b45ed9b373f26adfc798ca7d2d8cc58182718ei0",
+          "order": 0,
+          "created_height": 10,
+          "created_index": 1,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "application/json",
+          "body_hex": "",
+          "field5_hex": "a866736368656d617170696e732d636f6c6c656374696f6e2f31646e616d65674578616d706c6566737570706c7903656669727374016b6e616d655f707265666978654974656d2364726f6f7478403763633539323430376339623037666631633339636362313135373038323236346136663836373130396532343333383733376339376166353334616565353566697373756572784061626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162696974656d5f7479706569696d6167652f706e67"
+        },
+        {
+          "label": "leaf list",
+          "id": "dcfbf3f6ab49676591e95fc221d5684f4d8dc15f9d796b7c03bc24f23948b0eai0",
+          "order": 1,
+          "created_height": 10,
+          "created_index": 1,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "application/octet-stream",
+          "body_hex": "351c3ffc35264e974f6bd377312c92d7736baacdd52937e79022a5b84af0bcd2b5e7e0b29286ceb99fd0ff33707143b3593e5d7cc5a1de8a4dcbb98ab4c5e3e793ed7963ac131ab5bba294a2608306ecea720bb783d10783304710fbdddc6f1e",
+          "field5_hex": null
+        },
+        {
+          "label": "item 1 at 11",
+          "id": "a549cb3f46c396cd3223489cd3d074423de29aadb8f2fed02f36aa170809c6fdi0",
+          "order": 2,
+          "created_height": 11,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "image/png",
+          "body_hex": "626f6479206f66206974656d2031",
+          "field5_hex": "a1646d657461a2646e616d65664974656d23316a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656131"
+        },
+        {
+          "label": "item 2 at 11 by another key",
+          "id": "226c06d1b0395610e556ba4c7e24ee61112a2a278bd1a737f957a55635e17c7bi0",
+          "order": 3,
+          "created_height": 11,
+          "created_index": 0,
+          "reveal_key": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+          "content_type": "image/png",
+          "body_hex": "626f6479206f66206974656d2032",
+          "field5_hex": "a1646d657461a2646e616d65664974656d23326a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656132"
+        },
+        {
+          "label": "item 2 at 12",
+          "id": "a5b0fb002e5467dc8cd3710c9de710b623a7e7c8ed1cea85080ce968da3b5582i0",
+          "order": 4,
+          "created_height": 12,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "image/png",
+          "body_hex": "626f6479206f66206974656d2032",
+          "field5_hex": "a1646d657461a2646e616d65664974656d23326a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656132"
+        },
+        {
+          "label": "item 3 at 14",
+          "id": "038e64a0fffeb44d66df07b3f3c2a81e280743de75641bece031b603a65ae159i0",
+          "order": 5,
+          "created_height": 14,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "image/png",
+          "body_hex": "626f6479206f66206974656d2033",
+          "field5_hex": "a1646d657461a2646e616d65664974656d23336a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656133"
+        }
+      ],
+      "expected_pieces": [
+        {
+          "number": 1,
+          "authentic": true,
+          "item": "item 1 at 11"
+        },
+        {
+          "number": 2,
+          "authentic": true,
+          "item": "item 2 at 12"
+        },
+        {
+          "number": 3,
+          "authentic": true,
+          "item": "item 3 at 14"
+        }
+      ],
+      "closing": null
+    },
+    {
+      "name": "TV5-3 forged copy by the issuer with another body",
+      "description": "The issuer key signs an item 2 whose body is not the one in the leaf list. The leaf differs, so piece 2 stays empty.",
+      "genesis_field5_hex": "a866736368656d617170696e732d636f6c6c656374696f6e2f31646e616d65674578616d706c6566737570706c7903656669727374016b6e616d655f707265666978654974656d2364726f6f7478403763633539323430376339623037666631633339636362313135373038323236346136663836373130396532343333383733376339376166353334616565353566697373756572784061626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162696974656d5f7479706569696d6167652f706e67",
+      "leaf_list_hex": "351c3ffc35264e974f6bd377312c92d7736baacdd52937e79022a5b84af0bcd2b5e7e0b29286ceb99fd0ff33707143b3593e5d7cc5a1de8a4dcbb98ab4c5e3e793ed7963ac131ab5bba294a2608306ecea720bb783d10783304710fbdddc6f1e",
+      "items": [
+        {
+          "label": "genesis",
+          "id": "aeebad4a796fcc2e15dc4c6061b45ed9b373f26adfc798ca7d2d8cc58182718ei0",
+          "order": 0,
+          "created_height": 10,
+          "created_index": 1,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "application/json",
+          "body_hex": "",
+          "field5_hex": "a866736368656d617170696e732d636f6c6c656374696f6e2f31646e616d65674578616d706c6566737570706c7903656669727374016b6e616d655f707265666978654974656d2364726f6f7478403763633539323430376339623037666631633339636362313135373038323236346136663836373130396532343333383733376339376166353334616565353566697373756572784061626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162696974656d5f7479706569696d6167652f706e67"
+        },
+        {
+          "label": "leaf list",
+          "id": "dcfbf3f6ab49676591e95fc221d5684f4d8dc15f9d796b7c03bc24f23948b0eai0",
+          "order": 1,
+          "created_height": 10,
+          "created_index": 1,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "application/octet-stream",
+          "body_hex": "351c3ffc35264e974f6bd377312c92d7736baacdd52937e79022a5b84af0bcd2b5e7e0b29286ceb99fd0ff33707143b3593e5d7cc5a1de8a4dcbb98ab4c5e3e793ed7963ac131ab5bba294a2608306ecea720bb783d10783304710fbdddc6f1e",
+          "field5_hex": null
+        },
+        {
+          "label": "item 1 at 11",
+          "id": "a549cb3f46c396cd3223489cd3d074423de29aadb8f2fed02f36aa170809c6fdi0",
+          "order": 2,
+          "created_height": 11,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "image/png",
+          "body_hex": "626f6479206f66206974656d2031",
+          "field5_hex": "a1646d657461a2646e616d65664974656d23316a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656131"
+        },
+        {
+          "label": " with another body",
+          "id": "b2ac5bddca94aae6c25cd23a5a1f989f877df3e68630eb16082ed906a8845253i0",
+          "order": 3,
+          "created_height": 12,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "image/png",
+          "body_hex": "616e6f7468657220626f6479",
+          "field5_hex": "a1646d657461a2646e616d65664974656d23326a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656132"
+        },
+        {
+          "label": "item 3 at 14",
+          "id": "038e64a0fffeb44d66df07b3f3c2a81e280743de75641bece031b603a65ae159i0",
+          "order": 4,
+          "created_height": 14,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "image/png",
+          "body_hex": "626f6479206f66206974656d2033",
+          "field5_hex": "a1646d657461a2646e616d65664974656d23336a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656133"
+        }
+      ],
+      "expected_pieces": [
+        {
+          "number": 1,
+          "authentic": true,
+          "item": "item 1 at 11"
+        },
+        {
+          "number": 2,
+          "authentic": false,
+          "item": null
+        },
+        {
+          "number": 3,
+          "authentic": true,
+          "item": "item 3 at 14"
+        }
+      ],
+      "closing": null
+    },
+    {
+      "name": "TV5-4 item inscribed after closing",
+      "description": "Items 1 and 2 are inscribed, then the issuer closes the collection, then item 3 is inscribed. Item 3 is not authentic because it comes after the closing P2MR Inscription.",
+      "genesis_field5_hex": "a866736368656d617170696e732d636f6c6c656374696f6e2f31646e616d65674578616d706c6566737570706c7903656669727374016b6e616d655f707265666978654974656d2364726f6f7478403763633539323430376339623037666631633339636362313135373038323236346136663836373130396532343333383733376339376166353334616565353566697373756572784061626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162696974656d5f7479706569696d6167652f706e67",
+      "leaf_list_hex": "351c3ffc35264e974f6bd377312c92d7736baacdd52937e79022a5b84af0bcd2b5e7e0b29286ceb99fd0ff33707143b3593e5d7cc5a1de8a4dcbb98ab4c5e3e793ed7963ac131ab5bba294a2608306ecea720bb783d10783304710fbdddc6f1e",
+      "items": [
+        {
+          "label": "genesis",
+          "id": "aeebad4a796fcc2e15dc4c6061b45ed9b373f26adfc798ca7d2d8cc58182718ei0",
+          "order": 0,
+          "created_height": 10,
+          "created_index": 1,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "application/json",
+          "body_hex": "",
+          "field5_hex": "a866736368656d617170696e732d636f6c6c656374696f6e2f31646e616d65674578616d706c6566737570706c7903656669727374016b6e616d655f707265666978654974656d2364726f6f7478403763633539323430376339623037666631633339636362313135373038323236346136663836373130396532343333383733376339376166353334616565353566697373756572784061626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162696974656d5f7479706569696d6167652f706e67"
+        },
+        {
+          "label": "leaf list",
+          "id": "dcfbf3f6ab49676591e95fc221d5684f4d8dc15f9d796b7c03bc24f23948b0eai0",
+          "order": 1,
+          "created_height": 10,
+          "created_index": 1,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "application/octet-stream",
+          "body_hex": "351c3ffc35264e974f6bd377312c92d7736baacdd52937e79022a5b84af0bcd2b5e7e0b29286ceb99fd0ff33707143b3593e5d7cc5a1de8a4dcbb98ab4c5e3e793ed7963ac131ab5bba294a2608306ecea720bb783d10783304710fbdddc6f1e",
+          "field5_hex": null
+        },
+        {
+          "label": "item 1 at 11",
+          "id": "a549cb3f46c396cd3223489cd3d074423de29aadb8f2fed02f36aa170809c6fdi0",
+          "order": 2,
+          "created_height": 11,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "image/png",
+          "body_hex": "626f6479206f66206974656d2031",
+          "field5_hex": "a1646d657461a2646e616d65664974656d23316a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656131"
+        },
+        {
+          "label": "item 2 at 12",
+          "id": "a5b0fb002e5467dc8cd3710c9de710b623a7e7c8ed1cea85080ce968da3b5582i0",
+          "order": 3,
+          "created_height": 12,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "image/png",
+          "body_hex": "626f6479206f66206974656d2032",
+          "field5_hex": "a1646d657461a2646e616d65664974656d23326a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656132"
+        },
+        {
+          "label": "closing",
+          "id": "6f9a48800d2f3095e8a310a4317e009a5dc222e11c45b34ec8d5544feebb8277i0",
+          "order": 4,
+          "created_height": 13,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "application/json",
+          "body_hex": "",
+          "field5_hex": "a366736368656d616c70696e732d636c6f73652f3164726f6f7458207cc592407c9b07ff1c39ccb1157082264a6f867109e24338737c97af534aee5565636f756e7403"
+        },
+        {
+          "label": "item 3 at 14",
+          "id": "038e64a0fffeb44d66df07b3f3c2a81e280743de75641bece031b603a65ae159i0",
+          "order": 5,
+          "created_height": 14,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "image/png",
+          "body_hex": "626f6479206f66206974656d2033",
+          "field5_hex": "a1646d657461a2646e616d65664974656d23336a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656133"
+        }
+      ],
+      "expected_pieces": [
+        {
+          "number": 1,
+          "authentic": true,
+          "item": "item 1 at 11"
+        },
+        {
+          "number": 2,
+          "authentic": true,
+          "item": "item 2 at 12"
+        },
+        {
+          "number": 3,
+          "authentic": false,
+          "item": null
+        }
+      ],
+      "closing": "closing"
+    },
+    {
+      "name": "TV5-4 control, no closing",
+      "description": "The same P2MR Inscriptions without the closing: item 3 is authentic.",
+      "genesis_field5_hex": "a866736368656d617170696e732d636f6c6c656374696f6e2f31646e616d65674578616d706c6566737570706c7903656669727374016b6e616d655f707265666978654974656d2364726f6f7478403763633539323430376339623037666631633339636362313135373038323236346136663836373130396532343333383733376339376166353334616565353566697373756572784061626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162696974656d5f7479706569696d6167652f706e67",
+      "leaf_list_hex": "351c3ffc35264e974f6bd377312c92d7736baacdd52937e79022a5b84af0bcd2b5e7e0b29286ceb99fd0ff33707143b3593e5d7cc5a1de8a4dcbb98ab4c5e3e793ed7963ac131ab5bba294a2608306ecea720bb783d10783304710fbdddc6f1e",
+      "items": [
+        {
+          "label": "genesis",
+          "id": "aeebad4a796fcc2e15dc4c6061b45ed9b373f26adfc798ca7d2d8cc58182718ei0",
+          "order": 0,
+          "created_height": 10,
+          "created_index": 1,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "application/json",
+          "body_hex": "",
+          "field5_hex": "a866736368656d617170696e732d636f6c6c656374696f6e2f31646e616d65674578616d706c6566737570706c7903656669727374016b6e616d655f707265666978654974656d2364726f6f7478403763633539323430376339623037666631633339636362313135373038323236346136663836373130396532343333383733376339376166353334616565353566697373756572784061626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162696974656d5f7479706569696d6167652f706e67"
+        },
+        {
+          "label": "leaf list",
+          "id": "dcfbf3f6ab49676591e95fc221d5684f4d8dc15f9d796b7c03bc24f23948b0eai0",
+          "order": 1,
+          "created_height": 10,
+          "created_index": 1,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "application/octet-stream",
+          "body_hex": "351c3ffc35264e974f6bd377312c92d7736baacdd52937e79022a5b84af0bcd2b5e7e0b29286ceb99fd0ff33707143b3593e5d7cc5a1de8a4dcbb98ab4c5e3e793ed7963ac131ab5bba294a2608306ecea720bb783d10783304710fbdddc6f1e",
+          "field5_hex": null
+        },
+        {
+          "label": "item 1 at 11",
+          "id": "a549cb3f46c396cd3223489cd3d074423de29aadb8f2fed02f36aa170809c6fdi0",
+          "order": 2,
+          "created_height": 11,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "image/png",
+          "body_hex": "626f6479206f66206974656d2031",
+          "field5_hex": "a1646d657461a2646e616d65664974656d23316a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656131"
+        },
+        {
+          "label": "item 2 at 12",
+          "id": "a5b0fb002e5467dc8cd3710c9de710b623a7e7c8ed1cea85080ce968da3b5582i0",
+          "order": 3,
+          "created_height": 12,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "image/png",
+          "body_hex": "626f6479206f66206974656d2032",
+          "field5_hex": "a1646d657461a2646e616d65664974656d23326a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656132"
+        },
+        {
+          "label": "item 3 at 14",
+          "id": "038e64a0fffeb44d66df07b3f3c2a81e280743de75641bece031b603a65ae159i0",
+          "order": 4,
+          "created_height": 14,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "image/png",
+          "body_hex": "626f6479206f66206974656d2033",
+          "field5_hex": "a1646d657461a2646e616d65664974656d23336a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656133"
+        }
+      ],
+      "expected_pieces": [
+        {
+          "number": 1,
+          "authentic": true,
+          "item": "item 1 at 11"
+        },
+        {
+          "number": 2,
+          "authentic": true,
+          "item": "item 2 at 12"
+        },
+        {
+          "number": 3,
+          "authentic": true,
+          "item": "item 3 at 14"
+        }
+      ],
+      "closing": null
+    },
+    {
+      "name": "TV4-3 metadata keys reordered",
+      "description": "Item 2 carries valid CBOR in which `attributes` comes before `name`. The bytes differ from the canonical encoding, so the leaf differs and piece 2 stays empty.",
+      "genesis_field5_hex": "a866736368656d617170696e732d636f6c6c656374696f6e2f31646e616d65674578616d706c6566737570706c7903656669727374016b6e616d655f707265666978654974656d2364726f6f7478403763633539323430376339623037666631633339636362313135373038323236346136663836373130396532343333383733376339376166353334616565353566697373756572784061626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162696974656d5f7479706569696d6167652f706e67",
+      "leaf_list_hex": "351c3ffc35264e974f6bd377312c92d7736baacdd52937e79022a5b84af0bcd2b5e7e0b29286ceb99fd0ff33707143b3593e5d7cc5a1de8a4dcbb98ab4c5e3e793ed7963ac131ab5bba294a2608306ecea720bb783d10783304710fbdddc6f1e",
+      "items": [
+        {
+          "label": "genesis",
+          "id": "aeebad4a796fcc2e15dc4c6061b45ed9b373f26adfc798ca7d2d8cc58182718ei0",
+          "order": 0,
+          "created_height": 10,
+          "created_index": 1,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "application/json",
+          "body_hex": "",
+          "field5_hex": "a866736368656d617170696e732d636f6c6c656374696f6e2f31646e616d65674578616d706c6566737570706c7903656669727374016b6e616d655f707265666978654974656d2364726f6f7478403763633539323430376339623037666631633339636362313135373038323236346136663836373130396532343333383733376339376166353334616565353566697373756572784061626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162696974656d5f7479706569696d6167652f706e67"
+        },
+        {
+          "label": "leaf list",
+          "id": "dcfbf3f6ab49676591e95fc221d5684f4d8dc15f9d796b7c03bc24f23948b0eai0",
+          "order": 1,
+          "created_height": 10,
+          "created_index": 1,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "application/octet-stream",
+          "body_hex": "351c3ffc35264e974f6bd377312c92d7736baacdd52937e79022a5b84af0bcd2b5e7e0b29286ceb99fd0ff33707143b3593e5d7cc5a1de8a4dcbb98ab4c5e3e793ed7963ac131ab5bba294a2608306ecea720bb783d10783304710fbdddc6f1e",
+          "field5_hex": null
+        },
+        {
+          "label": "item 1 at 11",
+          "id": "a549cb3f46c396cd3223489cd3d074423de29aadb8f2fed02f36aa170809c6fdi0",
+          "order": 2,
+          "created_height": 11,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "image/png",
+          "body_hex": "626f6479206f66206974656d2031",
+          "field5_hex": "a1646d657461a2646e616d65664974656d23316a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656131"
+        },
+        {
+          "label": " reordered",
+          "id": "7b2a0ce130d7c7e7afce1dfcb96e0f49a06fd09cdcf2aac370d38d044e0946cci0",
+          "order": 3,
+          "created_height": 12,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "image/png",
+          "body_hex": "626f6479206f66206974656d2032",
+          "field5_hex": "a1646d657461a26a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656132646e616d65664974656d2332"
+        },
+        {
+          "label": "item 3 at 14",
+          "id": "038e64a0fffeb44d66df07b3f3c2a81e280743de75641bece031b603a65ae159i0",
+          "order": 4,
+          "created_height": 14,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "image/png",
+          "body_hex": "626f6479206f66206974656d2033",
+          "field5_hex": "a1646d657461a2646e616d65664974656d23336a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656133"
+        }
+      ],
+      "expected_pieces": [
+        {
+          "number": 1,
+          "authentic": true,
+          "item": "item 1 at 11"
+        },
+        {
+          "number": 2,
+          "authentic": false,
+          "item": null
+        },
+        {
+          "number": 3,
+          "authentic": true,
+          "item": "item 3 at 14"
+        }
+      ],
+      "closing": null
+    },
+    {
+      "name": "TV4-3 attribute keys reordered",
+      "description": "Item 2 carries valid CBOR in which `value` comes before `trait_type`. Same result.",
+      "genesis_field5_hex": "a866736368656d617170696e732d636f6c6c656374696f6e2f31646e616d65674578616d706c6566737570706c7903656669727374016b6e616d655f707265666978654974656d2364726f6f7478403763633539323430376339623037666631633339636362313135373038323236346136663836373130396532343333383733376339376166353334616565353566697373756572784061626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162696974656d5f7479706569696d6167652f706e67",
+      "leaf_list_hex": "351c3ffc35264e974f6bd377312c92d7736baacdd52937e79022a5b84af0bcd2b5e7e0b29286ceb99fd0ff33707143b3593e5d7cc5a1de8a4dcbb98ab4c5e3e793ed7963ac131ab5bba294a2608306ecea720bb783d10783304710fbdddc6f1e",
+      "items": [
+        {
+          "label": "genesis",
+          "id": "aeebad4a796fcc2e15dc4c6061b45ed9b373f26adfc798ca7d2d8cc58182718ei0",
+          "order": 0,
+          "created_height": 10,
+          "created_index": 1,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "application/json",
+          "body_hex": "",
+          "field5_hex": "a866736368656d617170696e732d636f6c6c656374696f6e2f31646e616d65674578616d706c6566737570706c7903656669727374016b6e616d655f707265666978654974656d2364726f6f7478403763633539323430376339623037666631633339636362313135373038323236346136663836373130396532343333383733376339376166353334616565353566697373756572784061626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162696974656d5f7479706569696d6167652f706e67"
+        },
+        {
+          "label": "leaf list",
+          "id": "dcfbf3f6ab49676591e95fc221d5684f4d8dc15f9d796b7c03bc24f23948b0eai0",
+          "order": 1,
+          "created_height": 10,
+          "created_index": 1,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "application/octet-stream",
+          "body_hex": "351c3ffc35264e974f6bd377312c92d7736baacdd52937e79022a5b84af0bcd2b5e7e0b29286ceb99fd0ff33707143b3593e5d7cc5a1de8a4dcbb98ab4c5e3e793ed7963ac131ab5bba294a2608306ecea720bb783d10783304710fbdddc6f1e",
+          "field5_hex": null
+        },
+        {
+          "label": "item 1 at 11",
+          "id": "a549cb3f46c396cd3223489cd3d074423de29aadb8f2fed02f36aa170809c6fdi0",
+          "order": 2,
+          "created_height": 11,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "image/png",
+          "body_hex": "626f6479206f66206974656d2031",
+          "field5_hex": "a1646d657461a2646e616d65664974656d23316a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656131"
+        },
+        {
+          "label": " reordered trait",
+          "id": "b2f7398450b1a203fa2490bfa86398d73b733ed6a8d040fdb511039f593ffcb0i0",
+          "order": 3,
+          "created_height": 12,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "image/png",
+          "body_hex": "626f6479206f66206974656d2032",
+          "field5_hex": "a1646d657461a2646e616d65664974656d23326a6174747269627574657381a26576616c756561326a74726169745f7479706564546f6e65"
+        },
+        {
+          "label": "item 3 at 14",
+          "id": "038e64a0fffeb44d66df07b3f3c2a81e280743de75641bece031b603a65ae159i0",
+          "order": 4,
+          "created_height": 14,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "image/png",
+          "body_hex": "626f6479206f66206974656d2033",
+          "field5_hex": "a1646d657461a2646e616d65664974656d23336a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656133"
+        }
+      ],
+      "expected_pieces": [
+        {
+          "number": 1,
+          "authentic": true,
+          "item": "item 1 at 11"
+        },
+        {
+          "number": 2,
+          "authentic": false,
+          "item": null
+        },
+        {
+          "number": 3,
+          "authentic": true,
+          "item": "item 3 at 14"
+        }
+      ],
+      "closing": null
+    },
+    {
+      "name": "TV4-3 control, canonical metadata",
+      "description": "The same item 2 with canonical metadata is authentic.",
+      "genesis_field5_hex": "a866736368656d617170696e732d636f6c6c656374696f6e2f31646e616d65674578616d706c6566737570706c7903656669727374016b6e616d655f707265666978654974656d2364726f6f7478403763633539323430376339623037666631633339636362313135373038323236346136663836373130396532343333383733376339376166353334616565353566697373756572784061626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162696974656d5f7479706569696d6167652f706e67",
+      "leaf_list_hex": "351c3ffc35264e974f6bd377312c92d7736baacdd52937e79022a5b84af0bcd2b5e7e0b29286ceb99fd0ff33707143b3593e5d7cc5a1de8a4dcbb98ab4c5e3e793ed7963ac131ab5bba294a2608306ecea720bb783d10783304710fbdddc6f1e",
+      "items": [
+        {
+          "label": "genesis",
+          "id": "aeebad4a796fcc2e15dc4c6061b45ed9b373f26adfc798ca7d2d8cc58182718ei0",
+          "order": 0,
+          "created_height": 10,
+          "created_index": 1,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "application/json",
+          "body_hex": "",
+          "field5_hex": "a866736368656d617170696e732d636f6c6c656374696f6e2f31646e616d65674578616d706c6566737570706c7903656669727374016b6e616d655f707265666978654974656d2364726f6f7478403763633539323430376339623037666631633339636362313135373038323236346136663836373130396532343333383733376339376166353334616565353566697373756572784061626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162616261626162696974656d5f7479706569696d6167652f706e67"
+        },
+        {
+          "label": "leaf list",
+          "id": "dcfbf3f6ab49676591e95fc221d5684f4d8dc15f9d796b7c03bc24f23948b0eai0",
+          "order": 1,
+          "created_height": 10,
+          "created_index": 1,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "application/octet-stream",
+          "body_hex": "351c3ffc35264e974f6bd377312c92d7736baacdd52937e79022a5b84af0bcd2b5e7e0b29286ceb99fd0ff33707143b3593e5d7cc5a1de8a4dcbb98ab4c5e3e793ed7963ac131ab5bba294a2608306ecea720bb783d10783304710fbdddc6f1e",
+          "field5_hex": null
+        },
+        {
+          "label": "item 1 at 11",
+          "id": "a549cb3f46c396cd3223489cd3d074423de29aadb8f2fed02f36aa170809c6fdi0",
+          "order": 2,
+          "created_height": 11,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "image/png",
+          "body_hex": "626f6479206f66206974656d2031",
+          "field5_hex": "a1646d657461a2646e616d65664974656d23316a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656131"
+        },
+        {
+          "label": "item 2 at 12",
+          "id": "a5b0fb002e5467dc8cd3710c9de710b623a7e7c8ed1cea85080ce968da3b5582i0",
+          "order": 3,
+          "created_height": 12,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "image/png",
+          "body_hex": "626f6479206f66206974656d2032",
+          "field5_hex": "a1646d657461a2646e616d65664974656d23326a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656132"
+        },
+        {
+          "label": "item 3 at 14",
+          "id": "038e64a0fffeb44d66df07b3f3c2a81e280743de75641bece031b603a65ae159i0",
+          "order": 4,
+          "created_height": 14,
+          "created_index": 0,
+          "reveal_key": "abababababababababababababababababababababababababababababababab",
+          "content_type": "image/png",
+          "body_hex": "626f6479206f66206974656d2033",
+          "field5_hex": "a1646d657461a2646e616d65664974656d23336a6174747269627574657381a26a74726169745f7479706564546f6e656576616c75656133"
+        }
+      ],
+      "expected_pieces": [
+        {
+          "number": 1,
+          "authentic": true,
+          "item": "item 1 at 11"
+        },
+        {
+          "number": 2,
+          "authentic": true,
+          "item": "item 2 at 12"
+        },
+        {
+          "number": 3,
+          "authentic": true,
+          "item": "item 3 at 14"
+        }
+      ],
+      "closing": null
+    }
+  ]
+}

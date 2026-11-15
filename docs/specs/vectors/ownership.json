@@ -1,0 +1,800 @@
+{
+  "description": "TV3 ownership vectors, PINS-3 §5 and PINS-2 §4. Each case is a short synthetic chain on mainnet rules (subsidy 21000000000 bits). `blocks` are the exact inputs of the rules engine. `state_hashes` is the PINS-2 §4.4 hash after each block. `expected` is the table of P2MR Inscriptions after the last block.",
+  "spec": "PINS-3 §5",
+  "cases": [
+    {
+      "name": "TV3-1 transfer",
+      "description": "A reveal puts a P2MR Inscription on output 0, offset 0. A later transaction spends that output as input 0 and pays output 0. The P2MR Inscription follows its bit to the new output and owner.",
+      "blocks": [
+        {
+          "height": 100,
+          "hash": "f6ed57122811b9165cc1adf28b3b67ae73ea6393937b8f4c7c4d6a767a2aaf67",
+          "subsidy": "21000000000",
+          "txs": [
+            {
+              "txid": "06580274e61e6e21f303e165c29d5dc972e64d0fc7e7d5422a6c086aba40de8e",
+              "inputs": [
+                {
+                  "coinbase": true
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "21000010000",
+                  "script_hex": "5220c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"
+                }
+              ]
+            },
+            {
+              "txid": "3a7853cc1af6b45085b7db16e77f66064ef608ca4a6cd3b415fd330852921166",
+              "inputs": [
+                {
+                  "prevout": "8ed3d7e32aa2d5f512a832f4ce4e4da5abe9eadf92b7eae880888a219acf99a0:0",
+                  "value": "20000",
+                  "p2mr": true,
+                  "witness_items": 3,
+                  "leaf_script_hex": "200202020202020202020202020202020202020202020202020202020202020202b300630470696e73510a746578742f706c61696e00057476332d3168"
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "10000",
+                  "script_hex": "5220a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "height": 101,
+          "hash": "3ac47e38caf4d2416db685939fdc3d4f455bedf76a9e9ce15a74d0ff82c4d6b1",
+          "subsidy": "21000000000",
+          "txs": [
+            {
+              "txid": "88b46c8a16bde4aa4c0bff84195c1d8a8158156931ccbda38feb1f851cedc150",
+              "inputs": [
+                {
+                  "coinbase": true
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "21000005000",
+                  "script_hex": "5220c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"
+                }
+              ]
+            },
+            {
+              "txid": "55da95b0da900abb8fd4afb4524b56281df558cd385f813fd0ab0a5f48cce9c4",
+              "inputs": [
+                {
+                  "prevout": "3a7853cc1af6b45085b7db16e77f66064ef608ca4a6cd3b415fd330852921166:0",
+                  "value": "10000",
+                  "p2mr": true,
+                  "witness_items": 2
+                },
+                {
+                  "prevout": "bc59a178a93b04d554ea4e2b0ba2045619c6935c72893b7e3f86f24d2911cefc:0",
+                  "value": "5000",
+                  "p2mr": true,
+                  "witness_items": 2
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "10000",
+                  "script_hex": "5220b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "state_hashes": [
+        {
+          "height": 100,
+          "block_hash": "f6ed57122811b9165cc1adf28b3b67ae73ea6393937b8f4c7c4d6a767a2aaf67",
+          "state_hash": "cab2d8b122fb3616d5c780209b7f3b95cb634522778834840899bfa2a18bf6cf"
+        },
+        {
+          "height": 101,
+          "block_hash": "3ac47e38caf4d2416db685939fdc3d4f455bedf76a9e9ce15a74d0ff82c4d6b1",
+          "state_hash": "5ffed894bf9227f303f3616da9123ba9d41801022ed3a0c418209022c96fab45"
+        }
+      ],
+      "expected": [
+        {
+          "number": 0,
+          "id": "3a7853cc1af6b45085b7db16e77f66064ef608ca4a6cd3b415fd330852921166i0",
+          "location": "55da95b0da900abb8fd4afb4524b56281df558cd385f813fd0ab0a5f48cce9c4:0:0",
+          "owner_script_hex": "5220b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
+          "owner_address": "qb1zkxcmrvd3kxcmrvd3kxcmrvd3kxcmrvd3kxcmrvd3kxcmrvd3kxcs7jgh29",
+          "location_height": 101,
+          "flags": [],
+          "content_type": "text/plain",
+          "body_sha256": "6884d88c6de7f22e8c80ab4277398db9b1f3f34ae1fecfdba007f558e308b7c0"
+        }
+      ]
+    },
+    {
+      "name": "TV3-2 split and merge",
+      "description": "Two P2MR Inscriptions X (offset 0) and Y (offset 10000) share output 0. A split sends each to its own output. A merge lists Y's output as input 0 and X's as input 1, so Y lands at offset 0 and X at offset 10000: input order decides, not output order. Two later splits show offsets counted from the start of the output.",
+      "blocks": [
+        {
+          "height": 200,
+          "hash": "61e55e840155327f02a2213137e838ba8d1399ec0c64f2a4feec4a7565066d97",
+          "subsidy": "21000000000",
+          "txs": [
+            {
+              "txid": "b68e45c9574923d100e771f0603defb867181fca2ca24db9792518f91117dd2c",
+              "inputs": [
+                {
+                  "coinbase": true
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "21000020000",
+                  "script_hex": "5220c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"
+                }
+              ]
+            },
+            {
+              "txid": "b3fe15b6b0a8122ce13ef799550d59d8dbb3c536797936aec0f07f557617e86c",
+              "inputs": [
+                {
+                  "prevout": "12632ab90780d39522de06b03576971eb676ed29a4fcff899f45fbf4eac54858:0",
+                  "value": "40000",
+                  "p2mr": true,
+                  "witness_items": 3,
+                  "leaf_script_hex": "200202020202020202020202020202020202020202020202020202020202020202b300630470696e73510a746578742f706c61696e0001586800630470696e73510a746578742f706c61696e5202102700015968"
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "20000",
+                  "script_hex": "5220a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "height": 201,
+          "hash": "c4a5c2321656ea3c76b400b27b3782adbae44949cbae8eb48852bd9bc795abb4",
+          "subsidy": "21000000000",
+          "txs": [
+            {
+              "txid": "7745506f4ecac6d1ffc03523fa8e51305dd5e9022bf3b373a6e1fb7249a44a53",
+              "inputs": [
+                {
+                  "coinbase": true
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "21000000000",
+                  "script_hex": "5220c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"
+                }
+              ]
+            },
+            {
+              "txid": "87fc98e7d582a8f941ce7348e5b5ad01d335ba3a6fc7b541933dff3865abbaab",
+              "inputs": [
+                {
+                  "prevout": "b3fe15b6b0a8122ce13ef799550d59d8dbb3c536797936aec0f07f557617e86c:0",
+                  "value": "20000",
+                  "p2mr": true,
+                  "witness_items": 2
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "10000",
+                  "script_hex": "5220a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2"
+                },
+                {
+                  "value": "10000",
+                  "script_hex": "5220a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "height": 202,
+          "hash": "404688dea8a6b7c79186d5cc02051aaad63520b15056d2a48f1174ee85a6e883",
+          "subsidy": "21000000000",
+          "txs": [
+            {
+              "txid": "a40e2c16914feb8a02dae58189d630062a49fa691e3160f166de034873a393c6",
+              "inputs": [
+                {
+                  "coinbase": true
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "21000000000",
+                  "script_hex": "5220c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"
+                }
+              ]
+            },
+            {
+              "txid": "20cb8403e70d16a990a4b36bc5bf2eeb2d7f0985b6649fcf42469c89a3fbf55f",
+              "inputs": [
+                {
+                  "prevout": "87fc98e7d582a8f941ce7348e5b5ad01d335ba3a6fc7b541933dff3865abbaab:1",
+                  "value": "10000",
+                  "p2mr": true,
+                  "witness_items": 2
+                },
+                {
+                  "prevout": "87fc98e7d582a8f941ce7348e5b5ad01d335ba3a6fc7b541933dff3865abbaab:0",
+                  "value": "10000",
+                  "p2mr": true,
+                  "witness_items": 2
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "20000",
+                  "script_hex": "5220a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "height": 203,
+          "hash": "7c4751191e0f7ba0d0c992fbd2a69864f0ba4a2ffd303456d79dd6ab2fa4a68c",
+          "subsidy": "21000000000",
+          "txs": [
+            {
+              "txid": "2589a39cd1f7a93cd79289a7f0603cb83fe7151e12b5052676fcca8a177b44e6",
+              "inputs": [
+                {
+                  "coinbase": true
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "21000000000",
+                  "script_hex": "5220c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"
+                }
+              ]
+            },
+            {
+              "txid": "dff7d98e824134466ea83e2fb1264d0a085566b200270ec8015bcdb0edc576b9",
+              "inputs": [
+                {
+                  "prevout": "20cb8403e70d16a990a4b36bc5bf2eeb2d7f0985b6649fcf42469c89a3fbf55f:0",
+                  "value": "20000",
+                  "p2mr": true,
+                  "witness_items": 2
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "15000",
+                  "script_hex": "5220a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5a5"
+                },
+                {
+                  "value": "5000",
+                  "script_hex": "5220a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6a6"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "height": 204,
+          "hash": "6ec2e28e0167351ba0deddb1540ce4255059a5b7f1868aa77b4c7c6ad78f771d",
+          "subsidy": "21000000000",
+          "txs": [
+            {
+              "txid": "0d979fa9cb038e67dadaad3fec62e1c71bbf55e4dfb3cabd30fb72451223402c",
+              "inputs": [
+                {
+                  "coinbase": true
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "21000000000",
+                  "script_hex": "5220c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"
+                }
+              ]
+            },
+            {
+              "txid": "d797b3f75f7e6880774137be4ae86ba25cf0101e540910d1278c175a0d206ba0",
+              "inputs": [
+                {
+                  "prevout": "dff7d98e824134466ea83e2fb1264d0a085566b200270ec8015bcdb0edc576b9:0",
+                  "value": "15000",
+                  "p2mr": true,
+                  "witness_items": 2
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "4000",
+                  "script_hex": "5220a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7"
+                },
+                {
+                  "value": "11000",
+                  "script_hex": "5220a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "state_hashes": [
+        {
+          "height": 200,
+          "block_hash": "61e55e840155327f02a2213137e838ba8d1399ec0c64f2a4feec4a7565066d97",
+          "state_hash": "5ad14eb848677d6baa41b61ca66ecb829639ef917609eecb0d5b2b006780548d"
+        },
+        {
+          "height": 201,
+          "block_hash": "c4a5c2321656ea3c76b400b27b3782adbae44949cbae8eb48852bd9bc795abb4",
+          "state_hash": "57368189d77875a32f8ce1ed0d737b3c8b5ca1b642f212022109b94fbb200da4"
+        },
+        {
+          "height": 202,
+          "block_hash": "404688dea8a6b7c79186d5cc02051aaad63520b15056d2a48f1174ee85a6e883",
+          "state_hash": "d7bacd3e54b5d66032270ccfbab4c0378ee6c7b198725ab9c95b9917882a562b"
+        },
+        {
+          "height": 203,
+          "block_hash": "7c4751191e0f7ba0d0c992fbd2a69864f0ba4a2ffd303456d79dd6ab2fa4a68c",
+          "state_hash": "5dc5812fd769cf415f077aadde43fe1eb20fdbea8e7ddbdd8fa17725c95ada90"
+        },
+        {
+          "height": 204,
+          "block_hash": "6ec2e28e0167351ba0deddb1540ce4255059a5b7f1868aa77b4c7c6ad78f771d",
+          "state_hash": "9497c15c7d8eb41eb430404b079937bf9f1f5a2f0c47d42e165979a5e7464092"
+        }
+      ],
+      "expected": [
+        {
+          "number": 0,
+          "id": "b3fe15b6b0a8122ce13ef799550d59d8dbb3c536797936aec0f07f557617e86ci0",
+          "location": "d797b3f75f7e6880774137be4ae86ba25cf0101e540910d1278c175a0d206ba0:1:6000",
+          "owner_script_hex": "5220a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8a8",
+          "owner_address": "qb1z4z52329g4z52329g4z52329g4z52329g4z52329g4z52329g4z5qvt7t7k",
+          "location_height": 204,
+          "flags": [],
+          "content_type": "text/plain",
+          "body_sha256": "4b68ab3847feda7d6c62c1fbcbeebfa35eab7351ed5e78f4ddadea5df64b8015"
+        },
+        {
+          "number": 1,
+          "id": "b3fe15b6b0a8122ce13ef799550d59d8dbb3c536797936aec0f07f557617e86ci1",
+          "location": "d797b3f75f7e6880774137be4ae86ba25cf0101e540910d1278c175a0d206ba0:0:0",
+          "owner_script_hex": "5220a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7a7",
+          "owner_address": "qb1z57n60fa857n60fa857n60fa857n60fa857n60fa857n60fa857ns5t2yyv",
+          "location_height": 204,
+          "flags": [],
+          "content_type": "text/plain",
+          "body_sha256": "18f5384d58bcb1bba0bcd9e6a6781d1a6ac2cc280c330ecbab6cb7931b721552"
+        }
+      ]
+    },
+    {
+      "name": "TV3-3 fee and coinbase",
+      "description": "A bit that is not covered by the outputs becomes part of the fee. Fees are appended to the coinbase input space after the subsidy, in transaction order. A bit the coinbase outputs do not claim is lost for good.",
+      "blocks": [
+        {
+          "height": 300,
+          "hash": "e4c6862f00954088977d97b49b90e8556ea455e859dc30b24d3580cb1e5f3580",
+          "subsidy": "21000000000",
+          "txs": [
+            {
+              "txid": "906229f02debe4a6ee6f55f63a13c449ac19ab104e748c0a11e0e9738d6a6db6",
+              "inputs": [
+                {
+                  "coinbase": true
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "21000000000",
+                  "script_hex": "5220c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1"
+                },
+                {
+                  "value": "10000",
+                  "script_hex": "5220c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2"
+                }
+              ]
+            },
+            {
+              "txid": "08bd4eecfc52b8eb642764393461ce9e6fb390c824e593bcd28bf8f417c7a217",
+              "inputs": [
+                {
+                  "prevout": "83064cc29cb8fb8a00f12eedc21856ac01b5218b99b7045cd613879c92fb16b2:0",
+                  "value": "10000",
+                  "p2mr": true,
+                  "witness_items": 3,
+                  "leaf_script_hex": "200202020202020202020202020202020202020202020202020202020202020202b300630470696e73510a746578742f706c61696e000977686f6c652066656568"
+                }
+              ],
+              "outputs": []
+            }
+          ]
+        },
+        {
+          "height": 301,
+          "hash": "2f7c4194f0df6aae99afe49d2baff39d72de726a83f64ce3f3c60939b5551754",
+          "subsidy": "21000000000",
+          "txs": [
+            {
+              "txid": "951a9ddee5773887c45d6667ac3531b560fc5bbe9df6509778ac21be4448a57d",
+              "inputs": [
+                {
+                  "coinbase": true
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "21000008000",
+                  "script_hex": "5220c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1"
+                },
+                {
+                  "value": "10000",
+                  "script_hex": "5220c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2"
+                }
+              ]
+            },
+            {
+              "txid": "d93048533b6090bceb54458e69bc3c4ae539552a2e525f4c1d148a5732edf83c",
+              "inputs": [
+                {
+                  "prevout": "ebf9df4678fe3384ad83810840719519428eeac2ab210863a093ec3a8af4387b:0",
+                  "value": "13000",
+                  "p2mr": true,
+                  "witness_items": 2
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "10000",
+                  "script_hex": "5220a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"
+                }
+              ]
+            },
+            {
+              "txid": "76e4a5d800ab2d4634c3c55790dee58f6bbb9f24127babcc452a298d4e1303cc",
+              "inputs": [
+                {
+                  "prevout": "3dd4e9bb082d0a2049c00db6eee88913ac809d45fc5851ed6caaccd2997eb965:0",
+                  "value": "20000",
+                  "p2mr": true,
+                  "witness_items": 2
+                },
+                {
+                  "prevout": "718eaead4832af4c7217e34b2903f4ada747ad5ba8cdd4bf5be5cc9fa4577d98:0",
+                  "value": "10000",
+                  "p2mr": true,
+                  "witness_items": 3,
+                  "leaf_script_hex": "200202020202020202020202020202020202020202020202020202020202020202b300630470696e73510a746578742f706c61696e000e666565206166746572203530303068"
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "15000",
+                  "script_hex": "5220a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2a2"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "height": 302,
+          "hash": "26594c4699107b552d6d1a12e59a4b5b0a3bf97301ab7b4277c64b3a68596da2",
+          "subsidy": "21000000000",
+          "txs": [
+            {
+              "txid": "c4fc87e8e133ad7798b91307ed051876a69e2aeba52af5c40d2494dc37e627d8",
+              "inputs": [
+                {
+                  "coinbase": true
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "21000000000",
+                  "script_hex": "5220c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1c1"
+                }
+              ]
+            },
+            {
+              "txid": "a2405c6831b6e10219edb56718624a80c2b4ae5c50e34df90400c38261d49d79",
+              "inputs": [
+                {
+                  "prevout": "7c75eab6609394428ddb9263714f8f729b63c6974ff55e2929b0e1943bfdb88a:0",
+                  "value": "10000",
+                  "p2mr": true,
+                  "witness_items": 3,
+                  "leaf_script_hex": "200202020202020202020202020202020202020202020202020202020202020202b300630470696e73510a746578742f706c61696e0009756e636c61696d656468"
+                }
+              ],
+              "outputs": []
+            }
+          ]
+        }
+      ],
+      "state_hashes": [
+        {
+          "height": 300,
+          "block_hash": "e4c6862f00954088977d97b49b90e8556ea455e859dc30b24d3580cb1e5f3580",
+          "state_hash": "f41982f9273d68268ddbee959f74d95881206ceddf8a2784258ddcd7e14bc94c"
+        },
+        {
+          "height": 301,
+          "block_hash": "2f7c4194f0df6aae99afe49d2baff39d72de726a83f64ce3f3c60939b5551754",
+          "state_hash": "e926ededd1a3aaf5e231e2cf5a42c52f24565ac2647a55f6fd550d1fea5bf987"
+        },
+        {
+          "height": 302,
+          "block_hash": "26594c4699107b552d6d1a12e59a4b5b0a3bf97301ab7b4277c64b3a68596da2",
+          "state_hash": "6cf41f5d35bff2b88f3723d29fcc5061b6fde510caab328652d1c6c4ccb9970d"
+        }
+      ],
+      "expected": [
+        {
+          "number": 0,
+          "id": "08bd4eecfc52b8eb642764393461ce9e6fb390c824e593bcd28bf8f417c7a217i0",
+          "location": "906229f02debe4a6ee6f55f63a13c449ac19ab104e748c0a11e0e9738d6a6db6:1:0",
+          "owner_script_hex": "5220c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2",
+          "owner_address": "qb1zctpv9skzctpv9skzctpv9skzctpv9skzctpv9skzctpv9skzctpqhv0d85",
+          "location_height": 300,
+          "flags": [],
+          "content_type": "text/plain",
+          "body_sha256": "a3ef90b60a7d5209e7d47b008fb4639518de456226982c35a67e7d3ba63c5ad7"
+        },
+        {
+          "number": 1,
+          "id": "76e4a5d800ab2d4634c3c55790dee58f6bbb9f24127babcc452a298d4e1303cci0",
+          "location": "951a9ddee5773887c45d6667ac3531b560fc5bbe9df6509778ac21be4448a57d:1:0",
+          "owner_script_hex": "5220c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2",
+          "owner_address": "qb1zctpv9skzctpv9skzctpv9skzctpv9skzctpv9skzctpv9skzctpqhv0d85",
+          "location_height": 301,
+          "flags": [],
+          "content_type": "text/plain",
+          "body_sha256": "b59b4b9026dc78eb7b1afae53c98a8e8d6a0564d1180501145f14ce360cc7c21"
+        },
+        {
+          "number": 2,
+          "id": "a2405c6831b6e10219edb56718624a80c2b4ae5c50e34df90400c38261d49d79i0",
+          "location": "lost",
+          "owner_script_hex": "",
+          "owner_address": "",
+          "location_height": 302,
+          "flags": [],
+          "content_type": "text/plain",
+          "body_sha256": "555e89803b3a8ec420ee9f29a9cef031d5b44ca91a78ae2673a853e956d41b1b"
+        }
+      ]
+    },
+    {
+      "name": "TV3-4 burn",
+      "description": "An OP_RETURN output burns whatever lands on it, at reveal or by a later spend. A burned P2MR Inscription keeps its number and stays burned.",
+      "blocks": [
+        {
+          "height": 400,
+          "hash": "c8f71613d3612185a3aea0fc0e0e9e32eb2dcd9529c4769eadac27592f34ce42",
+          "subsidy": "21000000000",
+          "txs": [
+            {
+              "txid": "ee2a1482a916009e386e03d177b677b3a8cebc8c0369599c9b731a5bf401f0f6",
+              "inputs": [
+                {
+                  "coinbase": true
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "21000000000",
+                  "script_hex": "5220c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"
+                }
+              ]
+            },
+            {
+              "txid": "2f54dbb12267069d1b7a264f4b9529f3a19f0c932a7ff5ea38f0a45f1554ec58",
+              "inputs": [
+                {
+                  "prevout": "07f9de5ef09efc6f5e7665dc67d09119de8a73d4561716f1dbe82530abf65ddf:0",
+                  "value": "20000",
+                  "p2mr": true,
+                  "witness_items": 3,
+                  "leaf_script_hex": "200202020202020202020202020202020202020202020202020202020202020202b300630470696e73510a746578742f706c61696e00106275726e65642061742072657665616c6800630470696e73510a746578742f706c61696e52021027000c6275726e6564206c6174657268"
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "10000",
+                  "script_hex": "6a046275726e"
+                },
+                {
+                  "value": "10000",
+                  "script_hex": "5220a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "height": 401,
+          "hash": "49fce35dca2a5c11094233b75cc9d14b6e21d2bbe6d00ad1e5c6672e8d35297f",
+          "subsidy": "21000000000",
+          "txs": [
+            {
+              "txid": "2ea17cefd4ffad33233c808ce261d4aa6b988b543fdc3a148fc3d78df545df86",
+              "inputs": [
+                {
+                  "coinbase": true
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "21000000000",
+                  "script_hex": "5220c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"
+                }
+              ]
+            },
+            {
+              "txid": "09aecc34ea1ca3f62b7997edb2aad781cecc43bbeb0c2c99bb04d2f7901beb88",
+              "inputs": [
+                {
+                  "prevout": "2f54dbb12267069d1b7a264f4b9529f3a19f0c932a7ff5ea38f0a45f1554ec58:1",
+                  "value": "10000",
+                  "p2mr": true,
+                  "witness_items": 2
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "10000",
+                  "script_hex": "6a046275726e"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "state_hashes": [
+        {
+          "height": 400,
+          "block_hash": "c8f71613d3612185a3aea0fc0e0e9e32eb2dcd9529c4769eadac27592f34ce42",
+          "state_hash": "a6e020fd1bf9982d9a6cf3fa7e7a3c01e6e270b673ed52f6d0ed469d502b2e44"
+        },
+        {
+          "height": 401,
+          "block_hash": "49fce35dca2a5c11094233b75cc9d14b6e21d2bbe6d00ad1e5c6672e8d35297f",
+          "state_hash": "e328f7fdef49f3c88a8e0271eb870b07713edaaf3bebeb8f352709492b9ac979"
+        }
+      ],
+      "expected": [
+        {
+          "number": 0,
+          "id": "2f54dbb12267069d1b7a264f4b9529f3a19f0c932a7ff5ea38f0a45f1554ec58i0",
+          "location": "burned",
+          "owner_script_hex": "6a046275726e",
+          "owner_address": "",
+          "location_height": 400,
+          "flags": [],
+          "content_type": "text/plain",
+          "body_sha256": "c9387e3f522bdf6ddb17818c654f0ccf6871d09dd71b1adc90d5d62b8ff1b608"
+        },
+        {
+          "number": 1,
+          "id": "2f54dbb12267069d1b7a264f4b9529f3a19f0c932a7ff5ea38f0a45f1554ec58i1",
+          "location": "burned",
+          "owner_script_hex": "6a046275726e",
+          "owner_address": "",
+          "location_height": 401,
+          "flags": [],
+          "content_type": "text/plain",
+          "body_sha256": "39ef046988ce5977dd3e76600687ea92190aba4e4f2df00e98cbefe423f1e53b"
+        }
+      ]
+    },
+    {
+      "name": "TV3-5 unbound",
+      "description": "A P2MR Inscription whose first bit is at or after the total input value has no bit to sit on. It is numbered, it is unbound, and no later transaction moves it.",
+      "blocks": [
+        {
+          "height": 500,
+          "hash": "778d5635bb595deb62b6d7a79070d8f35e2bf25ff91c095437df44e258e951bf",
+          "subsidy": "21000000000",
+          "txs": [
+            {
+              "txid": "37ee7db5727ad10d150ee0fbd823274a4948691b2845bd11bd04ae16c3ce5040",
+              "inputs": [
+                {
+                  "coinbase": true
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "21000000000",
+                  "script_hex": "5220c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0"
+                }
+              ]
+            },
+            {
+              "txid": "6bcebb86f300fc6b160425c62cd244d01ceade464bd254488662553b52f074e8",
+              "inputs": [
+                {
+                  "prevout": "8c7ee1bab944e1c965992d386170d924cda779fea86cc406212f9669a930c7e7:0",
+                  "value": "0",
+                  "p2mr": true,
+                  "witness_items": 3,
+                  "leaf_script_hex": "200202020202020202020202020202020202020202020202020202020202020202b300630470696e73510a746578742f706c61696e0012696e707574206f66207a65726f206269747368"
+                }
+              ],
+              "outputs": []
+            },
+            {
+              "txid": "319ac950628a0f8bf97652f0ccc2283e6c885e5fee80f5408516c5e370dc73d2",
+              "inputs": [
+                {
+                  "prevout": "d7d45cf3a2e03ca49b34da38ed3607afd45aebd6fc0cb90bfd345cfb5d858147:0",
+                  "value": "10000",
+                  "p2mr": true,
+                  "witness_items": 2
+                },
+                {
+                  "prevout": "8d3a810f2f24db588529efcfdbf4ff305b243226f6b30df20237d1cf7a8ca700:0",
+                  "value": "0",
+                  "p2mr": true,
+                  "witness_items": 3,
+                  "leaf_script_hex": "200202020202020202020202020202020202020202020202020202020202020202b300630470696e73510a746578742f706c61696e00117374617274732061742074686520656e6468"
+                }
+              ],
+              "outputs": [
+                {
+                  "value": "10000",
+                  "script_hex": "5220a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "state_hashes": [
+        {
+          "height": 500,
+          "block_hash": "778d5635bb595deb62b6d7a79070d8f35e2bf25ff91c095437df44e258e951bf",
+          "state_hash": "682ccc81ca483f01a1a7859ccdad793c6261c00cce6893dc8d9cd202dfe42b37"
+        }
+      ],
+      "expected": [
+        {
+          "number": 0,
+          "id": "6bcebb86f300fc6b160425c62cd244d01ceade464bd254488662553b52f074e8i0",
+          "location": "unbound",
+          "owner_script_hex": "",
+          "owner_address": "",
+          "location_height": 500,
+          "flags": [],
+          "content_type": "text/plain",
+          "body_sha256": "b2bbf59b8777250d5ea5411d74a29ef23bf4b8d69137931eac8fc46a7a16c0df"
+        },
+        {
+          "number": 1,
+          "id": "319ac950628a0f8bf97652f0ccc2283e6c885e5fee80f5408516c5e370dc73d2i0",
+          "location": "unbound",
+          "owner_script_hex": "",
+          "owner_address": "",
+          "location_height": 500,
+          "flags": [],
+          "content_type": "text/plain",
+          "body_sha256": "9e12b0f06d26ce05faeb09df07ed48c76438acfa1162e4deead04daad7ad48b3"
+        }
+      ]
+    }
+  ]
+}

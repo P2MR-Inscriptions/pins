@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: Apache-2.0
+
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/P2MR-Inscriptions/pins/security/advisories/new
+    about: Report a vulnerability, or conduct that breaks the code of conduct, in private through GitHub private vulnerability reporting. Do not open a public issue for a key, a seed, or an RPC password.

@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: Apache-2.0
+cff-version: 1.2.0
+message: "If you use PINS in your work, cite it as below."
+title: "PINS: P2MR Inscriptions on Qbit"
+type: software
+abstract: >-
+  PINS is an application protocol on Qbit. A P2MR Inscription is a body with a content type, written into a
+  Qbit transaction inside an envelope that never executes, and bound to one bit of the output that carries it.
+  The repository holds the specifications PINS-1 to PINS-6, their test vectors, and the reference indexer,
+  inscriber, sale library and explorer.
+authors:
+  - name: "PINS contributors"
+version: 1.0.0
+license:
+  - Apache-2.0
+  - CC0-1.0
+repository-code: "https://github.com/P2MR-Inscriptions/pins"
+url: "https://github.com/P2MR-Inscriptions/pins"
+keywords:
+  - Qbit
+  - P2MR
+  - inscriptions
+  - indexer
+  - protocol

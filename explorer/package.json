@@ -1,0 +1,36 @@
+{
+  "name": "pins-explorer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Read-only loopback explorer for PINS.",
+  "license": "Apache-2.0",
+  "author": {
+    "name": "PINS contributors",
+    "url": "https://github.com/P2MR-Inscriptions/pins"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/P2MR-Inscriptions/pins.git",
+    "directory": "explorer"
+  },
+  "homepage": "https://github.com/P2MR-Inscriptions/pins/tree/main/explorer#readme",
+  "bugs": {
+    "url": "https://github.com/P2MR-Inscriptions/pins/issues"
+  },
+  "engines": {
+    "node": ">=22.13 <25"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env --experimental-strip-types server/index.ts",
+    "dev": "node --experimental-strip-types scripts/dev.ts",
+    "mock": "node --experimental-strip-types dev/mock-indexer.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "indexer": "node --experimental-strip-types scripts/run-indexer.ts"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "typescript": "5.9.3"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "note": "Supplied by the collection owner. This file is NOT on-chain data; the explorer only compares it with what the chain says.",
+  "name": "Flatbits",
+  "supply": 10000,
+  "first": 1,
+  "genesisId": "15d6f9c48865b579f7d1144e4d2d71d905c6fe04458bebc814052a3e39a07784i0",
+  "merkleRoot": "70768608a21dec18f611a643ed1f519a19df4a0eca35c65a62588d383dcaf7b2",
+  "itemType": "image/png",
+  "image": { "width": 24, "height": 24 }
+}

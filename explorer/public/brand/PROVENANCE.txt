@@ -1,0 +1,19 @@
+PINS mark
+Source: https://github.com/P2MR-Inscriptions/pins/blob/main/docs/assets/pins-avatar.svg
+The same file in this repository: ../docs/assets/pins-avatar.svg (the explorer tests read it from there)
+The protocol asset README (docs/assets/README.md) says this is the PINS mark and that its plate is #0b120d.
+There is no second official PINS logo in that repository.
+
+Rendered file: public/pins-avatar.svg
+Transformation, and nothing else:
+  The official file is a PNG (1024 x 1024) embedded in an SVG wrapper: <image xlink:href="data:image/png;base64,...">.
+  The served file is the same kind of file with the one full-canvas plate (#0b120d) removed from the PNG,
+  so the mark sits on the page background. The wrapper keeps width="1024" height="1024" and
+  viewBox="0 0 1024 1024", so it scales without stretching. The mark itself is not redrawn.
+  No screenshot and no crop. The checksums of both files are in explorer/test/ui-budget.test.ts.
+
+Qbit wordmark
+Source: https://qbit.org/logo-full.svg
+Rendered file: public/qbit-logo-full.svg
+Copied unmodified. SHA-256 28978ec61a6f72fc55d18cf180a80fe357eecc3d4d617686f8f09d13f86e2de7
+The file has no background rectangle. viewBox is 0 0 736 320.

@@ -1,0 +1,7 @@
+PINS Explorer
+Copyright 2026 PINS contributors. Licensed under Apache-2.0 (see LICENSE).
+
+The explorer reads CBOR, and talks to the indexer, through packages/ of the same repository
+(https://github.com/P2MR-Inscriptions/pins, Apache-2.0, Copyright 2026 PINS contributors). It keeps no copy.
+
+PINS is an independent community protocol, not affiliated with Qbit or Qbit-Org.

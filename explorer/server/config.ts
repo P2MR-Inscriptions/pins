@@ -126,8 +126,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ExplorerConfig
     contentMaxBytes: int(env, "CONTENT_MAX_BYTES", 2_000_000, 1, 32_000_000),
     contentTimeoutMs: int(env, "CONTENT_TIMEOUT_MS", 30_000, 1000, 120_000),
     snapshotTimeoutMs: int(env, "SNAPSHOT_TIMEOUT_MS", 180_000, 1000, 600_000),
-    ratePerMinute: int(env, "RATE_PER_MINUTE", 240, 1, 100_000),
-    maxConcurrency: int(env, "MAX_CONCURRENCY", 8, 1, 1000),
+    ratePerMinute: int(env, "RATE_PER_MINUTE", 2000, 1, 100_000),
+    maxConcurrency: int(env, "MAX_CONCURRENCY", 128, 1, 1000),
     maxInscriptions: int(env, "MAX_INSCRIPTIONS", 200_000, 1, 5_000_000),
     version: packageVersion(),
   };

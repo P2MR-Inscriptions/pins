@@ -74,22 +74,32 @@ At height 171486:
 
 ## Verify the example
 
-You need a synced Qbit mainnet node run with `-txindex` and not pruned (see the README). Index the public chain and compare the results with this page:
+You need a synced Qbit mainnet node run with `-txindex` and not pruned (see the README). The default RPC port on mainnet is 8352, and the default data directory is `~/.qbit`. Index the public chain and compare the results with this page:
 
 ```text
 npm run indexer:serve -- \
   --db flatbits-check.sqlite \
-  --rpc http://127.0.0.1:RPC_PORT/ \
+  --rpc http://127.0.0.1:8352/ \
+  --rpc-datadir ~/.qbit \
   --network mainnet --confirm-network mainnet \
   --activation 161948 \
   --genesis 15d6f9c48865b579f7d1144e4d2d71d905c6fe04458bebc814052a3e39a07784i0
 ```
 
-Give the node login in the environment (`QBIT_RPC_USER` and `QBIT_RPC_PASSWORD`, or `QBIT_RPC_COOKIE_FILE`), as [Log in to your node](../guides/NODE-LOGIN.md) describes. Then:
+The shell expands `~/.qbit`. A user-and-password login, or a cookie file at another path, is described in [Log in to your node](../guides/NODE-LOGIN.md). The first catch-up on mainnet can take several hours. The HTTP API does not listen until that catch-up has finished, so wait until the process has reached the tip before the checks below. Node may print an `ExperimentalWarning` about SQLite; it is harmless. Then:
 
 1. `/inscription/15d6f9c4…7784i0` and `/inscription/15d6f9c4…7784i1` are the genesis and the leaf list of the table above. Both are in the genesis reveal, block 161948.
 2. `/collection` has `status` `present`, `supply` 10000, and `root` equal to the Merkle root of the table, and `issuer` equal to the issuer key. Its `authentic` count is 10,000. Later blocks cannot change that count: every number is already taken, and the first valid P2MR Inscription of a number is the only one that counts.
-3. The digest the indexer stored for a block is in the `blocks` table of the database. `SELECT state_hash FROM blocks WHERE height = 171486` gives the digest recorded above. `/status` shows only the tip, and a tip above 171486 has another digest, because the digest includes the tip block (see [what `stateHash` covers](../indexer/API.md#state-hash)).
+3. The digest the indexer stored for a block is in the `blocks` table of the database. `/status` shows only the tip, and a tip above 171486 has another digest, because the digest includes the tip block (see [what `stateHash` covers](../indexer/API.md#state-hash)). Read the stored digest and the collection totals:
+
+```text
+sqlite3 flatbits-check.sqlite "SELECT state_hash FROM blocks WHERE height = 171486"
+# 2d8255401cc9bace5eeba394b83eb38865ec6713b8d2a8578009b77b76424112
+
+curl -s http://127.0.0.1:8787/collection
+# supply is 10000, authentic is 10000
+```
+
 4. The 10,000 items are not on this page. Each is on chain, and `/pieces` lists them with their `authentic` flag.
 
 If a value differs, one of the two sides is wrong, and the chain is the authority. The same steps work for any collection: replace the genesis id and compare with the values its issuer publishes.

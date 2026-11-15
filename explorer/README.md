@@ -20,7 +20,15 @@ npm ci --ignore-scripts
 cp .env.example .env
 ```
 
-Fill `QBIT_RPC_URL` and one login: `QBIT_RPC_USER` with `QBIT_RPC_PASSWORD`, or the node's cookie with `QBIT_RPC_COOKIE_FILE` (the file) or `QBIT_RPC_DATADIR` (the node's data directory, with `PINS_NETWORK` naming the network), or set `QBIT_CONF` to a `qbit.conf` that contains `rpcuser` and `rpcpassword`. A node started without `rpcuser` writes a cookie, so the data directory is all it takes. The cookie is read for every call and accepted only for an RPC URL on this machine. The files are read as text. Values are not passed to a shell.
+Fill `QBIT_RPC_URL` and one login: `QBIT_RPC_USER` with `QBIT_RPC_PASSWORD`, or the node's cookie with `QBIT_RPC_COOKIE_FILE` (the file) or `QBIT_RPC_DATADIR` (the node's data directory, with `PINS_NETWORK` naming the network), or set `QBIT_CONF` to a `qbit.conf` that contains `rpcuser` and `rpcpassword`. A node started without `rpcuser` writes a cookie, so the data directory is all it takes. The cookie is read for every call and accepted only for an RPC URL on this machine. The files are read as text. Values are not passed to a shell. A leading `~` in `.env` is not expanded; write an absolute path.
+
+A mainnet cookie login, with the node's default data directory, looks like this in `.env` (replace the data directory with the absolute path on your machine):
+
+```text
+QBIT_RPC_URL=http://127.0.0.1:8352/
+QBIT_RPC_DATADIR=/home/operator/.qbit
+PINS_NETWORK=mainnet
+```
 
 ```bash
 npm run indexer
@@ -90,7 +98,9 @@ Explorer 1.0.0 is a viewer. It reads the indexer of this repository and changes 
 
 The explorer reads the list of P2MR Inscriptions from the indexer in pages of 1000, and this process keeps that snapshot in memory. The browser asks for one page of images, not the whole collection. One indexer process follows one genesis id.
 
-The explorer answers only a `Host` header that names loopback, plus the names in `TRUSTED_HOSTS` (comma separated). Behind a reverse proxy on the same machine, set `TRUST_PROXY=1`: the explorer then reads `X-Forwarded-Host`, and it rate-limits by the last address in `X-Forwarded-For`, the one the proxy appended. A proxy that does not set that header leaves the limit per proxy connection, not per client. `INDEXER_URL` must stay on loopback, which is also what the indexer's own Host check allows.
+The explorer answers only a `Host` header that names loopback, plus the names in `TRUSTED_HOSTS` (comma separated). Behind a reverse proxy on the same machine, set `TRUST_PROXY=1`: the explorer then reads `X-Forwarded-Host`, and it rate-limits by the last address in `X-Forwarded-For`, the one the proxy appended. A proxy that does not set that header leaves the limit per proxy connection, not per client. `INDEXER_URL` must stay on loopback, which is also what the indexer's own Host check allows. A worked example of systemd units, a reverse proxy, a LAN firewall, and an SSH tunnel is in [the deploy guide](../docs/guides/DEPLOY.md).
+
+A collection gallery page asks for 104 images at once (`PAGE_SIZE` in `public/app.js`). Under HTTP/2 the browser can open all of those at the same time. The defaults are `RATE_PER_MINUTE=2000` and `MAX_CONCURRENCY=128` so one page, plus a little headroom, does not get a 429 or a 503, while a client that keeps asking far faster still hits the cap. Failed image and text previews are tried again with backoff, and they honour the `Retry-After` header the explorer sends (60 seconds on a 429, 1 second on a 503). After the tries run out, the frame says Preview unavailable.
 
 ## Search
 
@@ -98,7 +108,7 @@ The explorer answers only a `Host` header that names loopback, plus the names in
 
 ## What a frame can show
 
-The card, the home feature, and the detail frame keep their size. PNG, JPEG, GIF, and WebP are drawn inside that frame. A broken image stays in the frame and says the preview is unavailable. Text and JSON are shown as plain text, cut off after 2048 bytes. SVG is drawn as an image. Its scripts do not run.
+The card, the home feature, and the detail frame keep their size. PNG, JPEG, GIF, and WebP are drawn inside that frame. A broken image is tried again a few times, then stays in the frame and says the preview is unavailable. Text and JSON are shown as plain text, cut off after 2048 bytes. SVG is drawn as an image. Its scripts do not run.
 
 Audio and video use the browser’s own controls in that frame. Nothing plays until a click, and a grid does not request those bytes before the click. A `text/html` page runs only after a click, in an iframe whose sandbox is `allow-scripts` and whose response blocks fetch, outside files, nested frames, and form posts. The sandbox keeps it off the parent origin. A policy cannot stop a frame from navigating itself, so such a page can still send its own frame to another address. Stop closes it. The sandbox does not cap processor time. Pages that need other files, a wallet, or the network are not loaded. SVG is not treated as a page.
 

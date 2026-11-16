@@ -17,7 +17,7 @@ import { readFileSync } from "node:fs";
 import { startApi } from "../packages/indexer/api.ts";
 import type { CollectionProfile } from "../packages/indexer/collection.ts";
 import { ACTIVATION_HEIGHT } from "../packages/indexer/chains.ts";
-import { follow, httpRpc, pollChain } from "../packages/indexer/follow.ts";
+import { follow, httpRpc, parsePrefetch, pollChain } from "../packages/indexer/follow.ts";
 import { rpcAuthFromFlags } from "../packages/indexer/rpc.ts";
 import { Store } from "../packages/indexer/store.ts";
 import { assertMarkerForNetwork, parseMarker } from "../packages/inscriber/marker.ts";
@@ -63,6 +63,7 @@ Options
   --collection <file>         A collection profile (JSON). Lets the indexer reproduce the creator reserve.
   --genesis <id>              Accept only this P2MR Inscription id as the genesis of the collection.
   --allow-host <names>        Comma-separated Host header values the API accepts besides loopback names.
+  --prefetch <n>              Blocks to fetch ahead during catch-up. Default 8, from 1 to 32. PINS_PREFETCH is the same.
   --no-follow                 Do one catch-up, keep serving, and do not poll for new blocks.
   --help                      This text.
 `;
@@ -104,9 +105,11 @@ async function main(): Promise<void> {
     if (typeof flag.genesis !== "string" || !/^[0-9a-f]{64}i\d+$/.test(flag.genesis)) throw new Error("--genesis must be a P2MR Inscription id: 64 hex characters, i, and the index");
     genesisId = flag.genesis;
   }
+  const prefetch = parsePrefetch(typeof flag.prefetch === "string" ? flag.prefetch : process.env.PINS_PREFETCH);
   const store = new Store(text(flag, "db"), { network, marker, schema, profile, genesisId });
   const rpc = httpRpc(text(flag, "rpc"), rpcAuthFromFlags(flag, network));
-  const synced = await follow(store, rpc, activation, network);
+  const log = (line: string) => process.stderr.write(`${line}\n`);
+  const synced = await follow(store, rpc, activation, network, { prefetch, log });
   const allowedHosts = typeof flag["allow-host"] === "string" ? flag["allow-host"].split(",").map((name) => name.trim()).filter((name) => name.length > 0) : [];
   const api = await startApi(store, port, network, { allowedHosts });
   // Follow is the default. `--no-follow` does one catch-up and still serves the API.
@@ -116,7 +119,7 @@ async function main(): Promise<void> {
     return;
   }
   process.stdout.write(`Indexer is following ${network} at ${api.url}\nHeight ${synced.height}. Polling every ${pollSeconds}s for new blocks and reorgs. Leave this running and open the checks in another terminal.\n`);
-  void pollChain(store, rpc, activation, network, { intervalMs: pollSeconds * 1000 }).catch((error: unknown) => {
+  void pollChain(store, rpc, activation, network, { intervalMs: pollSeconds * 1000, prefetch }).catch((error: unknown) => {
     const message = error instanceof Error ? error.message : "indexer follow failed";
     process.stderr.write(`${message}\n`);
     process.exit(1);

@@ -4,13 +4,13 @@
  * The JSON-RPC client for a Qbit Core node: Node's built-in `fetch`, no dependency.
  *
  * Two kinds of credentials, as in `@qbit-oss/rpc`: a user and a password, or the node's cookie file
- * (`<datadir>/.cookie`, with the network's own subdirectory for regtest and testnet4). The cookie is read again
- * for every call, so a node that restarts and writes a new cookie needs no restart here. A cookie is accepted
- * only for a loopback URL. Credentials go in the `Authorization` header only: never in the URL, in an argument,
+ * (`<datadir>/.cookie`, with the network's own subdirectory for regtest and testnet4). The cookie is reread when its size or mtime changes, so a node that restarts
+ * and writes a new cookie needs no restart here. A cookie is accepted only for a loopback URL. Credentials go in the `Authorization` header only: never in the URL, in an argument,
  * in a log line or in an error.
  */
-import { open } from "node:fs/promises";
+import { open, stat } from "node:fs/promises";
 import { join } from "node:path";
+import { quoteRpcAmounts } from "./amount.ts";
 import type { FollowNetwork } from "./chains.ts";
 
 export type RpcAuth = { user: string; password: string } | { cookieFile: string };
@@ -34,6 +34,7 @@ export const RPC_TIMEOUT_MS = 180_000;
 const MAX_RESPONSE_BYTES = 64 * 1024 * 1024;
 /** The node's cookie is `__cookie__:` and 64 hex digits. Anything larger is not one. */
 const MAX_COOKIE_BYTES = 1024;
+const cookieCache = new Map<string, { mtimeMs: number; size: number; login: { user: string; password: string } }>();
 /** A character that cannot be in a header value or a one-line credential: C0 controls and DEL. */
 const CONTROL = { test: (text: string): boolean => [...text].some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127) };
 
@@ -98,6 +99,16 @@ export async function readCookie(path: string): Promise<{ user: string; password
   return { user, password };
 }
 
+/** Reread the cookie only when its size or mtime changes. A node rewrite is picked up on the next call. */
+async function readCookieCached(path: string): Promise<{ user: string; password: string }> {
+  const info = await stat(path);
+  const hit = cookieCache.get(path);
+  if (hit && hit.mtimeMs === info.mtimeMs && hit.size === info.size) return hit.login;
+  const login = await readCookie(path);
+  cookieCache.set(path, { mtimeMs: info.mtimeMs, size: info.size, login });
+  return login;
+}
+
 /** Text made safe to show: each secret and a `user:password@` in a URL are replaced, and the text is cut short. */
 export function redactSecrets(text: string, secrets: readonly string[]): string {
   let out = text;
@@ -132,7 +143,7 @@ async function readBody(response: Response): Promise<string> {
 export async function rpcCall(url: string, auth: RpcAuth, method: string, params: unknown[] = []): Promise<unknown> {
   assertRpcEndpoint(url, auth);
   const cookie = "cookieFile" in auth;
-  const login = cookie ? await readCookie(auth.cookieFile) : auth;
+  const login = cookie ? await readCookieCached(auth.cookieFile) : auth;
   if (!cookie) checkLogin(login.user, login.password);
   const secrets = [login.user, login.password, Buffer.from(`${login.user}:${login.password}`, "utf8").toString("base64")];
   let response: Response;
@@ -154,7 +165,7 @@ export async function rpcCall(url: string, auth: RpcAuth, method: string, params
   }
   let body: { result?: unknown; error?: { message?: string } | null } | undefined;
   try {
-    body = JSON.parse(text) as typeof body;
+    body = JSON.parse(quoteRpcAmounts(text)) as typeof body;
   } catch {
     body = undefined;
   }

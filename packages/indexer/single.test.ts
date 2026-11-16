@@ -16,6 +16,7 @@ import { recoveryFor } from "../inscriber/reveal.ts";
 import { signPlan, type SignExpectations } from "../inscriber/sign.ts";
 import { leafPreimage, merkleRoot } from "../inscriber/verify.ts";
 import { collectionView } from "./collection.ts";
+import { fillBlockPrevouts } from "./chain.ts";
 import { follow, type Rpc } from "./follow.ts";
 import { Store } from "./store.ts";
 
@@ -57,14 +58,19 @@ function node(blocks: Tx[][], parents: Map<string, string>): Rpc {
       if (method === "getblockchaininfo") return { chain: "regtest", blocks: blocks.length - 1, bestblockhash: hashes[blocks.length - 1] } as T;
       if (method === "getblockcount") return (blocks.length - 1) as T;
       if (method === "getblockhash") return hashes[params[0] as number] as T;
-      if (method === "getrawtransaction") {
-        const found = parents.get(params[0] as string);
-        if (!found) throw new Error("No such mempool or blockchain transaction");
-        return { hex: found } as T;
-      }
+      if (method === "getrawtransaction") throw new Error("prevout is required; no raw-transaction fallback");
       if (method === "getblock") {
         const height = hashes.indexOf(params[0] as string);
-        return { hash: hashes[height], height, previousblockhash: height > 0 ? hashes[height - 1] : undefined, tx: blocks[height].map((tx) => ({ ...tx, vin: [], vout: [] })) } as T;
+        const raw = { hash: hashes[height], height, previousblockhash: height > 0 ? hashes[height - 1] : undefined, tx: blocks[height].map((tx) => ({ ...tx, vin: [], vout: [] })) };
+        const lookup = (txid: string): string | undefined => {
+          if (parents.has(txid)) return parents.get(txid);
+          for (const list of blocks) {
+            const tx = list.find((item) => item.txid === txid);
+            if (tx) return tx.hex;
+          }
+          return undefined;
+        };
+        return fillBlockPrevouts(raw, lookup) as T;
       }
       throw new Error(`unexpected ${method}`);
     },

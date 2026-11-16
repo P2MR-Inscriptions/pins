@@ -22,6 +22,8 @@ import { Indexer, contentTypeText, type ChainBlock, type Inscription, type Locat
 
 /** PINS-2 §4.3: an indexer SHOULD keep at least 1,000 blocks of undo data. */
 export const DEFAULT_UNDO_DEPTH = 1_000;
+/** Blocks written in one SQLite transaction during catch-up. */
+export const DEFAULT_COMMIT_BATCH = 64;
 
 const SCHEMA = `
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -137,6 +139,11 @@ export class Store {
   private readonly db: DatabaseSync;
   /** Prepared statements by SQL text. A statement is prepared once per store and reused (see `sql`). */
   private readonly statements = new Map<string, StatementSync>();
+  /** How many blocks to put in one SQLite transaction. 1 is one transaction per block. */
+  private batchLimit = 1;
+  private batchOpen = false;
+  private closed = false;
+  private staged: { height: number; hash: string; stateHash: string; created: readonly string[] }[] = [];
 
   constructor(path: string, options: { undoDepth?: number; network?: "regtest" | "testnet4" | "mainnet"; marker?: Uint8Array; schema?: string; profile?: CollectionProfile | null; genesisId?: string | null } = {}) {
     this.indexer = new Indexer(options.network ?? "regtest", { marker: options.marker, schema: options.schema, genesisId: options.genesisId });
@@ -247,12 +254,37 @@ export class Store {
   }
 
   close(): void {
+    if (this.closed) return;
+    this.endCommitBatch();
     this.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
     this.statements.clear();
     this.db.close();
+    this.closed = true;
+  }
+
+  /**
+   * Close the database handle without writing an open batch, as a process kill would.
+   * An uncommitted batch is dropped. Tests use this to check that follow resumes.
+   */
+  abandon(): void {
+    if (this.closed) return;
+    if (this.batchOpen) {
+      try {
+        this.db.exec("ROLLBACK");
+      } catch {
+        // The handle is being dropped the way a killed process would drop it.
+      }
+    }
+    this.batchOpen = false;
+    this.staged = [];
+    this.statements.clear();
+    this.db.close();
+    this.closed = true;
   }
 
   tip(): { height: number; hash: string; stateHash: string } | null {
+    const last = this.staged.at(-1);
+    if (last) return { height: last.height, hash: last.hash, stateHash: last.stateHash };
     const row = this.sql("SELECT height, hash, state_hash FROM blocks ORDER BY height DESC LIMIT 1").get() as
       | { height: number; hash: string; state_hash: string }
       | undefined;
@@ -260,8 +292,46 @@ export class Store {
   }
 
   hashAt(height: number): string | null {
+    const hit = this.staged.find((item) => item.height === height);
+    if (hit) return hit.hash;
     const row = this.sql("SELECT hash FROM blocks WHERE height = ?").get(height) as { hash: string } | undefined;
     return row?.hash ?? null;
+  }
+
+  /** Start grouping commits into one SQLite transaction of up to `limit` blocks. */
+  startCommitBatch(limit: number = DEFAULT_COMMIT_BATCH): void {
+    this.flushCommitBatch();
+    if (!Number.isInteger(limit) || limit < 1) throw new Error("commit batch must be a positive integer");
+    this.batchLimit = limit;
+  }
+
+  /** Write any open batch and go back to one transaction per block. */
+  endCommitBatch(): void {
+    this.flushCommitBatch();
+    this.batchLimit = 1;
+  }
+
+  /** Commit the open batch, keep the same batch size for the next blocks. */
+  flushCommitBatch(): void {
+    if (this.closed || !this.batchOpen) return;
+    this.db.exec("COMMIT");
+    for (const item of this.staged) {
+      for (const id of item.created) this.indexer.releaseBody(id);
+    }
+    this.indexer.trimUndo(this.undoDepth);
+    this.batchOpen = false;
+    this.staged = [];
+  }
+
+  /** Drop an open batch from memory and from the uncommitted transaction. */
+  abortCommitBatch(): void {
+    if (this.closed || !this.batchOpen) return;
+    this.db.exec("ROLLBACK");
+    for (const item of [...this.staged].reverse()) {
+      if (this.indexer.lastUndo()?.hash === item.hash) this.indexer.disconnectTip(item.hash);
+    }
+    this.batchOpen = false;
+    this.staged = [];
   }
 
   /** Remember an output that was created before the activation height. Its spend is recorded when the block that spends it is committed. */
@@ -299,8 +369,11 @@ export class Store {
     const undo = this.indexer.lastUndo();
     if (!undo) throw new Error("applyBlock did not record undo");
     const digest = stateHash(this.indexer, block);
-    this.db.exec("BEGIN");
     try {
+      if (!this.batchOpen) {
+        this.db.exec("BEGIN");
+        this.batchOpen = true;
+      }
       this.sql("INSERT INTO blocks (height, hash, prev_hash, state_hash) VALUES (?, ?, ?, ?)").run(
         block.height,
         block.hash,
@@ -325,12 +398,10 @@ export class Store {
         this.sql("DELETE FROM undo WHERE height <= ?").run(oldest);
         this.sql("DELETE FROM outputs WHERE spent_height IS NOT NULL AND spent_height <= ?").run(oldest);
       }
-      this.db.exec("COMMIT");
-      this.indexer.trimUndo(this.undoDepth);
-      // The bodies are on disk now. The indexer keeps no body of a stored P2MR Inscription; `bodyOf` loads it.
-      for (const id of undo.created) this.indexer.releaseBody(id);
+      this.staged.push({ height: block.height, hash: block.hash, stateHash: digest, created: undo.created });
+      if (this.staged.length >= this.batchLimit) this.flushCommitBatch();
     } catch (error) {
-      this.db.exec("ROLLBACK");
+      this.abortCommitBatch();
       if (this.indexer.lastUndo()?.hash === block.hash) this.indexer.disconnectTip(block.hash);
       throw error;
     }
@@ -343,6 +414,11 @@ export class Store {
    * follow again from the activation height.
    */
   disconnect(): void {
+    // An uncommitted batch is one atomic unit. A reorg drops the whole batch and starts again from the last written tip.
+    if (this.staged.length > 0) {
+      this.abortCommitBatch();
+      return;
+    }
     const tip = this.tip();
     if (!tip) throw new Error("no tip to disconnect");
     const undo = this.indexer.lastUndo();
@@ -370,12 +446,15 @@ export class Store {
   }
 
   stateHashAt(height: number): string | null {
+    const hit = this.staged.find((item) => item.height === height);
+    if (hit) return hit.stateHash;
     const row = this.sql("SELECT state_hash FROM blocks WHERE height = ?").get(height) as { state_hash: string } | undefined;
     return row?.state_hash ?? null;
   }
 
   /** Forget chain data so follow() can rebuild from the activation height. */
   resync(): void {
+    this.abortCommitBatch();
     this.db.exec("BEGIN");
     try {
       this.db.exec("DELETE FROM inscriptions; DELETE FROM outputs; DELETE FROM undo; DELETE FROM blocks; DELETE FROM meta WHERE key = 'activation_height';");

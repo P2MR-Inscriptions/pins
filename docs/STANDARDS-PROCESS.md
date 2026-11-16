@@ -56,7 +56,7 @@ A pull request that changes a rule contains all of these.
    npm test
    npm run check:terminology
    ```
-5. **The replay.** Run the reference indexer over mainnet on your own node (`-txindex`, not pruned), from the activation height, and read the digest of block 171,486 from the store:
+5. **The replay.** Run the reference indexer over mainnet on your own node (not pruned), from the activation height, and read the digest of block 171,486 from the store:
 
    ```text
    npm run indexer:serve -- --db replay.sqlite --rpc http://127.0.0.1:RPC_PORT/ --rpc-datadir YOUR_NODE_DATADIR --network mainnet --confirm-network mainnet --activation 161948 --genesis 15d6f9c48865b579f7d1144e4d2d71d905c6fe04458bebc814052a3e39a07784i0

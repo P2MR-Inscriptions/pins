@@ -3,7 +3,6 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import type { Server } from "node:http";
 import { mockBrand } from "../dev/mock-brand.ts";
-import { profile } from "../server/profile.ts";
 
 let mock: { url: string; close: () => Promise<void> };
 let server: Server;
@@ -95,7 +94,9 @@ test("address holdings come from the snapshot owner", async () => {
 });
 
 test("search classifies queries", async () => {
-  assert.equal((await api("/api/search?q=%23123")).body.path, `/${profile.piecePath}/123`);
+  assert.equal((await api("/api/search?q=%23123")).body.path, "/number/123");
+  assert.equal((await api("/api/search?q=Pins%20%2310%2C001")).body.path, "/number/10001");
+  assert.equal((await api("/api/search?q=item%20123")).status, 404);
   assert.equal((await api("/api/search?q=42")).body.path, "/number/42");
   assert.equal((await api("/api/search?q=" + "ab".repeat(32))).body.type, "transaction");
   assert.equal((await api("/api/search?q=hello")).status, 404);

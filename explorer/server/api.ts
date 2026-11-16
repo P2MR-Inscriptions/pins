@@ -340,7 +340,7 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse, url: 
     }
     if (path === "/search") {
       const found = classifyQuery(url.searchParams.get("q") ?? "");
-      send(res, found ? 200 : 404, found ?? { error: "Not a recognized P2MR Inscription id or number, txid, address, or piece." });
+      send(res, found ? 200 : 404, found ?? { error: "Not a recognized P2MR Inscription number or id, transaction id, address, or block." });
       return;
     }
     if (path === "/inscriptions") {

@@ -39,7 +39,7 @@ q generatetoaddress 1001 "$(qw funds getnewaddress)" > /dev/null
 qw funds getbalance
 ```
 
-`txindex=1` is required: the indexer reads earlier transactions through it. The last command prints the coins that matured.
+`txindex=1` is for the inscriber, which reads a transaction that is already confirmed. The indexer does not need it. The last command prints the coins that matured.
 
 ## 2. Start the indexer
 

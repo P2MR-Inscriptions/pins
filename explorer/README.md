@@ -69,7 +69,7 @@ Ctrl+C stops the mock and the explorer that this command started. `npm test` use
 
 A password is placed in the indexer process environment. It is not an npm or node argument. `npm --silent` only suppresses npm's log line. The indexer sends the login to the node in an `Authorization` header. A cookie login passes only the path of the cookie file.
 
-The genesis id is read from the file that `MANIFEST` names. Without `MANIFEST` the explorer looks for `config/manifest.json`. If that file is absent, no collection is featured and the indexer is started without `--genesis`. When a manifest is read, the indexer is started with its genesis id as `--genesis`. `.env.example` sets `MANIFEST=config/examples/flatbits.json`, the Flatbits manifest, as a worked example of a real mainnet collection. Replace that line with your own manifest. The manifest is collection configuration, not a protocol rule, and the page names its items "item" (`#/item/12`) for every collection.
+The genesis id is read from the file that `MANIFEST` names. Without `MANIFEST` the explorer looks for `config/manifest.json`. If that file is absent, no collection is featured and the indexer is started without `--genesis`. When a manifest is read, the indexer is started with its genesis id as `--genesis`. `.env.example` sets `MANIFEST=config/examples/flatbits.json`, the Flatbits manifest, as a worked example of a real mainnet collection. Replace that line with your own manifest. The manifest is collection configuration, not a protocol rule, and the collection view and the Collection facts of an item name an item with the name prefix (or the name) that the genesis gives, such as `Flatbit #12`. The route `#/item/12` takes the item number for every collection.
 
 ## Settings
 
@@ -104,7 +104,7 @@ A collection gallery page asks for 104 images at once (`PAGE_SIZE` in `public/ap
 
 ## Search
 
-`/api/search?q=` (the search box) takes a query of at most 128 characters after trimming. A longer one gets the same "not recognized" answer (`404`) as text that matches nothing. It recognizes: a P2MR Inscription id (`<txid>i<n>`), a transaction id, an address, a collection piece (`item 12`, `piece #12`, `#12`), a block (`block 5`, `block #5`), and a P2MR Inscription number (`7`, `no. 7`, `n° 7`, `inscription #7`). The patterns are in `server/search.ts`, and `test/search.test.ts` lists what each accepts and refuses.
+`/api/search?q=` (the search box) takes a query of at most 128 characters after trimming. A longer one gets the same "not recognized" answer (`404`) as text that matches nothing. It recognizes: a P2MR Inscription id (`<txid>i<n>`), a transaction id, an address, a block (`block 5`, `block #5`), and the global P2MR Inscription number, counted from 0 (`7`, `#7`, `10,001`, `no. 7`, `n° 7`, `inscription #7`, `Pins #7`, `P2MR Inscription #7`). It does not search by a collection's own item number: `item 12` and `Flatbit #12` get the "not recognized" answer. The patterns are in `server/search.ts`, and `test/search.test.ts` lists what each accepts and refuses.
 
 ## What a frame can show
 

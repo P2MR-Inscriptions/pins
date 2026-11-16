@@ -5,5 +5,5 @@ export const brand = {
   collectionNav: "Collection",
   piecePath: "item",
   pieceWord: "Item",
-  searchPlaceholder: "#12 item · 12 P2MR Inscription no. · id · txid · address",
+  searchPlaceholder: "P2MR Inscription #12 · id · txid · address",
 };

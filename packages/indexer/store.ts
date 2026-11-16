@@ -14,11 +14,11 @@
  * A database that is opened with other values is refused, because its rows
  * would be read under rules they were not built under.
  */
-import { DatabaseSync, type StatementSync } from "node:sqlite";
+import { DatabaseSync, type SQLInputValue, type StatementSync } from "node:sqlite";
 import { isP2mr } from "./address.ts";
 import type { CollectionProfile } from "./collection.ts";
-import { stateHash } from "./hash.ts";
-import { Indexer, contentTypeText, type ChainBlock, type Inscription, type Location, type UndoEntry } from "./pins.ts";
+import { forgetStateLine, inscriptionLine, primeStateLines, resetStateLines, stateHash } from "./hash.ts";
+import { Indexer, contentTypeText, type ChainBlock, type Inscription, type InscriptionQuery, type Location, type UndoEntry } from "./pins.ts";
 
 /** PINS-2 §4.3: an indexer SHOULD keep at least 1,000 blocks of undo data. */
 export const DEFAULT_UNDO_DEPTH = 1_000;
@@ -52,8 +52,24 @@ CREATE TABLE inscriptions (
   number INTEGER NOT NULL,
   payload TEXT NOT NULL,
   body BLOB NOT NULL,
-  metadata BLOB
+  metadata BLOB,
+  owner_address TEXT NOT NULL DEFAULT '',
+  loc_state TEXT NOT NULL DEFAULT '',
+  loc_txid TEXT,
+  loc_vout INTEGER,
+  loc_offset TEXT,
+  leaf_issuer TEXT NOT NULL DEFAULT '',
+  content_type TEXT NOT NULL DEFAULT '',
+  created_height INTEGER NOT NULL DEFAULT 0,
+  created_index INTEGER NOT NULL DEFAULT 0,
+  n INTEGER NOT NULL DEFAULT 0,
+  state_line BLOB
 );
+CREATE UNIQUE INDEX inscriptions_number ON inscriptions (number);
+CREATE INDEX inscriptions_owner ON inscriptions (owner_address);
+CREATE INDEX inscriptions_location ON inscriptions (loc_txid, loc_vout);
+CREATE INDEX inscriptions_issuer ON inscriptions (leaf_issuer);
+CREATE INDEX inscriptions_created ON inscriptions (created_height, created_index, n);
 `;
 
 type StoredLocation =
@@ -97,6 +113,35 @@ function freeze(item: Inscription): Payload {
   void metadata;
   void contentType;
   return { ...rest, location: storedLocation(location) };
+}
+
+function indexFields(item: Inscription): {
+  owner_address: string;
+  loc_state: string;
+  loc_txid: string | null;
+  loc_vout: number | null;
+  loc_offset: string | null;
+  leaf_issuer: string;
+  content_type: string;
+  created_height: number;
+  created_index: number;
+  n: number;
+  state_line: Buffer;
+} {
+  const location = item.location;
+  return {
+    owner_address: item.ownerAddress,
+    loc_state: location.state,
+    loc_txid: location.state === "located" ? location.txid : null,
+    loc_vout: location.state === "located" ? location.vout : null,
+    loc_offset: location.state === "located" ? location.offset.toString() : null,
+    leaf_issuer: item.leafIssuer,
+    content_type: item.contentType,
+    created_height: item.createdHeight,
+    created_index: item.createdIndex,
+    n: item.n,
+    state_line: inscriptionLine(item),
+  };
 }
 
 /** A row as the indexer holds it: no body in memory (it is loaded on demand), field 5 as bytes. */
@@ -144,10 +189,13 @@ export class Store {
   private batchOpen = false;
   private closed = false;
   private staged: { height: number; hash: string; stateHash: string; created: readonly string[] }[] = [];
+  private readonly primeHashLines: boolean;
+  private hashLinesReady = false;
 
-  constructor(path: string, options: { undoDepth?: number; network?: "regtest" | "testnet4" | "mainnet"; marker?: Uint8Array; schema?: string; profile?: CollectionProfile | null; genesisId?: string | null } = {}) {
+  constructor(path: string, options: { undoDepth?: number; network?: "regtest" | "testnet4" | "mainnet"; marker?: Uint8Array; schema?: string; profile?: CollectionProfile | null; genesisId?: string | null; primeHashLines?: boolean } = {}) {
     this.indexer = new Indexer(options.network ?? "regtest", { marker: options.marker, schema: options.schema, genesisId: options.genesisId });
     this.profile = options.profile ?? null;
+    this.primeHashLines = options.primeHashLines !== false;
     this.undoDepth = options.undoDepth ?? DEFAULT_UNDO_DEPTH;
     if (!Number.isInteger(this.undoDepth) || this.undoDepth < 1) throw new Error("undo depth must be a positive integer");
     this.db = new DatabaseSync(path);
@@ -166,10 +214,17 @@ export class Store {
       // A database without the spend column gets it. Its existing outputs stay NULL: unspent, as far as is known, and never pruned.
       if (!columns.some((column) => column.name === "spent_height")) this.db.exec("ALTER TABLE outputs ADD COLUMN spent_height INTEGER");
       this.db.exec("CREATE INDEX IF NOT EXISTS outputs_spent ON outputs (spent_height)");
+      this.migrateInscriptionIndex();
       this.bindConfig(options.genesisId ?? null);
       this.db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
-      this.indexer.adopt(this.readInscriptions());
+      this.indexer.setItemSource(
+        (id) => this.readInscription(id),
+        (query) => this.selectInscriptions(query),
+        () => this.inscriptionCount(),
+        (txid, vout) => this.heldAt(txid, vout),
+      );
       this.indexer.setBodyLoader((id) => this.readBody(id));
+      this.loadIndex();
       this.indexer.installUndo(this.readUndo());
     } catch (error) {
       this.statements.clear();
@@ -319,6 +374,7 @@ export class Store {
       for (const id of item.created) this.indexer.releaseBody(id);
     }
     this.indexer.trimUndo(this.undoDepth);
+    this.evictWorkingSet();
     this.batchOpen = false;
     this.staged = [];
   }
@@ -368,6 +424,7 @@ export class Store {
     this.indexer.applyBlock(block);
     const undo = this.indexer.lastUndo();
     if (!undo) throw new Error("applyBlock did not record undo");
+    this.ensureHashLines();
     const digest = stateHash(this.indexer, block);
     try {
       if (!this.batchOpen) {
@@ -436,7 +493,10 @@ export class Store {
       this.sql("DELETE FROM outputs WHERE height = ?").run(tip.height);
       this.sql("UPDATE outputs SET spent_height = NULL WHERE spent_height = ?").run(tip.height);
       const remove = this.sql("DELETE FROM inscriptions WHERE id = ?");
-      for (const id of undo.created) remove.run(id);
+      for (const id of undo.created) {
+        remove.run(id);
+        forgetStateLine(this.indexer, id);
+      }
       this.writeInscriptions([], undo.prior.map((row) => row.id));
       this.db.exec("COMMIT");
     } catch (error) {
@@ -465,6 +525,9 @@ export class Store {
     }
     this.indexer.adopt([]);
     this.indexer.installUndo([]);
+    this.indexer.clearHeldCache();
+    resetStateLines(this.indexer);
+    this.hashLinesReady = true;
   }
 
   undoCount(): number {
@@ -479,9 +542,18 @@ export class Store {
    */
   private writeInscriptions(created: readonly string[], moved: readonly string[]): void {
     const insert = this.sql(`
-      INSERT INTO inscriptions (id, number, payload, body, metadata)
-      VALUES (?, ?, ?, ?, ?)
-      ON CONFLICT(id) DO UPDATE SET number = excluded.number, payload = excluded.payload, body = excluded.body, metadata = excluded.metadata
+      INSERT INTO inscriptions (
+        id, number, payload, body, metadata,
+        owner_address, loc_state, loc_txid, loc_vout, loc_offset,
+        leaf_issuer, content_type, created_height, created_index, n, state_line
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        number = excluded.number, payload = excluded.payload, body = excluded.body, metadata = excluded.metadata,
+        owner_address = excluded.owner_address, loc_state = excluded.loc_state, loc_txid = excluded.loc_txid,
+        loc_vout = excluded.loc_vout, loc_offset = excluded.loc_offset, leaf_issuer = excluded.leaf_issuer,
+        content_type = excluded.content_type, created_height = excluded.created_height,
+        created_index = excluded.created_index, n = excluded.n, state_line = excluded.state_line
     `);
     const fresh = new Set(created);
     for (const id of fresh) {
@@ -489,21 +561,189 @@ export class Store {
       if (!item) continue;
       const body = item.body ?? this.indexer.bodyOf(id);
       if (!body) throw new Error(`the body of ${id} is neither in memory nor stored`);
-      insert.run(item.id, item.number, JSON.stringify(freeze(item)), Buffer.from(body), item.metadata ? Buffer.from(item.metadata) : null);
+      const idx = indexFields(item);
+      insert.run(
+        item.id, item.number, JSON.stringify(freeze(item)), Buffer.from(body), item.metadata ? Buffer.from(item.metadata) : null,
+        idx.owner_address, idx.loc_state, idx.loc_txid, idx.loc_vout, idx.loc_offset,
+        idx.leaf_issuer, idx.content_type, idx.created_height, idx.created_index, idx.n, idx.state_line,
+      );
     }
-    const update = this.sql("UPDATE inscriptions SET number = ?, payload = ?, metadata = ? WHERE id = ?");
+    const update = this.sql(`
+      UPDATE inscriptions SET
+        number = ?, payload = ?, metadata = ?,
+        owner_address = ?, loc_state = ?, loc_txid = ?, loc_vout = ?, loc_offset = ?,
+        leaf_issuer = ?, content_type = ?, created_height = ?, created_index = ?, n = ?, state_line = ?
+      WHERE id = ?
+    `);
     for (const id of new Set(moved)) {
       if (fresh.has(id)) continue;
       const item = this.indexer.get(id);
       if (!item) continue;
-      update.run(item.number, JSON.stringify(freeze(item)), item.metadata ? Buffer.from(item.metadata) : null, item.id);
+      const idx = indexFields(item);
+      update.run(
+        item.number, JSON.stringify(freeze(item)), item.metadata ? Buffer.from(item.metadata) : null,
+        idx.owner_address, idx.loc_state, idx.loc_txid, idx.loc_vout, idx.loc_offset,
+        idx.leaf_issuer, idx.content_type, idx.created_height, idx.created_index, idx.n, idx.state_line,
+        item.id,
+      );
     }
   }
 
-  /** Every stored P2MR Inscription without its body: the bodies stay on disk until `bodyOf` asks for one. */
-  private readInscriptions(): Inscription[] {
-    const rows = this.sql("SELECT payload, metadata FROM inscriptions").all() as { payload: string; metadata: Uint8Array | null }[];
+  private inscriptionColumns(): { name: string }[] {
+    return this.db.prepare("PRAGMA table_info(" + "inscriptions" + ")").all() as { name: string }[];
+  }
+
+  /** Add indexed columns to a database that predates them, and fill them from the stored payload. */
+  private migrateInscriptionIndex(): void {
+    const have = new Set(this.inscriptionColumns().map((column) => column.name));
+    const add: [string, string][] = [
+      ["owner_address", "TEXT NOT NULL DEFAULT ''"],
+      ["loc_state", "TEXT NOT NULL DEFAULT ''"],
+      ["loc_txid", "TEXT"],
+      ["loc_vout", "INTEGER"],
+      ["loc_offset", "TEXT"],
+      ["leaf_issuer", "TEXT NOT NULL DEFAULT ''"],
+      ["content_type", "TEXT NOT NULL DEFAULT ''"],
+      ["created_height", "INTEGER NOT NULL DEFAULT 0"],
+      ["created_index", "INTEGER NOT NULL DEFAULT 0"],
+      ["n", "INTEGER NOT NULL DEFAULT 0"],
+      ["state_line", "BLOB"],
+    ];
+    for (const [name, typ] of add) {
+      if (!have.has(name)) this.db.exec(`ALTER TABLE inscriptions ADD COLUMN ${name} ${typ}`);
+    }
+    this.db.exec("CREATE UNIQUE INDEX IF NOT EXISTS inscriptions_number ON " + "inscriptions" + " (number)");
+    this.db.exec("CREATE INDEX IF NOT EXISTS inscriptions_owner ON " + "inscriptions" + " (owner_address)");
+    this.db.exec("CREATE INDEX IF NOT EXISTS inscriptions_location ON " + "inscriptions" + " (loc_txid, loc_vout)");
+    this.db.exec("CREATE INDEX IF NOT EXISTS inscriptions_issuer ON " + "inscriptions" + " (leaf_issuer)");
+    this.db.exec("CREATE INDEX IF NOT EXISTS inscriptions_created ON " + "inscriptions" + " (created_height, created_index, n)");
+    const missing = this.sql("SELECT 1 AS x FROM inscriptions WHERE state_line IS NULL LIMIT 1").get() as { x: number } | undefined;
+    if (!missing) return;
+    const update = this.sql(`
+      UPDATE inscriptions SET
+        owner_address = ?, loc_state = ?, loc_txid = ?, loc_vout = ?, loc_offset = ?,
+        leaf_issuer = ?, content_type = ?, created_height = ?, created_index = ?, n = ?, state_line = ?
+      WHERE id = ?
+    `);
+    const batch = this.sql("SELECT id, payload, metadata FROM inscriptions WHERE state_line IS NULL LIMIT 1000");
+    this.db.exec("BEGIN");
+    try {
+      for (;;) {
+        const rows = batch.all() as { id: string; payload: string; metadata: Uint8Array | null }[];
+        if (rows.length === 0) break;
+        for (const row of rows) {
+          const item = thaw(JSON.parse(row.payload) as Payload, row.metadata ? new Uint8Array(row.metadata) : null);
+          const idx = indexFields(item);
+          update.run(
+            idx.owner_address, idx.loc_state, idx.loc_txid, idx.loc_vout, idx.loc_offset,
+            idx.leaf_issuer, idx.content_type, idx.created_height, idx.created_index, idx.n, idx.state_line,
+            item.id,
+          );
+        }
+      }
+      this.db.exec("COMMIT");
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      throw error;
+    }
+  }
+
+  private loadIndex(): void {
+    const max = this.sql("SELECT MAX(number) AS n FROM inscriptions").get() as { n: number | null };
+    this.indexer.adoptIndex((max.n ?? -1) + 1, []);
+    if (this.primeHashLines) this.ensureHashLines();
+  }
+
+  /** Load cached §4.4 line bytes from SQLite, once, before the first state hash. */
+  private ensureHashLines(): void {
+    if (this.hashLinesReady) return;
+    const rows = this.sql("SELECT id, number, state_line FROM inscriptions WHERE state_line IS NOT NULL").all() as { id: string; number: number; state_line: Uint8Array }[];
+    if (rows.length > 0) {
+      primeStateLines(this.indexer, rows.map((row) => ({ id: row.id, number: row.number, line: Buffer.from(row.state_line) })));
+    } else {
+      resetStateLines(this.indexer);
+    }
+    this.hashLinesReady = true;
+  }
+
+  private evictWorkingSet(): void {
+    const keep = new Set<string>();
+    for (const entry of this.readUndo()) {
+      for (const id of entry.created) keep.add(id);
+      for (const row of entry.prior) keep.add(row.id);
+    }
+    for (const id of [...this.indexer.inscriptions.keys()]) {
+      if (!keep.has(id)) this.indexer.unload(id);
+    }
+    this.indexer.clearHeldCache();
+  }
+
+  inscriptionCount(): number {
+    const row = this.sql("SELECT COUNT(*) AS n FROM inscriptions").get() as { n: number };
+    return row.n;
+  }
+
+  private readInscription(id: string): Inscription | undefined {
+    const row = this.sql("SELECT payload, metadata FROM inscriptions WHERE id = ?").get(id) as { payload: string; metadata: Uint8Array | null } | undefined;
+    return row ? thaw(JSON.parse(row.payload) as Payload, row.metadata ? new Uint8Array(row.metadata) : null) : undefined;
+  }
+
+  private heldAt(txid: string, vout: number): { id: string; offset: bigint }[] {
+    const rows = this.sql("SELECT id, loc_offset FROM inscriptions WHERE loc_txid = ? AND loc_vout = ?").all(txid, vout) as { id: string; loc_offset: string }[];
+    return rows.map((row) => ({ id: row.id, offset: BigInt(row.loc_offset) }));
+  }
+
+  private inscriptionWhere(query: InscriptionQuery): { sql: string; params: SQLInputValue[] } {
+    const where: string[] = [];
+    const params: SQLInputValue[] = [];
+    if (query.owner !== undefined) { where.push("owner_address = ?"); params.push(query.owner); }
+    if (query.leafIssuer !== undefined) { where.push("leaf_issuer = ?"); params.push(query.leafIssuer); }
+    if (query.txid !== undefined) { where.push("id LIKE ?"); params.push(`${query.txid}i%`); }
+    if (query.createdHeight !== undefined) { where.push("created_height = ?"); params.push(query.createdHeight); }
+    if (query.number !== undefined) { where.push("number = ?"); params.push(query.number); }
+    if (query.locTxid !== undefined) {
+      where.push("loc_txid = ?");
+      params.push(query.locTxid);
+      if (query.locVout !== undefined) { where.push("loc_vout = ?"); params.push(query.locVout); }
+    }
+    if (query.hasMetadata) where.push("metadata IS NOT NULL");
+    if (query.contentType !== undefined) { where.push("content_type = ?"); params.push(query.contentType); }
+    if (query.after) {
+      where.push("(created_height > ? OR (created_height = ? AND created_index > ?) OR (created_height = ? AND created_index = ? AND n > ?))");
+      const a = query.after;
+      params.push(a.createdHeight, a.createdHeight, a.createdIndex, a.createdHeight, a.createdIndex, a.n);
+    }
+    if (query.before) {
+      where.push("(created_height < ? OR (created_height = ? AND created_index < ?) OR (created_height = ? AND created_index = ? AND n < ?))");
+      const b = query.before;
+      params.push(b.createdHeight, b.createdHeight, b.createdIndex, b.createdHeight, b.createdIndex, b.n);
+    }
+    return { sql: where.length ? ` WHERE ${where.join(" AND ")}` : "", params };
+  }
+
+  selectInscriptions(query: InscriptionQuery): Inscription[] {
+    const { sql, params } = this.inscriptionWhere(query);
+    let order = "number ASC";
+    if (query.order === "created") order = "created_height ASC, created_index ASC, n ASC";
+    else if (query.order === "latest") order = "created_height DESC, created_index DESC, n DESC, number DESC";
+    const offset = query.offset ?? 0;
+    const extra: SQLInputValue[] = [];
+    let page = "";
+    if (query.limit !== null && query.limit !== undefined) {
+      page = " LIMIT ? OFFSET ?";
+      extra.push(query.limit, offset);
+    } else if (offset > 0) {
+      page = " LIMIT ? OFFSET ?";
+      extra.push(-1, offset);
+    }
+    const rows = this.sql(`SELECT payload, metadata FROM inscriptions${sql} ORDER BY ${order}${page}`).all(...params, ...extra) as { payload: string; metadata: Uint8Array | null }[];
     return rows.map((row) => thaw(JSON.parse(row.payload) as Payload, row.metadata ? new Uint8Array(row.metadata) : null));
+  }
+
+  countInscriptions(query: InscriptionQuery = {}): number {
+    const { sql, params } = this.inscriptionWhere(query);
+    const row = this.sql(`SELECT COUNT(*) AS n FROM inscriptions${sql}`).get(...params) as { n: number };
+    return row.n;
   }
 
   /** The stored body of one P2MR Inscription, or undefined. */

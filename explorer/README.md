@@ -86,7 +86,7 @@ All of them are environment variables, read from the process or from `.env` (see
 | `QBIT_RPC_USER`, `QBIT_RPC_PASSWORD` | none | A user and a password |
 | `QBIT_RPC_COOKIE_FILE`, `QBIT_RPC_DATADIR` | none | A cookie login. Not together with a user and a password |
 | `QBIT_CONF` | none | A `qbit.conf` for the user, the password and the port |
-| `MAX_INSCRIPTIONS` | `200000` | The most P2MR Inscriptions the explorer keeps in memory. A bigger index is refused |
+| `MAX_INSCRIPTIONS` | `200000` | The most collection pieces the explorer keeps in memory. A bigger piece list is refused |
 | `TRUSTED_HOSTS`, `TRUST_PROXY` | none | See below |
 | `POLL_MS`, `CONTENT_MAX_BYTES`, `CONTENT_TIMEOUT_MS`, `SNAPSHOT_TIMEOUT_MS`, `RATE_PER_MINUTE`, `MAX_CONCURRENCY`, `EXPLORER_URL` | see `.env.example` | Polling, content and rate limits, and an external link |
 
@@ -96,7 +96,7 @@ Explorer 1.0.0 is a viewer. It reads the indexer of this repository and changes 
 
 `npm test` checks the pages and the server against a mock indexer and against the indexer of `packages/` on a small synthetic database. The public example (10,002 P2MR Inscriptions) is checked at the indexer, by the mainnet replay of [docs/examples/flatbits.md](../docs/examples/flatbits.md). The explorer has no test against a synced mainnet node.
 
-The explorer reads the list of P2MR Inscriptions from the indexer in pages of 1000, and this process keeps that snapshot in memory. The browser asks for one page of images, not the whole collection. One indexer process follows one genesis id.
+The explorer keeps a preview of the latest 1000 P2MR Inscriptions from the indexer, plus the collection and its pieces. Further rows are read from the indexer as a page is requested. The browser asks for one page of images, not the whole collection. One indexer process follows one genesis id.
 
 The explorer answers only a `Host` header that names loopback, plus the names in `TRUSTED_HOSTS` (comma separated). Behind a reverse proxy on the same machine, set `TRUST_PROXY=1`: the explorer then reads `X-Forwarded-Host`, and it rate-limits by the last address in `X-Forwarded-For`, the one the proxy appended. A proxy that does not set that header leaves the limit per proxy connection, not per client. `INDEXER_URL` must stay on loopback, which is also what the indexer's own Host check allows. A worked example of systemd units, a reverse proxy, a LAN firewall, and an SSH tunnel is in [the deploy guide](../docs/guides/DEPLOY.md).
 

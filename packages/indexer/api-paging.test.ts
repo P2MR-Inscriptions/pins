@@ -189,10 +189,13 @@ test("an answer for one tip is kept, and a new block or a reorg drops it", async
     const before = await json<Page>(`${api.url}/inscriptions`);
     assert.equal(before.body.total, 5);
     const afterFirst = api.cacheStats();
+    await json<Page>(`${api.url}/inscriptions`);
+    await json<Page>(`${api.url}/inscriptions?limit=1`);
     await json<Page>(`${api.url}/inscriptions?limit=1`);
     await json<Page>(`${api.url}/output/${T("t1")}:0`);
-    // Same tip: no further computation for the list or the outputs.
-    assert.deepEqual(api.cacheStats(), { hits: afterFirst.hits + 2, misses: afterFirst.misses });
+    await json<Page>(`${api.url}/output/${T("t1")}:0`);
+    // Same tip: a repeated list or output request is served from the cache.
+    assert.deepEqual(api.cacheStats(), { hits: afterFirst.hits + 3, misses: afterFirst.misses + 2 });
 
     // A new block shows its P2MR Inscription at once.
     store.commit(block({ hash: "c", height: 3, txs: [coinbase(T("c3")), reveal(T("t3"), T("02"), KEY_A, OWNER_A, 1, 3)] }));

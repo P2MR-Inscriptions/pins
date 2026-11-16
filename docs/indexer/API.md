@@ -86,6 +86,22 @@ paths:
         - in: query
           name: limit
           schema: { type: integer, minimum: 1, maximum: 1000 }
+        - in: query
+          name: sort
+          schema: { type: string, enum: [latest] }
+          description: Optional. latest lists by created height, created index, n and number, descending. Omitted, the list is by number.
+        - in: query
+          name: txid
+          schema: { type: string }
+        - in: query
+          name: locTxid
+          schema: { type: string }
+        - in: query
+          name: createdHeight
+          schema: { type: integer }
+        - in: query
+          name: number
+          schema: { type: integer }
       responses:
         "200": { description: "List with total, offset and limit" }
         "400": { description: Bad offset or limit }
@@ -167,8 +183,8 @@ Three endpoints return lists: `/inscriptions` (the path is fixed; it lists P2MR 
 | `limit` | Number of rows. A whole number from 1 to 1000. |
 
 - **Digits only.** `1e1`, `0x10`, `-1`, `1.5`, ` 5` and an empty value are refused with `400` and `{ "error": "offset must be a whole number from 0 and limit a whole number from 1 to 1000" }`. A `limit` of 1001 or more is refused too: it is never cut down to 1000 without saying so.
-- **The answer says what it holds.** Every list answer has `total` (the rows of the whole list, after the `owner` or `authentic` filter), `offset`, and `limit` (the limit that applied, or `null` when the request set none). The rows are under `inscriptions` (`/inscriptions`, `/output/{outpoint}`) or `pieces` (`/pieces`). An `offset` at or past `total` gives an empty list and the same `total`.
-- **Order.** `/inscriptions` and `/output/{outpoint}` list by P2MR Inscription number, `/pieces` by piece number. The order does not change between two pages read at the same tip.
+- **The answer says what it holds.** Every list answer has `total` (the rows of the whole list, after the `owner` or `authentic` filter, or the other `/inscriptions` filters when they are set), `offset`, and `limit` (the limit that applied, or `null` when the request set none). The rows are under `inscriptions` (`/inscriptions`, `/output/{outpoint}`) or `pieces` (`/pieces`). An `offset` at or past `total` gives an empty list and the same `total`.
+- **Order.** `/inscriptions` and `/output/{outpoint}` list by P2MR Inscription number, `/pieces` by piece number. The order does not change between two pages read at the same tip. `/inscriptions` also accepts `sort=latest` (created height, created index, n, then number, all descending). When that key and the optional filters `txid`, `locTxid`, `createdHeight` and `number` are omitted, the list is the same as before.
 - **With no `limit`.** `/pieces` gives 100 rows. `/inscriptions` and `/output/{outpoint}` give every row. A list is never cut short without a `total` to say so. The whole list is not bounded: for the public example (10,002 P2MR Inscriptions) it is 14.7 MB, and it grows with the chain. New code should always send `limit`. `limit=1000` is a good page.
 - **Keys.** The existing keys are unchanged. `total`, `offset` and `limit` were added to `/inscriptions` and `/output/{outpoint}`; `/pieces` had them. `/output/{outpoint}` also has `known` and `spent` ([Output](#output)).
 
@@ -204,7 +220,7 @@ async function readAll(base, path, key) {
 }
 ```
 
-The explorer reads `/inscriptions` this way, 1000 rows at a time, and drops a snapshot whose tip moved. An answer with no `total` is the whole list, and the explorer takes it as that.
+The explorer keeps a preview of the latest 1000 P2MR Inscriptions (`/inscriptions?offset=0&limit=1000&sort=latest`) and reads further rows from the indexer as a page is requested. It still uses `X-Indexed-Tip` and drops a preview whose tip moved. An answer with no `total` is the whole list.
 
 ## Output
 
@@ -255,15 +271,15 @@ GET /output/<txid>:0?limit=1000
 The indexer keeps the answer of the costly reads until the tip changes, so a gallery or an explorer polling it does not make it recompute the collection for every request:
 
 - the collection view, used by `/collection`, `/pieces` and `/pieces/{n}`;
-- the list of P2MR Inscriptions as the API shows them, with an index by output, used by `/inscriptions` and `/output/{outpoint}`.
+- each `/inscriptions` and `/output/{outpoint}` answer, keyed by the path and query at that tip. The list is not precomputed in full.
 
-The key is the tip: its height, block hash and state hash. The state changes only when a block is applied or disconnected, and either one changes the tip. So the first request after a new block, or after a reorg (even one that ends at the same height with another block), computes the answer again, and the others share it. One tip is kept at a time and nothing is written to disk. The answers are the same as without the cache: on the mainnet replay to block 171486, `/collection`, `/pieces`, the rows of `/inscriptions` and `/status` (apart from the keys added here) are byte for byte what the version before returned. `/status`, `/inscription/{id}` and `/content/{id}` are not cached: they read the store directly, as before. `Cache-Control: no-store` is for the client's own cache and is unchanged. A program that embeds the indexer and changes `store.indexer` other than by `commit`, `disconnect` or `resync` would see stale answers until the next block.
+The key is the tip: its height, block hash and state hash. The state changes only when a block is applied or disconnected, and either one changes the tip. So the first request after a new block, or after a reorg (even one that ends at the same height with another block), computes the answer again, and the others share it. One tip is kept at a time and nothing is written to disk. The answers are the same as without the cache: on the mainnet replay to block 171486, `/collection`, `/pieces`, the rows of `/inscriptions` and `/status` (apart from the keys added here) are byte for byte what the version before returned, when the new optional query keys are omitted. `/status`, `/inscription/{id}` and `/content/{id}` are not cached: they read the store directly, as before. `Cache-Control: no-store` is for the client's own cache and is unchanged. A program that embeds the indexer and changes `store.indexer` other than by `commit`, `disconnect` or `resync` would see stale answers until the next block.
 
 Measured on the mainnet replay to block 171486 (10,002 P2MR Inscriptions, 10,000 collection pieces), one machine: `/collection` and `/pieces` took about 410 ms for every request before. The first request at a tip takes the same time, and the following ones 1 to 3 ms. A whole `/inscriptions` answer is 14.7 MB and takes about 80 ms to serialize. Eleven pages of 1000 take about 140 ms in all, and each page 6 to 7 ms.
 
 ## State hash
 
-`/status` returns `stateHash`, the SHA-256 of a canonical text snapshot after the tip block. Two indexers that follow the same chain to the same tip produce the same digest. The digest includes the tip, so it changes with every block, and two digests are comparable only when both indexers are at the same tip. The text starts with one line `block <height> <hash>` for the tip. Then comes one line per P2MR Inscription, sorted by P2MR Inscription number, and it is hashed as it is. The exact text, every field and the escape of the content type are defined in [PINS-2 §4.4](../specs/PINS-2.md#44-state-hash), and `docs/specs/vectors/state-hash.json` has examples.
+`/status` returns `stateHash`, the SHA-256 of a canonical text snapshot after the tip block. Two indexers that follow the same chain to the same tip produce the same digest. The digest includes the tip, so it changes with every block, and two digests are comparable only when both indexers are at the same tip. The text starts with one line `block <height> <hash>` for the tip. Then comes one line per P2MR Inscription, sorted by P2MR Inscription number, and it is hashed as it is. The exact text, every field and the escape of the content type are defined in [PINS-2 §4.4](../specs/PINS-2.md#44-state-hash), and `docs/specs/vectors/state-hash.json` has examples. The digest is the SHA-256 of that whole text at every block. Unchanged line bytes are reused so the text is not re-encoded, but the hash still covers the whole preimage. That cost grows with the number of P2MR Inscriptions and cannot be bounded without changing the digest.
 
 **What the digest covers.** For each P2MR Inscription it covers: the number, the id, the SHA-256 of the body, the content type (the bytes of field 1, with a line feed written `%0a` and `%` written `%25`), the location (`txid:vout:offset`, or `unbound`, `lost`, and the other non-located states), the owner address, the height at which the P2MR Inscription was last placed, and its flags. The location already includes the effect of a pointer field (field 2), and the flags include a bad pointer. `/pieces/N` and `/inscription/id` both send `location.script` and `ownerScript` as lowercase hex. A located script is not a JSON object of byte indexes. `ownerAddress` is the address of that same script.
 

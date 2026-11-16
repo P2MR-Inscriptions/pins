@@ -7,7 +7,7 @@ A launch on mainnet spends real QBT and cannot be undone: there is no rollback c
 ## 1. Before you spend anything
 
 - [ ] **You rehearsed the same launch on regtest,** with the same kind of input and the same commands: [Five minutes on regtest](QUICKSTART.md) for a single P2MR Inscription, [Try it on your own regtest node](REGTEST.md) for a collection.
-- [ ] **Your tools are the tools you tested.** `git status` is clean, `npm ci` ran, and `npm run lint`, `npm run typecheck`, `npm test` and `npm run check:terminology` pass on Node.js 22.13 to 24.
+- [ ] **Your tools are the tools you tested.** `git status` is clean, `npm ci --ignore-scripts` ran, and `npm run lint`, `npm run typecheck`, `npm test` and `npm run check:terminology` pass on Node.js 22.13 to 24.
 - [ ] **Your node is Qbit Core v1.0.1** ([docs/PINNED_VERSIONS.md](../PINNED_VERSIONS.md)), fully synced, with `-txindex`, and not run with `-prunewitnesses=1`. Its RPC port on mainnet is 8352.
 - [ ] **The login is the node's cookie or a user and password in the environment,** never a flag typed into shared shell history ([Log in to your node](NODE-LOGIN.md)).
 - [ ] **Your inputs are final.** For a collection: the zip, the profile (`supply`, `batchSize`, `sale`), and the Merkle root that `root` prints, written into the profile. A collection's name, root and supply cannot change after the genesis ([The Merkle root before the profile](COLLECTION-LAUNCH.md#the-merkle-root-before-the-profile)).

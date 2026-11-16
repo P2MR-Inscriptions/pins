@@ -50,7 +50,7 @@ A pull request that changes a rule contains all of these.
 4. **The checks of CI,** run by you before you push:
 
    ```text
-   npm ci
+   npm ci --ignore-scripts
    npm run lint
    npm run typecheck
    npm test

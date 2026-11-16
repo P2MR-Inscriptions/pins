@@ -9,7 +9,7 @@ PINS is the P2MR Inscription protocol in `docs/specs/` and the reference indexer
 Node.js 22.13 or newer, up to Node 24 (the `engines` range is `>=22.13 <25`). Node 22.12 and older lack `node:sqlite` without a flag, which the indexer needs. Continuous integration runs the tests on Node 22 and on Node 24, and `.nvmrc` names Node 22 for local use.
 
 ```text
-npm ci
+npm ci --ignore-scripts
 npm run build
 npm run lint
 npm run typecheck

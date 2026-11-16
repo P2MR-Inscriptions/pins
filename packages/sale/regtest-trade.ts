@@ -26,7 +26,7 @@ import { rpcAuthFromFlags } from "../indexer/rpc.ts";
 import { DUST_BITS, bitsOf, checkPurchasePsbt, offsetsFromOutputAnswer, outpointsOf, utxoFromGetTxOut, type ChainUtxo, type PurchaseReport } from "./checks.ts";
 import { primarySalePsbt, type SaleCoin } from "./psbt.ts";
 
-export type Unspent = { txid: string; vout: number; amount: number; scriptPubKey: string; desc?: string };
+export type Unspent = { txid: string; vout: number; amount: number | string; scriptPubKey: string; desc?: string };
 
 /** The 32-byte key of a descriptor `mr(pk(<64 hex>))#checksum`, the plain single-key P2MR output of a Qbit Core wallet. */
 export function pubkeyFromDescriptor(desc: string): Uint8Array {
@@ -150,7 +150,7 @@ export async function main(argv: string[]): Promise<void> {
   // 1. What is for sale, and where it is.
   const row = await indexerJson(indexer, `inscription/${id}`) as { id: string; location: { state: string; txid: string; vout: number; offset: string }; ownerAddress: string; burned?: boolean };
   if (row.location.state !== "located" || row.location.offset !== "0") throw new Error(`${id} is not at offset 0 of an output (state ${row.location.state}, offset ${row.location.offset}); the clean template sells an output whose first bit it is`);
-  const out = await node.call<{ value: number; scriptPubKey: { hex: string } } | null>("gettxout", [row.location.txid, row.location.vout, true]);
+  const out = await node.call<{ value: number | string; scriptPubKey: { hex: string } } | null>("gettxout", [row.location.txid, row.location.vout, true]);
   if (out === null) throw new Error("the output of that P2MR Inscription is spent or unknown to the node");
   const owner = await seller.call<{ ismine: boolean; desc?: string }>("getaddressinfo", [row.ownerAddress]);
   if (!owner.ismine || !owner.desc) throw new Error(`the seller wallet does not hold ${row.ownerAddress}; it is the owner of ${id}`);

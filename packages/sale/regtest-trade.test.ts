@@ -13,7 +13,7 @@ const key = "ab".repeat(32);
 const desc = `mr(pk(${key}))#abcd1234`;
 const script = bytesToHex(p2mrScriptPubKey(p2mrLeafHash(P2MR_LEAF_VERSION_V1, singleKeyLeafScript(Buffer.from(key, "hex")))));
 
-function coin(n: number, amount: number): Unspent {
+function coin(n: number, amount: number | string): Unspent {
   return { txid: n.toString(16).padStart(64, "0"), vout: 0, amount, scriptPubKey: script, desc };
 }
 
@@ -28,6 +28,9 @@ test("amounts in QBT become whole bits", () => {
   assert.equal(bitsOf(0.0001), 10_000n);
   assert.equal(bitsOf(1.23456789), 123_456_789n);
   assert.equal(bitsOf(0.00002855), 2_855n);
+  assert.equal(bitsOf("0.00010000"), 10_000n);
+  assert.equal(bitsOf("1.23456789"), 123_456_789n);
+  assert.equal(bitsOf("0.00002855"), 2_855n);
 });
 
 test("a coin is rebuilt from its descriptor and refused when the script is another one", () => {
@@ -51,4 +54,12 @@ test("the buyer's coins: two smallest as padding, the largest as funding, none t
   assert.throws(() => pickBuyerCoins([coin(1, 0.00001), coin(2, 0.00001), coin(3, 0.00002)], 1_000n, 1_000n), /dust threshold/);
   assert.throws(() => pickBuyerCoins(coins, 2_000_000n, 20_000n), /the price, the fee and a change output need/);
   assert.throws(() => pickBuyerCoins([{ ...coin(1, 0.01), desc: undefined }, coin(2, 0.01), coin(3, 0.01)], 1n, 1n), /has 2/);
+});
+
+test("buyer coins listed with 8-decimal amount text are picked the same way", () => {
+  const coins = [coin(1, "0.01000000"), coin(2, "0.00010000"), coin(3, "0.00012000"), coin(4, "0.00500000")];
+  const picked = pickBuyerCoins(coins, 50_000n, 20_000n);
+  assert.equal(bitsOf(picked.paddingA.amount), 10_000n);
+  assert.equal(bitsOf(picked.paddingB.amount), 12_000n);
+  assert.equal(bitsOf(picked.funding.amount), 1_000_000n);
 });

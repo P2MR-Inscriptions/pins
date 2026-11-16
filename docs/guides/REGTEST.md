@@ -27,7 +27,7 @@ You need Node.js 22.13 or newer (and older than 25), `curl`, `unzip` (Info-ZIP, 
 
 ```bash
 cd pins            # the folder of your clone
-npm ci
+npm ci --ignore-scripts
 export PINS="$PWD"
 export W="$HOME/pins-regtest"      # everything this guide writes goes here
 mkdir -p "$W"
@@ -143,7 +143,7 @@ inscribe address --pub issuer.key.pub.json --network regtest
 `keygen` wrote `issuer.key` (encrypted) and `issuer.key.pub.json` (public). `address` printed the **funding address** of that key. Only this key can spend it, so a wallet cannot, and `listunspent` of a wallet never shows it. Pay it in one payment from `funds`, mine blocks until the payment has 6 confirmations, then write `utxo.json` with the `utxo` command. It asks the node for the one output that pays the address and writes `txid`, `vout`, `value` in bits and `script`:
 
 ```bash
-FUNDING=$(inscribe address --pub issuer.key.pub.json --network regtest | awk 'NR==1 {print $4}')
+FUNDING=$(inscribe address --pub issuer.key.pub.json --network regtest | awk '/ funding address / {print $NF; exit}')
 qw funds sendtoaddress "$FUNDING" 1
 q generatetoaddress 6 "$(qw funds getnewaddress)" > /dev/null
 inscribe utxo --pub issuer.key.pub.json --network regtest --rpc "$NODE_URL" --rpc-user "$RPC_USER" --rpc-password "$RPC_PASSWORD" --out utxo.json
@@ -204,7 +204,7 @@ Now the launch. A collection with no sale has no reserve and no sale secret, so 
 mkdir -p "$W/nosale" && cd "$W/nosale"
 cp "$W/sample/collection.zip" "$W/sample/profile.nosale.json" .
 inscribe keygen --no-sale --out issuer.key
-FUNDING=$(inscribe address --pub issuer.key.pub.json --network regtest | awk 'NR==1 {print $4}')
+FUNDING=$(inscribe address --pub issuer.key.pub.json --network regtest | awk '/ funding address / {print $NF; exit}')
 qw funds sendtoaddress "$FUNDING" 1
 q generatetoaddress 6 "$(qw funds getnewaddress)" > /dev/null
 inscribe utxo --pub issuer.key.pub.json --network regtest --rpc "$NODE_URL" --rpc-user "$RPC_USER" --rpc-password "$RPC_PASSWORD" --out utxo.json
@@ -236,7 +236,7 @@ mkdir -p "$W/sale" && cd "$W/sale"
 cp "$W/sample/collection.zip" "$W/sample/profile.sale.json" "$W/sample/price.json" .
 cat profile.sale.json
 inscribe keygen --out issuer.key
-FUNDING=$(inscribe address --pub issuer.key.pub.json --network regtest | awk 'NR==1 {print $4}')
+FUNDING=$(inscribe address --pub issuer.key.pub.json --network regtest | awk '/ funding address / {print $NF; exit}')
 qw funds sendtoaddress "$FUNDING" 1
 q generatetoaddress 6 "$(qw funds getnewaddress)" > /dev/null
 inscribe utxo --pub issuer.key.pub.json --network regtest --rpc "$NODE_URL" --rpc-user "$RPC_USER" --rpc-password "$RPC_PASSWORD" --out utxo.json

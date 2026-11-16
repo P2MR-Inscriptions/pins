@@ -339,7 +339,7 @@ type CoinRow = { txid?: unknown; vout?: unknown; value?: unknown; amount?: unkno
 function rowBits(row: CoinRow, what: string): bigint {
   if ((row.value === undefined) === (row.amount === undefined)) throw new Error(`${what} needs a value in bits or an amount in QBT, not both and not neither`);
   if (row.amount !== undefined) {
-    if (typeof row.amount !== "number") throw new Error(`${what} amount must be a number of QBT`);
+    if (typeof row.amount !== "number" && typeof row.amount !== "string") throw new Error(`${what} amount must be a QBT amount`);
     return bitsOf(row.amount);
   }
   if (typeof row.value !== "string" && typeof row.value !== "number") throw new Error(`${what} value must be a whole number of bits`);
@@ -424,7 +424,7 @@ async function fundingRows(rpc: ReturnType<typeof httpRpc>, utxo: FundingFile, s
   let valueBits: bigint | null = null;
   let scriptHex: string | null = null;
   try {
-    const tx = await rpc.call<{ confirmations?: number; vout?: { value: number; scriptPubKey: { hex: string } }[] }>("getrawtransaction", [utxo.txid, true]);
+    const tx = await rpc.call<{ confirmations?: number; vout?: { value: number | string; scriptPubKey: { hex: string } }[] }>("getrawtransaction", [utxo.txid, true]);
     found = true;
     confirmations = tx.confirmations ?? 0;
     const output = tx.vout?.[utxo.vout];

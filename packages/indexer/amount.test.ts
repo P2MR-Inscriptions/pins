@@ -6,7 +6,7 @@ import { bitsFromRpcAmount, quoteRpcAmounts, rpcAmountFromBits } from "./amount.
 import { formatEta, formatSyncLine } from "./progress.ts";
 import { DEFAULT_PREFETCH, parsePrefetch } from "./prefetch.ts";
 
-test("bitsFromRpcAmount reads exact 8-decimal text and rejects a JSON number", () => {
+test("bitsFromRpcAmount reads exact 8-decimal text", () => {
   assert.equal(bitsFromRpcAmount("0.00000001"), 1n);
   assert.equal(bitsFromRpcAmount("0.00010000"), 10_000n);
   assert.equal(bitsFromRpcAmount("0.10000000"), 10_000_000n);
@@ -15,22 +15,38 @@ test("bitsFromRpcAmount reads exact 8-decimal text and rejects a JSON number", (
   assert.equal(rpcAmountFromBits(10_000n), "0.00010000");
   assert.equal(rpcAmountFromBits(0n), "0.00000000");
   assert.equal(bitsFromRpcAmount(rpcAmountFromBits(123_456_789n)), 123_456_789n);
-  assert.throws(() => bitsFromRpcAmount(0.1), /decimal text, not a JSON number/);
-  assert.throws(() => bitsFromRpcAmount(0.10000000), /decimal text/);
   assert.throws(() => bitsFromRpcAmount("0.1"), /8-decimal/);
   assert.throws(() => bitsFromRpcAmount("1.2345678"), /8-decimal/);
   assert.throws(() => bitsFromRpcAmount("1e-8"), /8-decimal/);
   assert.throws(() => bitsFromRpcAmount("1.234567890"), /8-decimal/);
 });
 
-test("quoteRpcAmounts keeps 0.1 QBT exact through JSON.parse", () => {
-  const raw = '{"vin":[{"prevout":{"value":0.10000000,"scriptPubKey":{"hex":"00"}}}],"other":1.5}';
+test("bitsFromRpcAmount accepts a JSON number only as the unique 8-decimal amount it already is", () => {
+  assert.equal(bitsFromRpcAmount(0.00000001), 1n);
+  assert.equal(bitsFromRpcAmount(0.00010000), 10_000n);
+  assert.equal(bitsFromRpcAmount(0.1), 10_000_000n);
+  assert.equal(bitsFromRpcAmount(1.23456789), 123_456_789n);
+  assert.equal(bitsFromRpcAmount(21_000_000), 2_100_000_000_000_000n);
+  assert.equal(bitsFromRpcAmount(-1.5), -150_000_000n);
+  assert.throws(() => bitsFromRpcAmount(Number.POSITIVE_INFINITY), /decimal text, not a JSON number/);
+  assert.throws(() => bitsFromRpcAmount(Number.NaN), /decimal text, not a JSON number/);
+  assert.throws(() => bitsFromRpcAmount(true), /decimal text, not a JSON number/);
+});
+
+test("quoteRpcAmounts keeps 0.1 QBT exact through JSON.parse for value and amount", () => {
+  const raw = '{"vin":[{"prevout":{"value":0.10000000,"scriptPubKey":{"hex":"00"}}}],"unspents":[{"amount":0.00010000}],"fee":-0.00020000,"other":1.5}';
   const quoted = quoteRpcAmounts(raw);
   assert.match(quoted, /"value":"0\.10000000"/);
+  assert.match(quoted, /"amount":"0\.00010000"/);
+  assert.match(quoted, /"fee":"-0\.00020000"/);
   assert.match(quoted, /"other":1\.5/);
-  const body = JSON.parse(quoted) as { vin: { prevout: { value: unknown } }[] };
+  const body = JSON.parse(quoted) as { vin: { prevout: { value: unknown } }[]; unspents: { amount: unknown }[]; fee: unknown };
   assert.equal(body.vin[0]?.prevout.value, "0.10000000");
+  assert.equal(body.unspents[0]?.amount, "0.00010000");
+  assert.equal(body.fee, "-0.00020000");
   assert.equal(bitsFromRpcAmount(body.vin[0]?.prevout.value), 10_000_000n);
+  assert.equal(bitsFromRpcAmount(body.unspents[0]?.amount), 10_000n);
+  assert.equal(bitsFromRpcAmount(body.fee), -20_000n);
 });
 
 test("parsePrefetch defaults to 8 and stays inside 1 to 32", () => {

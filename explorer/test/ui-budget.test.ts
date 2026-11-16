@@ -83,7 +83,7 @@ test("warmup retries do not rebuild the page and home paints once", () => {
   assert.match(home, /class: "home-side"/);
   assert.match(home, /class: "home-links"/);
   assert.match(home, /Browse all P2MR Inscriptions →/);
-  assert.match(home, /Open the collection →/);
+  assert.match(home, /Open the \$\{collectionTitle\(collectionRecord\)\} →/);
   assert.equal(/page\.get\([`'"]\/collection/.test(home), false);
   assert.match(src, /data-warmup/);
   assert.match(src, /Reading the index\. This can take a few minutes\./);
@@ -104,7 +104,7 @@ test("warmup retries do not rebuild the page and home paints once", () => {
   assert.equal(src.includes("detail-close"), false);
   assert.equal(src.includes("window.close"), false);
   assert.match(src, /stroke: "currentColor"/);
-  assert.match(home, /READ FROM YOUR OWN NODE/);
+  assert.match(home, /READ FROM A QBIT NODE/);
   assert.ok(home.indexOf("home-intro") < home.indexOf("home-board"));
   assert.match(readFileSync("public/style.css", "utf8"), /width: min\(100%, 80rem\)/);
   assert.match(readFileSync("public/style.css", "utf8"), /a\.back \{[^}]*color: #1ab552/);

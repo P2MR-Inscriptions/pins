@@ -84,22 +84,14 @@ function parseOutpoint(text: string): { txid: string; vout: number } | null {
 }
 
 type Row = NonNullable<ReturnType<typeof inscriptionJson>>;
-type Rows = { all: Row[]; byOutput: Map<string, Row[]> };
 
-/** Every P2MR Inscription as the API shows it, by number, and by the output that holds it. Built once per tip. */
-function buildRows(store: Store): Rows {
-  const all = [...store.indexer.inscriptions.values()]
-    .sort((left, right) => left.number - right.number)
-    .map((item) => inscriptionJson(item) as Row);
-  const byOutput = new Map<string, Row[]>();
-  for (const row of all) {
-    if (row.location?.state !== "located") continue;
-    const key = `${row.location.txid}:${row.location.vout}`;
-    const list = byOutput.get(key);
-    if (list) list.push(row);
-    else byOutput.set(key, [row]);
+function jsonRows(items: Iterable<ReturnType<Store["indexer"]["get"]>>): Row[] {
+  const rows: Row[] = [];
+  for (const item of items) {
+    const row = inscriptionJson(item);
+    if (row) rows.push(row);
   }
-  return { all, byOutput };
+  return rows;
 }
 
 /** What a list response says about the page it holds. `limit` is null when the request set none. */
@@ -167,7 +159,6 @@ async function handle(store: Store, cache: TipCache, request: { method?: string;
     const reply = (status: number, body: unknown) => send(response, status, body, headers);
     const key = tip ? `${tip.height}:${tip.hash}:${tip.stateHash}` : "none";
     const view = () => cache.get(key, "view", () => collectionView(store.indexer, { tipHeight, blockHash: (height) => store.hashAt(height) }, store.profile));
-    const rows = () => cache.get(key, "rows", () => buildRows(store));
     if (request.method !== "GET") {
       reply(405, { error: "read only" });
       return;
@@ -179,7 +170,7 @@ async function handle(store: Store, cache: TipCache, request: { method?: string;
         height: tipHeight,
         hash: tip?.hash ?? null,
         stateHash: tip?.stateHash ?? null,
-        inscriptions: store.indexer.inscriptions.size,
+        inscriptions: store.indexer.size,
         undoBlocks: store.undoCount(),
         activationHeight: store.activationHeight(),
         standards: STANDARDS.filter((standard) => INDEXER_STANDARD_IDS.includes(standard.id)).map((standard) => ({ id: standard.id, version: standard.version })),
@@ -204,10 +195,26 @@ async function handle(store: Store, cache: TipCache, request: { method?: string;
         reply(400, { error: PAGE_ERROR });
         return;
       }
-      const owner = url.searchParams.get("owner");
-      const { all } = await rows();
-      const shown = slicePage(owner ? all.filter((row) => row.ownerAddress === owner) : all, page);
-      reply(200, { ...pageMeta(shown), inscriptions: shown.shown });
+      const owner = url.searchParams.get("owner") ?? undefined;
+      const txid = url.searchParams.get("txid") ?? undefined;
+      const locTxid = url.searchParams.get("locTxid") ?? undefined;
+      const createdText = url.searchParams.get("createdHeight");
+      const numberText = url.searchParams.get("number");
+      const createdHeight = createdText === null ? undefined : (/^\d{1,15}$/.test(createdText) ? Number(createdText) : null);
+      const number = numberText === null ? undefined : (/^\d{1,15}$/.test(numberText) ? Number(numberText) : null);
+      if (createdHeight === null || number === null) {
+        reply(400, { error: PAGE_ERROR });
+        return;
+      }
+      const order = url.searchParams.get("sort") === "latest" ? "latest" as const : "number" as const;
+      const filter = { owner, txid, locTxid, createdHeight, number };
+      const cacheKey = `inscriptions:${owner ?? ""}:${txid ?? ""}:${locTxid ?? ""}:${createdHeight ?? ""}:${number ?? ""}:${order}:${page.offset}:${page.limit}`;
+      const listed = await cache.get(key, cacheKey, () => {
+        const total = store.countInscriptions(filter);
+        const shown = jsonRows(store.selectInscriptions({ ...filter, order, offset: page.offset, limit: page.limit }));
+        return { total, shown };
+      });
+      reply(200, { ...pageMeta({ total: listed.total, offset: page.offset, limit: page.limit }), inscriptions: listed.shown });
       return;
     }
     if (url.pathname.startsWith("/inscription/")) {
@@ -260,7 +267,7 @@ async function handle(store: Store, cache: TipCache, request: { method?: string;
       }
       const key = `${parsed.txid}:${parsed.vout}`;
       const state = store.outputState(parsed.txid, parsed.vout);
-      const held = (await rows()).byOutput.get(key) ?? [];
+      const held = await cache.get(key, `output:${parsed.txid}:${parsed.vout}`, () => jsonRows(store.selectInscriptions({ locTxid: parsed.txid, locVout: parsed.vout, order: "number" })));
       const shown = slicePage(held, page);
       // An output that holds a P2MR Inscription is known whatever the table says (it was created in an indexed block).
       const known = state !== undefined || held.length > 0;

@@ -84,7 +84,20 @@ export function startMock(port = 8787): Promise<{ url: string; close: () => Prom
       const o = url.searchParams.get("owner"), offset = Number(url.searchParams.get("offset") ?? 0), text = url.searchParams.get("limit");
       const limit = text === null ? null : Number(text);
       if (!Number.isInteger(offset) || offset < 0 || (limit !== null && !(Number.isInteger(limit) && limit >= 1 && limit <= 1000))) return json(400, { error: "offset and limit" });
-      const rows = items.filter((i) => !o || i.ownerAddress === o);
+      const txid = url.searchParams.get("txid");
+      const locTxid = url.searchParams.get("locTxid");
+      const createdHeight = url.searchParams.get("createdHeight");
+      const number = url.searchParams.get("number");
+      let rows = items.filter((item) => !o || item.ownerAddress === o);
+      if (txid) rows = rows.filter((item) => item.txid === txid);
+      if (locTxid) rows = rows.filter((item) => item.location.state === "located" && item.location.txid === locTxid);
+      if (createdHeight !== null) rows = rows.filter((item) => item.createdHeight === Number(createdHeight));
+      if (number !== null) rows = rows.filter((item) => item.number === Number(number));
+      if (url.searchParams.get("sort") === "latest") {
+        rows = [...rows].sort((left, right) => right.createdHeight - left.createdHeight || right.createdIndex - left.createdIndex || right.n - left.n || right.number - left.number);
+      } else {
+        rows = [...rows].sort((left, right) => left.number - right.number);
+      }
       return json(200, { total: rows.length, offset, limit, inscriptions: rows.slice(offset, limit === null ? undefined : offset + limit).map(strip) });
     }
     if (p === "/pieces") {

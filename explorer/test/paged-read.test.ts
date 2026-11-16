@@ -3,8 +3,8 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { createServer, type Server } from "node:http";
 
-// The explorer reads the P2MR Inscription list in pages of 1000. An indexer from before paging sends every row
-// without a total, and that still works. A list that does not add up, or is too large, is refused.
+// The explorer keeps a bounded preview of the newest P2MR Inscriptions (one page of 1000) and does not
+// hold the whole list. A collection piece list is still capped by MAX_INSCRIPTIONS.
 let mode: "paged" | "unpaged" | "short" | "huge" = "paged";
 let hash = "a";
 let requests: string[] = [];
@@ -60,44 +60,46 @@ before(async () => {
 
 after(() => indexer.close());
 
-test("the list is read in pages of 1000 and every row arrives", async () => {
+test("the snapshot keeps one preview page and does not read the rest of the list", async () => {
   const { cache } = await import("../server/index-cache.ts");
   await cache.tick();
   assert.equal(cache.ready, true);
-  assert.equal(cache.list.length, ROWS);
-  assert.equal(cache.byNumber.get(ROWS)?.id, all[ROWS - 1].id);
-  assert.deepEqual([...requests].sort(), ["?offset=0&limit=1000", "?offset=1000&limit=1000", "?offset=2000&limit=1000"]);
+  assert.equal(cache.status?.inscriptions, ROWS);
+  assert.equal(cache.list.length, 1000);
+  assert.deepEqual(requests, ["?offset=0&limit=1000&sort=latest"]);
 });
 
-test("an indexer from before paging sends every row without a total, and that is taken as the list", async () => {
+test("an indexer that sends every row without a total is capped to the preview page", async () => {
   const { cache } = await import("../server/index-cache.ts");
   mode = "unpaged";
   hash = "b";
   requests = [];
   await cache.tick();
   assert.equal(cache.error, null);
-  assert.equal(cache.list.length, ROWS);
+  assert.equal(cache.list.length, 1000);
   assert.equal(requests.length, 1);
   assert.equal(cache.status?.hash, "b");
 });
 
-test("pages that do not add up to the total are refused, and the last snapshot stays", async () => {
+test("a later tip still refreshes the preview when a previous snapshot is ready", async () => {
   const { cache } = await import("../server/index-cache.ts");
-  mode = "short";
+  mode = "paged";
   hash = "c";
+  requests = [];
   await cache.tick();
-  assert.match(cache.error ?? "", /do not add up/);
-  assert.equal(cache.stale, true);
-  assert.equal(cache.list.length, ROWS);
+  assert.equal(cache.error, null);
+  assert.equal(cache.stale, false);
+  assert.equal(cache.status?.hash, "c");
+  assert.equal(cache.list.length, 1000);
 });
 
-test("a total above the limit is refused after the first page, before the rest is read", async () => {
+test("a large total does not load the rest of the list", async () => {
   const { cache } = await import("../server/index-cache.ts");
   mode = "huge";
   hash = "d";
   requests = [];
   await cache.tick();
-  assert.match(cache.error ?? "", /exceeds the P2MR Inscription limit/);
-  assert.deepEqual(requests, ["?offset=0&limit=1000"]);
-  assert.equal(cache.list.length, ROWS);
+  assert.equal(cache.error, null);
+  assert.deepEqual(requests, ["?offset=0&limit=1000&sort=latest"]);
+  assert.equal(cache.list.length, 1000);
 });

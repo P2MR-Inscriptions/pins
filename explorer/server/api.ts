@@ -3,7 +3,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { mediaKind, normalizeType, PREVIEW_BYTES } from "../public/content-view.js";
 import { config } from "./config.ts";
 import { decodeCbor } from "../../packages/indexer/cbor.ts";
-import { cache, type Inscription } from "./index-cache.ts";
+import { cache, indexerGet, type Inscription } from "./index-cache.ts";
 import { publicError } from "./redact.ts";
 import { rpc, rpcEnabled, rpcProbe, rpcSecrets } from "./rpc.ts";
 import { ADDRESS, HEX64, ID, classifyQuery } from "./search.ts";
@@ -204,8 +204,10 @@ function manifestChecks() {
 }
 
 async function txView(txid: string) {
-  const created = cache.byTxid.get(txid) ?? [];
-  const holding = cache.byLocationTx.get(txid) ?? [];
+  const createdPage = await indexerGet<{ inscriptions: Inscription[] }>(`/inscriptions?txid=${txid}`);
+  const holdingPage = await indexerGet<{ inscriptions: Inscription[] }>(`/inscriptions?locTxid=${txid}`);
+  const created = createdPage.inscriptions;
+  const holding = holdingPage.inscriptions;
   let node: unknown = null;
   let nodeError: string | null = null;
   if (rpcEnabled()) {
@@ -248,8 +250,66 @@ async function blockView(param: string) {
       nodeError = "node details unavailable";
     }
   }
-  const created = cache.byHeight.get(height) ?? [];
-  return { height, hash, header, nodeError, created: created.map(summary) };
+  const createdPage = await indexerGet<{ inscriptions: Inscription[] }>(`/inscriptions?createdHeight=${height}`);
+  return { height, hash, header, nodeError, created: createdPage.inscriptions.map(summary) };
+}
+
+
+async function liveItem(id: string): Promise<Inscription> {
+  const cached = cache.byId.get(id);
+  if (cached) return cached;
+  try {
+    return await indexerGet<Inscription>(`/inscription/${id}`);
+  } catch {
+    throw new HttpError(404, "P2MR Inscription not found");
+  }
+}
+
+async function itemByNumber(number: number): Promise<Inscription | undefined> {
+  const cached = cache.byNumber.get(number);
+  if (cached) return cached;
+  try {
+    const page = await indexerGet<{ inscriptions: Inscription[] }>(`/inscriptions?number=${number}&limit=1`);
+    return page.inscriptions.find((item) => item.number === number);
+  } catch {
+    return undefined;
+  }
+}
+
+async function liveDetail(id: string): Promise<ReturnType<typeof detail>> {
+  const item = await liveItem(id);
+  const body = detail(item);
+  body.neighbors = await liveNeighbors(item.number);
+  return body;
+}
+
+async function liveDetailByNumber(number: number): Promise<ReturnType<typeof detail>> {
+  const item = await itemByNumber(number);
+  if (!item) throw new HttpError(404, "P2MR Inscription number not found");
+  const body = detail(item);
+  body.neighbors = await liveNeighbors(item.number);
+  return body;
+}
+
+async function liveNeighbors(number: number): Promise<ReturnType<typeof inscriptionNeighbors>> {
+  // The preview holds existing numbers, including holes in small test sets.
+  if (cache.byNumber.has(number)) return inscriptionNeighbors(cache.numberOrder, cache.byNumber, number);
+  const pack = async (n: number) => {
+    const item = await itemByNumber(n);
+    return item ? { number: n, id: item.id } : null;
+  };
+  return { prev: number > 0 ? await pack(number - 1) : null, next: await pack(number + 1) };
+}
+
+async function ownerAll(address: string, total: number): Promise<Inscription[]> {
+  const limit = 1000;
+  const pages = Math.max(1, Math.ceil(total / limit));
+  const chunks: Inscription[][] = [];
+  for (let index = 0; index < pages; index += 1) {
+    const page = await indexerGet<{ inscriptions: Inscription[] }>(`/inscriptions?owner=${encodeURIComponent(address)}&offset=${index * limit}&limit=${limit}`);
+    chunks.push(page.inscriptions);
+  }
+  return chunks.flat();
 }
 
 export async function handleApi(req: IncomingMessage, res: ServerResponse, url: URL): Promise<void> {
@@ -262,7 +322,7 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse, url: 
         snapshot: {
           ready: cache.ready, preview: cache.previewReady, piecesComplete: cache.piecesComplete,
           stale: cache.stale, height: cache.snapshotHeight, updatedAt: cache.updatedAt,
-          loading: cache.loading, inscriptions: cache.list.length, owners: cache.byOwner.size,
+          loading: cache.loading, inscriptions: cache.status?.inscriptions ?? cache.list.length, owners: cache.byOwner.size,
         },
         rpc: await rpcProbe(),
         externalExplorer: config.externalExplorer,
@@ -285,17 +345,17 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse, url: 
     }
     if (path === "/inscriptions") {
       const { offset, limit } = paging(url);
-      const asc = url.searchParams.get("order") === "asc";
-      const rows = pageSlice(asc ? cache.list : cache.newest, offset, limit);
-      send(res, 200, { total: rows.total, offset: rows.offset, limit: rows.limit, inscriptions: rows.shown.map(summary) });
+      const sort = url.searchParams.get("order") === "asc" ? "number" : "latest";
+      const page = await indexerGet<{ total: number; inscriptions: Inscription[] }>(`/inscriptions?offset=${offset}&limit=${limit}&sort=${sort}`);
+      send(res, 200, { total: page.total, offset, limit, inscriptions: page.inscriptions.map(summary) });
       return;
     }
     let m = /^\/inscription\/([0-9a-f]{64}i\d+)$/.exec(path);
-    if (m) { send(res, 200, detail(need(cache.byId.get(m[1]), "P2MR Inscription"))); return; }
+    if (m) { send(res, 200, await liveDetail(m[1])); return; }
     m = /^\/number\/(\d+)$/.exec(path);
-    if (m) { send(res, 200, detail(need(cache.byNumber.get(Number(m[1])), "P2MR Inscription number"))); return; }
+    if (m) { send(res, 200, await liveDetailByNumber(Number(m[1]))); return; }
     m = /^\/content\/([0-9a-f]{64}i\d+)$/.exec(path);
-    if (m) { await content(req, res, need(cache.byId.get(m[1]), "P2MR Inscription"), url); return; }
+    if (m) { await content(req, res, await liveItem(m[1]), url); return; }
     if (path === "/collection") {
       const c = cache.collection ?? { status: cache.previewReady ? "pending" : "absent" };
       const authentic = cache.piecesComplete ? cache.pieces.filter((p) => p.authentic).length : null;
@@ -325,19 +385,23 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse, url: 
     }
     m = /^\/address\/([0-9a-z]+)$/.exec(path);
     if (m && ADDRESS.test(m[1])) {
+      const address = m[1];
       const { offset, limit } = paging(url, 200, 100);
-      const all = cache.byOwner.get(m[1]) ?? [];
-      const rows = pageSlice(all, offset, limit);
+      const page = await indexerGet<{ total: number; inscriptions: Inscription[] }>(`/inscriptions?owner=${encodeURIComponent(address)}&offset=${offset}&limit=${limit}`);
       const outputs = new Map<string, number>();
-      for (const item of all) if (item.location?.state === "located") {
-        const key = `${item.location.txid}:${item.location.vout}`;
-        outputs.set(key, (outputs.get(key) ?? 0) + 1);
+      // Output counts cover the whole address, so later pages of this list are fetched only for that aggregate.
+      if (page.total > 0) {
+        const source = page.total <= limit ? page.inscriptions : (await ownerAll(address, page.total));
+        for (const item of source) if (item.location?.state === "located") {
+          const key = `${item.location.txid}:${item.location.vout}`;
+          outputs.set(key, (outputs.get(key) ?? 0) + 1);
+        }
       }
       send(res, 200, {
-        address: m[1], total: rows.total, offset: rows.offset, limit: rows.limit,
-        collectionPieces: all.filter((i) => cache.pieceByInscription.has(i.id)).length,
+        address, total: page.total, offset, limit,
+        collectionPieces: cache.pieces.filter((piece) => piece.ownerAddress === address && piece.inscriptionId).length,
         outputs: [...outputs].map(([outpoint, count]) => ({ outpoint, count })),
-        inscriptions: rows.shown.map(summary),
+        inscriptions: page.inscriptions.map(summary),
       });
       return;
     }

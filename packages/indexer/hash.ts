@@ -95,6 +95,12 @@ type LineCache = {
   /** Line bytes by P2MR Inscription number. A hole is `undefined`. */
   lines: (Buffer | undefined)[];
   byId: Map<string, CachedLine>;
+  /**
+   * When true, the line array is the complete tip set (a store primed it, or it
+   * grew from an empty store). Ids missing from the in-memory map were evicted,
+   * not deleted, and their lines stay.
+   */
+  complete: boolean;
 };
 
 const caches = new WeakMap<Indexer, LineCache>();
@@ -102,7 +108,7 @@ const caches = new WeakMap<Indexer, LineCache>();
 function cacheOf(indexer: Indexer): LineCache {
   const hit = caches.get(indexer);
   if (hit) return hit;
-  const created: LineCache = { lines: [], byId: new Map() };
+  const created: LineCache = { lines: [], byId: new Map(), complete: false };
   caches.set(indexer, created);
   return created;
 }
@@ -151,7 +157,7 @@ function syncLines(indexer: Indexer): (Buffer | undefined)[] {
     cache.byId.set(item.id, next);
     cache.lines[item.number] = line;
   }
-  if (cache.byId.size !== seen.size) {
+  if (!cache.complete && cache.byId.size !== seen.size) {
     for (const [id, prev] of cache.byId) {
       if (seen.has(id)) continue;
       if (cache.lines[prev.number] === prev.line) cache.lines[prev.number] = undefined;
@@ -160,6 +166,48 @@ function syncLines(indexer: Indexer): (Buffer | undefined)[] {
   }
   while (cache.lines.length > 0 && cache.lines[cache.lines.length - 1] === undefined) cache.lines.pop();
   return cache.lines;
+}
+
+
+/**
+ * Install already-encoded §4.4 line bytes, in number order, so `stateHash` does
+ * not walk every payload. Further creates and moves still update the cache from
+ * the in-memory working set. The digest is unchanged.
+ */
+export function primeStateLines(indexer: Indexer, rows: { id: string; number: number; line: Buffer }[]): void {
+  const cache = cacheOf(indexer);
+  cache.lines = [];
+  cache.byId.clear();
+  cache.complete = true;
+  for (const row of rows) {
+    cache.lines[row.number] = row.line;
+    cache.byId.set(row.id, {
+      number: row.number,
+      state: "unbound",
+      owner: "",
+      locationHeight: -1,
+      flags: [],
+      line: row.line,
+    });
+  }
+}
+
+/** Clear the line cache, as after `resync`. */
+export function resetStateLines(indexer: Indexer): void {
+  const cache = cacheOf(indexer);
+  cache.lines = [];
+  cache.byId.clear();
+  cache.complete = true;
+}
+
+/** Drop one cached line, as when a reorg removes a P2MR Inscription the block created. */
+export function forgetStateLine(indexer: Indexer, id: string): void {
+  const cache = cacheOf(indexer);
+  const prev = cache.byId.get(id);
+  if (!prev) return;
+  if (cache.lines[prev.number] === prev.line) cache.lines[prev.number] = undefined;
+  cache.byId.delete(id);
+  while (cache.lines.length > 0 && cache.lines[cache.lines.length - 1] === undefined) cache.lines.pop();
 }
 
 export function stateHash(indexer: Indexer, block: { height: number; hash: string }): string {

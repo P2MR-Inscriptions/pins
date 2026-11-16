@@ -234,9 +234,6 @@ const HEX32 = /^[0-9a-f]{64}$/;
 const GENESIS_KEYS = ["schema", "name", "supply", "first", "name_prefix", "root", "issuer", "item_type"];
 const GENESIS_KEYS_WITH_SALE = [...GENESIS_KEYS, "sale_commitment"];
 
-function chainOrder(left: Inscription, right: Inscription): number {
-  return left.createdHeight - right.createdHeight || left.createdIndex - right.createdIndex || left.n - right.n;
-}
 
 /**
  * Genesis parameters come only from field 5. A JSON body, earlier or not, is not a source.
@@ -245,9 +242,8 @@ function chainOrder(left: Inscription, right: Inscription): number {
  * be the reveal key.
  */
 function genesisOf(indexer: Indexer): Genesis | null {
-  const found = [...indexer.inscriptions.values()]
-    .filter((item) => hasContentType(item, "application/json"))
-    .sort(chainOrder);
+  const found = indexer.select({ hasMetadata: true, contentType: "application/json", order: "created" })
+    .filter((item) => hasContentType(item, "application/json"));
   for (const item of found) {
     if (indexer.genesisId && item.id !== indexer.genesisId) continue;
     if (item.flags.includes("reinscription") || item.flags.includes("opaque") || !item.metadata) continue;
@@ -311,15 +307,12 @@ function genesisOf(indexer: Indexer): Genesis | null {
  */
 function leafListOf(indexer: Indexer, genesis: Genesis): Inscription | undefined {
   const want = genesis.supply * 32;
-  const candidates = [...indexer.inscriptions.values()]
-    .filter((item) => item.txid === genesis.inscription.txid
-      && item !== genesis.inscription
+  const candidates = indexer.select({ txid: genesis.inscription.txid, leafIssuer: genesis.issuer, order: "created" })
+    .filter((item) => item !== genesis.inscription
       && hasContentType(item, "application/octet-stream")
       && item.bodyLength === want
-      && item.leafIssuer === genesis.issuer
       && !item.flags.includes("reinscription")
-      && !item.flags.includes("opaque"))
-    .sort(chainOrder);
+      && !item.flags.includes("opaque"));
   for (const item of candidates) {
     if (item.metadata) {
       let decoded: Record<string, unknown>;
@@ -354,9 +347,12 @@ function recordOf(item: Inscription): Record<string, unknown> | null {
 
 /** The issuer's P2MR Inscriptions after the genesis whose field 5 is a map of three keys (`0xa3`), in chain order. */
 function recordCandidates(indexer: Indexer, genesis: Genesis): Inscription[] {
-  return [...indexer.inscriptions.values()]
-    .filter((item) => item.metadata?.[0] === 0xa3 && item.leafIssuer === genesis.issuer && after(genesis, item))
-    .sort(chainOrder);
+  return indexer.select({
+    leafIssuer: genesis.issuer,
+    hasMetadata: true,
+    after: { createdHeight: genesis.inscription.createdHeight, createdIndex: genesis.inscription.createdIndex, n: genesis.inscription.n },
+    order: "created",
+  }).filter((item) => item.metadata?.[0] === 0xa3);
 }
 
 function bytes32(value: unknown): Buffer | null {
@@ -397,11 +393,6 @@ function closingOf(indexer: Indexer, genesis: Genesis): Inscription | null {
   return null;
 }
 
-function after(genesis: Genesis, item: Inscription): boolean {
-  if (item.createdHeight !== genesis.inscription.createdHeight) return item.createdHeight > genesis.inscription.createdHeight;
-  if (item.createdIndex !== genesis.inscription.createdIndex) return item.createdIndex > genesis.inscription.createdIndex;
-  return item.n > genesis.inscription.n;
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -442,10 +433,12 @@ export async function collectionView(indexer: Indexer, cursor: ChainCursor, prof
   // The leaf list is the one body this view reads. An item is checked by the digest of its body, not by the body.
   const leafListBytes = leafList ? indexer.bodyOf(leafList.id) : undefined;
   const claimed = new Map<number, Inscription>();
-  const candidates = [...indexer.inscriptions.values()]
-    .filter((item) => item !== genesis.inscription && item !== leafList && item.leafIssuer === genesis.issuer && after(genesis, item))
-    .filter((item) => !closing || chainOrder(item, closing) < 0)
-    .sort((left, right) => left.createdHeight - right.createdHeight || left.createdIndex - right.createdIndex || left.n - right.n);
+  const candidates = indexer.select({
+    leafIssuer: genesis.issuer,
+    after: { createdHeight: genesis.inscription.createdHeight, createdIndex: genesis.inscription.createdIndex, n: genesis.inscription.n },
+    before: closing ? { createdHeight: closing.createdHeight, createdIndex: closing.createdIndex, n: closing.n } : undefined,
+    order: "created",
+  }).filter((item) => item !== genesis.inscription && item !== leafList);
   for (const item of candidates) {
     const meta = metaOf(item);
     if (!meta?.name?.startsWith(genesis.namePrefix)) continue;
@@ -539,7 +532,11 @@ export async function collectionView(indexer: Indexer, cursor: ChainCursor, prof
   // A price opens a sale. A genesis that declares none has nothing to open, so none is read.
   const price = genesis.saleCommitment
     ? firstValidPrice(
-      [...indexer.inscriptions.values()].filter((item) => after(genesis, item)),
+      indexer.select({
+        leafIssuer: genesis.issuer,
+        after: { createdHeight: genesis.inscription.createdHeight, createdIndex: genesis.inscription.createdIndex, n: genesis.inscription.n },
+        order: "created",
+      }),
       genesis.inscription.id,
       genesis.issuer,
       indexer.priceSchema,

@@ -136,6 +136,28 @@ function readPointer(value: Uint8Array): { ok: true; n: bigint } | { ok: false }
   return { ok: true, n };
 }
 
+
+/**
+ * A bounded read of P2MR Inscriptions. A store answers from SQLite; an indexer
+ * with no store filters the in-memory map. `limit` null means every match.
+ */
+export type InscriptionQuery = {
+  owner?: string;
+  leafIssuer?: string;
+  txid?: string;
+  createdHeight?: number;
+  number?: number;
+  locTxid?: string;
+  locVout?: number;
+  hasMetadata?: boolean;
+  contentType?: string;
+  after?: { createdHeight: number; createdIndex: number; n: number };
+  before?: { createdHeight: number; createdIndex: number; n: number };
+  order?: "number" | "created" | "latest";
+  offset?: number;
+  limit?: number | null;
+};
+
 export class Indexer {
   readonly network: "regtest" | "testnet4" | "mainnet";
   readonly marker: Uint8Array;
@@ -154,6 +176,10 @@ export class Indexer {
   private height = 0;
   private readonly undo: UndoEntry[] = [];
   private bodyLoader: ((id: string) => Uint8Array | undefined) | null = null;
+  private itemLoader: ((id: string) => Inscription | undefined) | null = null;
+  private itemSelect: ((query: InscriptionQuery) => Inscription[]) | null = null;
+  private itemCount: (() => number) | null = null;
+  private heldLookup: ((txid: string, vout: number) => Held[]) | null = null;
 
   constructor(network: "regtest" | "testnet4" | "mainnet" = "regtest", options: { marker?: Uint8Array; schema?: string; genesisId?: string | null } = {}) {
     this.network = network;
@@ -167,7 +193,54 @@ export class Indexer {
   }
 
   get(id: string): Inscription | undefined {
-    return this.inscriptions.get(id);
+    const hit = this.inscriptions.get(id);
+    if (hit) return hit;
+    const row = this.itemLoader?.(id);
+    if (row) this.inscriptions.set(row.id, row);
+    return row;
+  }
+
+  /**
+   * How many P2MR Inscriptions exist at the tip. A store counts rows, so this
+   * stays correct when the in-memory map holds only the undo working set.
+   */
+  get size(): number {
+    return this.itemCount ? this.itemCount() : this.inscriptions.size;
+  }
+
+  /**
+   * A bounded subset, in the requested order. A store answers from indexed
+   * SQLite rows. An indexer with no store filters the in-memory map.
+   */
+  select(query: InscriptionQuery = {}): Inscription[] {
+    if (!this.itemSelect) return selectFrom(this.inscriptions.values(), query);
+    const byId = new Map<string, Inscription>();
+    for (const item of this.itemSelect({ ...query, offset: 0, limit: null })) byId.set(item.id, item);
+    for (const item of this.inscriptions.values()) byId.set(item.id, item);
+    return selectFrom(byId.values(), query);
+  }
+
+  /** Where `get` loads a P2MR Inscription that is not in the in-memory map. */
+  setItemSource(
+    loader: ((id: string) => Inscription | undefined) | null,
+    select: ((query: InscriptionQuery) => Inscription[]) | null = null,
+    count: (() => number) | null = null,
+    heldLookup: ((txid: string, vout: number) => Held[]) | null = null,
+  ): void {
+    this.itemLoader = loader;
+    this.itemSelect = select;
+    this.itemCount = count;
+    this.heldLookup = heldLookup;
+  }
+
+  /** Drop an in-memory object without changing `held`. The store still has the row. */
+  unload(id: string): void {
+    this.inscriptions.delete(id);
+  }
+
+  /** Drop cached location slots. A store calls this after a flush; the next spend reads the index. */
+  clearHeldCache(): void {
+    this.held.clear();
   }
 
   /**
@@ -177,7 +250,7 @@ export class Indexer {
    * after a block is committed. An indexer without a store keeps every body in memory.
    */
   bodyOf(id: string): Uint8Array | undefined {
-    const item = this.inscriptions.get(id);
+    const item = this.get(id);
     if (!item) return undefined;
     return item.body ?? this.bodyLoader?.(id);
   }
@@ -189,7 +262,7 @@ export class Indexer {
 
   /** Drop the in-memory body of one P2MR Inscription. Call it only when the body can be loaded again. */
   releaseBody(id: string): void {
-    const item = this.inscriptions.get(id);
+    const item = this.get(id);
     if (item) delete item.body;
   }
 
@@ -231,7 +304,7 @@ export class Indexer {
     const prior: UndoEntry["prior"] = [];
     const remember = (id: string) => {
       if (prior.some((row) => row.id === id)) return;
-      const item = this.inscriptions.get(id);
+      const item = this.get(id);
       if (!item) return;
       prior.push({
         id,
@@ -273,13 +346,13 @@ export class Indexer {
   /** Put back what an undo record says a block changed: remove what it created, restore what it moved. */
   private restore(entry: { created: string[]; prior: UndoEntry["prior"] }): void {
     for (const id of entry.created) {
-      const item = this.inscriptions.get(id);
+      const item = this.get(id);
       if (item && item.location.state === "located") this.removeHeld(item.location, id);
       this.inscriptions.delete(id);
       this.nextNumber -= 1;
     }
     for (const row of entry.prior) {
-      const item = this.inscriptions.get(row.id);
+      const item = this.get(row.id);
       if (!item) continue;
       if (item.location.state === "located") this.removeHeld(item.location, row.id);
       item.location = row.location;
@@ -320,6 +393,17 @@ export class Indexer {
     this.nextNumber = max + 1;
   }
 
+  /**
+   * Rebuild `held` and the next number without loading every payload. A store
+   * uses this on open so RAM stays the undo working set plus this compact index.
+   */
+  adoptIndex(nextNumber: number, held: { txid: string; vout: number; offset: bigint; id: string }[]): void {
+    this.inscriptions.clear();
+    this.held.clear();
+    this.nextNumber = nextNumber;
+    for (const row of held) this.addHeld({ state: "located", txid: row.txid, vout: row.vout, offset: row.offset, script: new Uint8Array() }, row.id);
+  }
+
   /** Highest P2MR Inscription number already assigned, or -1. */
   get tipNumber(): number {
     return this.nextNumber - 1;
@@ -337,14 +421,14 @@ export class Indexer {
     const moving: { id: string; x: bigint }[] = [];
     tx.inputs.forEach((input, index) => {
       if (input.coinbase || !input.prevTxid || input.prevVout === undefined) return;
-      const slot = this.held.get(outpoint(input.prevTxid, input.prevVout)) ?? [];
+      const slot = this.heldSlot(input.prevTxid, input.prevVout);
       for (const held of slot) moving.push({ id: held.id, x: inputRanges[index].start + held.offset });
     });
     const feeIds: string[] = [];
     const fresh = this.freshInscriptions(tx, created);
     for (const move of moving) {
       remember(move.id);
-      if (this.place(this.inscriptions.get(move.id)!, move.x, tx, inputTotal, outputTotal, false) === "fee") feeIds.push(move.id);
+      if (this.place(this.get(move.id)!, move.x, tx, inputTotal, outputTotal, false) === "fee") feeIds.push(move.id);
     }
     for (const { item, inputIndex, pointer } of fresh) {
       const x = this.initialOffset(item, inputIndex, pointer, inputRanges, outputTotal);
@@ -464,7 +548,7 @@ export class Indexer {
     let feeStart = block.subsidy;
     for (const group of fees) {
       for (const id of group.ids) {
-        const item = this.inscriptions.get(id);
+        const item = this.get(id);
         if (!item) continue;
         const feeFlag = item.flags.find((flag) => flag.startsWith("fee:"));
         const feeOffset = feeFlag ? BigInt(feeFlag.slice(4)) : 0n;
@@ -479,27 +563,86 @@ export class Indexer {
   }
 
   private bitTaken(txid: string, vout: number, offset: bigint): boolean {
-    return (this.held.get(outpoint(txid, vout)) ?? []).some((held) => held.offset === offset);
+    return this.heldSlot(txid, vout).some((held) => held.offset === offset);
+  }
+
+  /**
+   * Who is at this output. A store looks up the location index when this
+   * process has not already established the slot (SQL would still have the
+   * previous tip during apply).
+   */
+  private heldSlot(txid: string, vout: number): Held[] {
+    const key = outpoint(txid, vout);
+    const hit = this.held.get(key);
+    if (hit) return hit;
+    const rows = this.heldLookup?.(txid, vout) ?? [];
+    this.held.set(key, rows);
+    return rows;
   }
 
   private addHeld(location: Located, id: string): void {
-    const key = outpoint(location.txid, location.vout);
-    const list = this.held.get(key) ?? [];
+    const list = this.heldSlot(location.txid, location.vout);
     list.push({ id, offset: location.offset });
-    this.held.set(key, list);
   }
 
   private removeHeld(location: Located, id: string): void {
     const key = outpoint(location.txid, location.vout);
-    const list = (this.held.get(key) ?? []).filter((held) => held.id !== id);
-    if (list.length) this.held.set(key, list);
-    else this.held.delete(key);
+    const list = this.heldSlot(location.txid, location.vout).filter((held) => held.id !== id);
+    // Keep an empty array so a later lookup does not re-read a stale stored tip.
+    this.held.set(key, list);
   }
 }
 
 function leafIssuer(script: Uint8Array | undefined): string {
   if (!script || script.length < 34 || script[0] !== 32 || script[33] !== 0xb3) return "";
   return Buffer.from(script.subarray(1, 33)).toString("hex");
+}
+
+
+function queryAfter(item: Inscription, after: { createdHeight: number; createdIndex: number; n: number }): boolean {
+  if (item.createdHeight !== after.createdHeight) return item.createdHeight > after.createdHeight;
+  if (item.createdIndex !== after.createdIndex) return item.createdIndex > after.createdIndex;
+  return item.n > after.n;
+}
+
+function queryBefore(item: Inscription, before: { createdHeight: number; createdIndex: number; n: number }): boolean {
+  if (item.createdHeight !== before.createdHeight) return item.createdHeight < before.createdHeight;
+  if (item.createdIndex !== before.createdIndex) return item.createdIndex < before.createdIndex;
+  return item.n < before.n;
+}
+
+function compareCreated(left: Inscription, right: Inscription): number {
+  return left.createdHeight - right.createdHeight || left.createdIndex - right.createdIndex || left.n - right.n;
+}
+
+function compareLatest(left: Inscription, right: Inscription): number {
+  return right.createdHeight - left.createdHeight || right.createdIndex - left.createdIndex || right.n - left.n || right.number - left.number;
+}
+
+function selectFrom(items: Iterable<Inscription>, query: InscriptionQuery): Inscription[] {
+  const rows: Inscription[] = [];
+  for (const item of items) {
+    if (query.owner !== undefined && item.ownerAddress !== query.owner) continue;
+    if (query.leafIssuer !== undefined && item.leafIssuer !== query.leafIssuer) continue;
+    if (query.txid !== undefined && item.txid !== query.txid) continue;
+    if (query.createdHeight !== undefined && item.createdHeight !== query.createdHeight) continue;
+    if (query.number !== undefined && item.number !== query.number) continue;
+    if (query.locTxid !== undefined) {
+      if (item.location.state !== "located" || item.location.txid !== query.locTxid) continue;
+      if (query.locVout !== undefined && item.location.vout !== query.locVout) continue;
+    } else if (query.locVout !== undefined) continue;
+    if (query.hasMetadata && !item.metadata) continue;
+    if (query.contentType !== undefined && item.contentType !== query.contentType) continue;
+    if (query.after && !queryAfter(item, query.after)) continue;
+    if (query.before && !queryBefore(item, query.before)) continue;
+    rows.push(item);
+  }
+  if (query.order === "created") rows.sort(compareCreated);
+  else if (query.order === "latest") rows.sort(compareLatest);
+  else rows.sort((left, right) => left.number - right.number);
+  const offset = query.offset ?? 0;
+  if (query.limit === null || query.limit === undefined) return rows.slice(offset);
+  return rows.slice(offset, offset + query.limit);
 }
 
 export function cloneIndexer(source: Indexer): Indexer {

@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 /**
- * Snapshot of the PINS indexer, replaced only when a full read matches one tip.
- * A tip that moves during the read is discarded, so a reorg cannot publish a mix
- * of two chains. Authenticity flags come from the indexer and are not recomputed here.
+ * Snapshot of the PINS indexer: status, a bounded preview of the newest
+ * P2MR Inscriptions, and the collection pieces. List and detail pages read the
+ * indexer when asked, so the explorer does not hold every row. A tip that
+ * moves during the read is discarded. Authenticity flags come from the indexer
+ * and are not recomputed here.
  */
 import { config } from "./config.ts";
 import { redactSecrets } from "./redact.ts";
@@ -37,10 +39,14 @@ type IndexerStatus = {
 /** Rows per request when the P2MR Inscription list is read. The indexer accepts up to 1000. */
 const INSCRIPTION_PAGE = 1000;
 
-async function get<T>(path: string, signal: AbortSignal): Promise<T> {
+export async function indexerGet<T>(path: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(`${config.indexerUrl}${path}`, { signal, redirect: "error" });
   if (!response.ok) throw new Error(`indexer answered HTTP ${response.status}`);
   return (await response.json()) as T;
+}
+
+async function get<T>(path: string, signal: AbortSignal): Promise<T> {
+  return indexerGet<T>(path, signal);
 }
 
 /** Newest P2MR Inscription first: block height, then transaction index, then input index. */
@@ -129,29 +135,12 @@ export class IndexCache {
   }
 
   /**
-   * Read the whole P2MR Inscription list in pages. An answer without a `total` (an indexer that ignores `offset` and
-   * `limit`) is taken as the whole list. `total` is null then.
+   * A bounded preview of the newest P2MR Inscriptions, for the home list and a first paint.
+   * The explorer no longer holds every row; list and detail pages read the indexer when asked.
    */
-  private async loadInscriptions(signal: AbortSignal): Promise<{ inscriptions: Inscription[]; total: number | null }> {
-    const first = await get<{ total?: unknown; inscriptions: Inscription[] }>(`/inscriptions?offset=0&limit=${INSCRIPTION_PAGE}`, signal);
-    const total = first.total;
-    if (total === undefined) return { inscriptions: first.inscriptions, total: null };
-    if (typeof total !== "number" || !Number.isInteger(total) || total < 0) throw new Error("indexer P2MR Inscriptions total is invalid");
-    if (total > config.maxInscriptions) throw new Error("indexer snapshot exceeds the P2MR Inscription limit");
-    const pages = Math.max(1, Math.ceil(total / INSCRIPTION_PAGE));
-    const chunks: Inscription[][] = new Array(pages);
-    chunks[0] = first.inscriptions;
-    let cursor = 1;
-    const worker = async () => {
-      while (cursor < pages) {
-        const index = cursor;
-        cursor += 1;
-        const page = await get<{ inscriptions: Inscription[] }>(`/inscriptions?offset=${index * INSCRIPTION_PAGE}&limit=${INSCRIPTION_PAGE}`, signal);
-        chunks[index] = page.inscriptions;
-      }
-    };
-    await Promise.all(Array.from({ length: Math.min(4, pages - 1) }, () => worker()));
-    return { inscriptions: chunks.flat(), total };
+  private async loadPreview(signal: AbortSignal): Promise<Inscription[]> {
+    const first = await get<{ inscriptions: Inscription[] }>(`/inscriptions?offset=0&limit=${INSCRIPTION_PAGE}&sort=latest`, signal);
+    return (first.inscriptions ?? []).slice(0, INSCRIPTION_PAGE);
   }
 
   private async refresh(): Promise<void> {
@@ -166,10 +155,9 @@ export class IndexCache {
         return;
       }
       this.loading = true;
-      const { inscriptions, total } = await this.loadInscriptions(signal);
-      if (inscriptions.length > config.maxInscriptions) throw new Error("indexer snapshot exceeds the P2MR Inscription limit");
+      const preview = await this.loadPreview(signal);
       // The latest P2MR Inscriptions can be shown before every collection piece page returns.
-      if (!this.ready) this.publishPreview(inscriptions, status.height);
+      if (!this.ready) this.publishPreview(preview, status.height);
       const collection = await get<Record<string, unknown>>("/collection", signal);
       if (!this.ready) this.collection = collection;
       const pieces = collection.status === "present" ? await this.loadPieces(signal) : [];
@@ -181,9 +169,7 @@ export class IndexCache {
         this.error = null;
         return;
       }
-      // The tip did not move, so the pages are one list. A count that differs from the total is an indexer fault.
-      if (total !== null && inscriptions.length !== total) throw new Error("indexer P2MR Inscription pages do not add up to the total");
-      this.apply(inscriptions, collection, pieces, status.height);
+      this.apply(preview, collection, pieces, status.height);
       this.piecesComplete = true;
       this.previewReady = true;
       this.tipKey = key;

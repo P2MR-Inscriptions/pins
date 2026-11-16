@@ -61,8 +61,8 @@ test("latest inscriptions are readable before the collection piece pages finish"
   assert.equal(cache.previewReady, true);
   assert.equal(cache.ready, false);
   assert.equal(cache.piecesComplete, false);
-  assert.equal(cache.list.length, TOTAL);
-  assert.equal(cache.newest.length, TOTAL);
+  assert.ok(cache.list.length > 0 && cache.list.length <= TOTAL);
+  assert.equal(cache.newest.length, cache.list.length);
   assert.ok(previewAt < piecesStarted + 80 || piecesStarted === 0 || previewAt < fullAt);
   const top = cache.newest[0];
   assert.ok(top);

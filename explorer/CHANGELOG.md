@@ -6,7 +6,8 @@
 
 - Default `RATE_PER_MINUTE` is 2000 and `MAX_CONCURRENCY` is 128, so a gallery page of 104 images does not hit a 429 or a 503. The limits still cap a client that keeps asking far faster.
 - Image and text previews retry failed loads with backoff and honour `Retry-After`, then show "Preview unavailable".
-- P2MR Inscription numbers are always written `P2MR Inscription #N` (global, counted from 0). A collection item also shows its own number, for example `Flatbits #12 of 10,000`, on its page. Lists and captions label a collection item as `Item #12`.
+- The home introduction says that the explorer shows P2MR Inscriptions that its indexer reads from a Qbit node, instead of naming "this computer".
+- Every page except the collection view writes only the global number (counted from 0): `Pins #N` on the thumbnails of the home page and of the latest list (the large latest hero keeps `P2MR Inscription #N`), and `P2MR Inscription #N` in the title and facts of a P2MR Inscription page. The list is titled "Latest P2MR Inscriptions" and is newest first. A collection item's own number (for example `Flatbit #12`, from the name prefix of the genesis) appears only in the collection view and in the Collection facts of an item. The menu entry for the collection is named after it, for example "Flatbits Collection".
 - SVG previews are no longer drawn with `image-rendering: pixelated`. Raster images keep it.
 - `.env.example` and the README include a mainnet cookie login (`QBIT_RPC_URL` and `QBIT_RPC_DATADIR`).
 

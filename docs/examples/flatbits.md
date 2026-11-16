@@ -41,7 +41,7 @@ Flatbits has two kinds of number, and they are not the same thing:
 - The **P2MR Inscription number** is global. It counts every P2MR Inscription the indexer finds, from 0, in the order of block, transaction and envelope (PINS-2 §4.1). The genesis is number 0, the leaf list is number 1, and the 10,000 items hold numbers 2 to 10,001. At block 171,486 the indexer holds 10,002 P2MR Inscriptions, numbered 0 to 10,001. The next P2MR Inscription on the chain takes number 10,002.
 - The **item number** belongs to the collection only. It runs from `first` for `supply` numbers, here 1 to 10,000. The genesis and the leaf list have none.
 
-An item's two numbers are independent. Do not convert one into the other. The explorer writes the first as `P2MR Inscription #10,001` and the second as `Flatbits #10,000 of 10,000`. In the API, `number` is the P2MR Inscription number and the number of a piece is the item number.
+An item's two numbers are independent. Do not convert one into the other. The explorer writes the first everywhere, as `P2MR Inscription #10,001` (`Pins #10,001` on a thumbnail caption). It writes the second only in its collection view (the menu entry is "Flatbits Collection") and in the Collection facts of an item, as `Flatbit #10,000`, using the collection name and the name prefix of the genesis. In the API, `number` is the P2MR Inscription number and the number of a piece is the item number.
 
 The genesis field 5 is the CBOR map of PINS-5 §3. Its keys, in order, with the values read from the genesis P2MR Inscription:
 

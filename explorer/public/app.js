@@ -65,17 +65,28 @@ function openPage() {
   };
 }
 
-// The global number counts every P2MR Inscription from 0. Collection piece numbers are a separate series.
+// Every page shows the global number, which counts every P2MR Inscription from 0.
+// Collection item numbers appear only in the collection view and in the Collection facts of an item.
 const inscriptionLabel = (n) => `P2MR Inscription #${fmt(n)}`;
-const captionLabel = (item) => item && item.collectionPiece != null && Number.isFinite(Number(item.collectionPiece))
-  ? `${brand.pieceWord} #${fmt(item.collectionPiece)}`
-  : inscriptionLabel(item?.number);
-const pieceTitle = (piece) => {
-  if (!piece || typeof piece !== "object") return "P2MR Inscription";
-  const base = String(piece.namePrefix || piece.collectionName || brand.pieceWord).replace(/[\s#]+$/, "");
-  const n = Number(piece.number);
-  return Number.isFinite(n) ? `${base} #${n.toLocaleString("en-US")}` : base;
-};
+// The short form for a thumbnail caption: the same global number.
+const pinsLabel = (n) => `Pins #${fmt(n)}`;
+// The item name is the singular the collection declares as its name prefix, without the number sign. Without one, the collection name.
+const itemBase = (prefix, name) => String(prefix || name || brand.pieceWord).replace(/[\s#]+$/, "");
+let collectionRecord = null;
+const itemName = () => itemBase(collectionRecord?.namePrefix, collectionRecord?.name);
+const itemLabel = (n) => `${itemName()} #${fmt(n)}`;
+const collectionTitle = (record) => (record?.name ? `${record.name} Collection` : brand.collectionNav);
+function setCollection(record) {
+  if (!record || record.status !== "present") return;
+  collectionRecord = record;
+  const nav = document.getElementById("nav-collection");
+  if (nav) nav.textContent = collectionTitle(record);
+}
+// The menu names the collection from its genesis record. Until that record is read, it keeps the generic word.
+async function loadCollection() {
+  if (collectionRecord) return;
+  try { setCollection((await request("/collection"))?.onchain); } catch { /* the menu keeps its generic word */ }
+}
 const fmt = (n) => {
   const v = Number(n);
   return Number.isFinite(v) ? v.toLocaleString("en-US") : "unknown";
@@ -290,7 +301,7 @@ function contentFrame(item, index, extra) {
 function cell(item, index) {
   try {
     const id = item && typeof item.id === "string" ? item.id : "";
-    const label = captionLabel(item);
+    const label = pinsLabel(item?.number);
     const frame = contentFrame(item, index);
     if (!SAFE_ID.test(id)) return h("div", { class: "cell" }, frame, h("span", { class: "cap" }, label));
     return h("a", { class: "cell", href: `#/inscription/${id}`, title: id }, frame, h("span", { class: "cap" }, label));
@@ -412,7 +423,7 @@ function countedInscriptions(n) {
 }
 
 function homeHero(item) {
-  const label = captionLabel(item);
+  const label = inscriptionLabel(item.number);
   const href = item && SAFE_ID.test(item.id || "") ? `#/inscription/${item.id}` : "#/inscriptions";
   return h("article", { class: "home-hero" },
     h("h2", null, "LATEST P2MR INSCRIPTION"),
@@ -425,20 +436,21 @@ async function home() {
   const latest = await page.get(`/inscriptions?limit=${HOME_FETCH}`);
   if (!page.live()) return;
   await refreshStatus(true);
+  await loadCollection();
   if (!page.live()) return;
   const items = latest.inscriptions;
   const hero = items[0];
   const side = hero ? items.slice(1).filter((item) => item.id !== hero.id).slice(0, HOME_SIDE) : [];
   const intro = h("section", { class: "home-intro" },
-      h("h2", null, "READ FROM YOUR OWN NODE"),
-    h("p", null, "This explorer shows PINS recorded by the indexer on this computer.", h("br"), "It is read-only. It does not sign, broadcast, or keep a wallet."));
+      h("h2", null, "READ FROM A QBIT NODE"),
+    h("p", null, "This explorer shows P2MR Inscriptions that its indexer reads from a Qbit node.", h("br"), "It is read-only. It does not sign, broadcast, or keep a wallet."));
   const board = hero ? h("div", { class: "home-board" },
     h("div", { class: "home-stage" },
       homeHero(hero),
       side.length ? h("div", { class: "home-side" }, side.map((item, index) => cell(item, index + 1))) : null),
     h("div", { class: "home-links" },
       link("#/inscriptions", "Browse all P2MR Inscriptions →"),
-      link("#/collection", "Open the collection →"))) : null;
+      link("#/collection", `Open the ${collectionTitle(collectionRecord)} →`))) : null;
   page.show(
     h("div", { class: "home-gap home-gap-top", "aria-hidden": "true" }),
     intro,
@@ -644,7 +656,7 @@ async function inscriptionsPage(q) {
   const data = await page.get(`/inscriptions?offset=${offset}&limit=${PAGE_SIZE}`);
   if (!page.live()) return;
   const to = (o) => go(`/inscriptions?offset=${o}`);
-  page.show(h("h1", null, "P2MR Inscriptions"), h("p", { class: "lede" }, `${countedInscriptions(data.total)}, newest first.`),
+  page.show(h("h1", null, "Latest P2MR Inscriptions"), h("p", { class: "lede" }, `${countedInscriptions(data.total)}, newest first.`),
     h("div", { class: "grid" }, data.inscriptions.map(cell)), pager(data.total, offset, PAGE_SIZE, to));
 }
 
@@ -668,8 +680,9 @@ async function collectionPage(q) {
     return;
   }
   const c = col.onchain;
+  setCollection(c);
   const to = (o, v = only) => go(`/collection?offset=${o}${v ? "&verified=1" : ""}`);
-  const jump = h("input", { type: "number", min: c.first, max: c.first + c.supply - 1, placeholder: `${brand.pieceWord} #${c.first}–${c.first + c.supply - 1}`, "aria-label": "Piece number" });
+  const jump = h("input", { type: "number", min: c.first, max: c.first + c.supply - 1, placeholder: `${itemName()} #${c.first}–${c.first + c.supply - 1}`, "aria-label": "Piece number" });
   const mismatch = col.checks.some((k) => k.match === false);
   const summary = col.piecesComplete
     ? `${fmt(col.authenticPieces)} of ${fmt(c.supply)} pieces are authentic in this indexer snapshot.`
@@ -677,7 +690,7 @@ async function collectionPage(q) {
   const genesis = h("div", { class: "section genesis" }, h("h3", null, "Collection genesis ", verified()),
     facts([["Genesis P2MR Inscription", link(`#/inscription/${c.genesisId}`, c.genesisId, "mono")], ["Merkle root", h("span", { class: "mono" }, c.root)], ["Issuer key", h("span", { class: "mono" }, c.issuer)], ["Item type", c.itemType]]));
   page.show(
-    h("h1", { class: "collection-title" }, c.name),
+    h("h1", { class: "collection-title" }, collectionTitle(c)),
     h("p", { class: "lede" }, summary),
     genesis,
     h("details", { class: "manifest", open: mismatch },
@@ -691,11 +704,11 @@ async function collectionPage(q) {
     col.piecesComplete ? (() => {
       const sheet = h("div", { class: "sheet" },
         h("div", { class: "grid" }, list.pieces.map((p, index) => {
-          if (!p.inscriptionId) return h("a", { class: "cell", href: `#/${brand.piecePath}/${p.number}` }, h("div", { class: "tile empty" }, "not inscribed"), h("span", { class: "cap" }, `#${fmt(p.number)}`));
+          if (!p.inscriptionId) return h("a", { class: "cell", href: `#/${brand.piecePath}/${p.number}` }, h("div", { class: "tile empty" }, "not inscribed"), h("span", { class: "cap" }, itemLabel(p.number)));
           const url = `/api/content/${p.inscriptionId}`;
           const img = picture(url, `${c.name} ${p.number}`, index);
           attachImageRetry(img, url, () => { if (img.isConnected) img.replaceWith(h("div", { class: "tile" }, "Preview unavailable")); });
-          return h("a", { class: "cell", href: `#/inscription/${p.inscriptionId}`, title: p.inscriptionId }, img, h("span", { class: "cap" }, `#${fmt(p.number)}`));
+          return h("a", { class: "cell", href: `#/inscription/${p.inscriptionId}`, title: p.inscriptionId }, img, h("span", { class: "cap" }, itemLabel(p.number)));
         })),
         pager(list.total, offset, PAGE_SIZE, to));
       fitSheet(sheet);
@@ -712,7 +725,9 @@ async function piecePage(n) {
   const piece = await page.get(`/collection/pieces/${n}`);
   if (!page.live()) return;
   if (piece.inscriptionId) { location.replace(`#/inscription/${piece.inscriptionId}`); return; }
-  page.show(h("h1", null, `${brand.pieceWord} #${n}`), h("div", { class: "err" }, h("strong", null, "No authentic P2MR Inscription for this number"),
+  await loadCollection();
+  if (!page.live()) return;
+  page.show(h("h1", null, itemLabel(n)), h("div", { class: "err" }, h("strong", null, "No authentic P2MR Inscription for this number"),
     h("p", null, "Nothing in this snapshot passes the collection check for this piece. It may not be inscribed yet.")), h("p", null, link("#/collection", "Back to the collection")));
 }
 
@@ -733,9 +748,6 @@ function locationText(loc) {
 async function inscriptionPage(id) {
   const page = openPage();
   const i = await page.get(`/inscription/${id}`);
-  if (!page.live()) return;
-  // The collection size is in the collection record, not in this record. Without it the line has no "of N".
-  const col = i.piece ? await page.get("/collection").catch(() => null) : null;
   if (!page.live()) return;
   const viewer = detailViewer(i);
   const showBadge = i.authenticity === "confirmed" && i.snapshotStale !== true;
@@ -775,7 +787,6 @@ async function inscriptionPage(id) {
   const hop = (target, label, direction) => target?.id
     ? h("a", { class: "insc-hop", href: `#/inscription/${target.id}`, "aria-label": label }, hopArrow(direction))
     : h("button", { type: "button", class: "insc-hop", disabled: true, "aria-label": label }, hopArrow(direction));
-  const name = i.metadata?.decoded?.meta?.name;
   const attrs = Array.isArray(i.piece?.attributes) && i.piece.attributes.length ? i.piece.attributes : i.metadata?.decoded?.meta?.attributes;
   const traitRows = Array.isArray(attrs) ? attrs.filter((row) => row && typeof row === "object").slice(0, 40).map((row) => [clip(row.trait_type, 80), clip(row.value, 80)]) : [];
   let decodedText = "";
@@ -787,12 +798,8 @@ async function inscriptionPage(id) {
   const fields = Array.isArray(i.fields) ? i.fields : [];
   const flags = Array.isArray(i.flags) ? i.flags.filter((flag) => typeof flag === "string") : [];
   const tx = typeof i.txid === "string" && /^[0-9a-f]{64}$/.test(i.txid) ? txLink(i.txid) : "none";
-  const heading = i.piece ? pieceTitle(i.piece) : (typeof name === "string" && name.trim() ? clip(name, 160) : inscriptionLabel(i.number));
+  const heading = inscriptionLabel(i.number);
   const ext = status?.externalExplorer;
-  const supply = Number(col?.onchain?.supply), first = Number(col?.onchain?.first);
-  const pieceName = i.piece ? String(i.piece.collectionName || brand.pieceWord) : "";
-  const pieceSeries = !i.piece ? "" : `${pieceName} #${fmt(i.piece.number)}${
-    Number.isInteger(supply) && supply > 0 && first === 1 ? ` of ${fmt(supply)}` : ""}`;
   page.show(
     h("div", { class: "detail" },
       h("div", { class: "detail-actions" },
@@ -803,7 +810,6 @@ async function inscriptionPage(id) {
       h("div", { class: "art-wrap" }, viewer, h("div", { class: "badge-row" }, chainBadge, showBadge ? authNote : null)),
       h("div", { class: "detail-copy" },
       h("h1", null, heading),
-      i.piece ? h("p", { class: "muted" }, inscriptionLabel(i.number)) : null,
       h("p", { class: "lede" }, lede),
       chainNote,
       showBadge ? null : authNote,
@@ -820,7 +826,7 @@ async function inscriptionPage(id) {
         ["Raw content", [link(`/api/content/${i.id}`, "view"), " · ", link(`/api/content/${i.id}?download=1`, "download bytes")]],
         ext ? ["Node explorer", link(`${ext}/tx/${i.txid}`, "open transaction")] : null])),
     i.piece ? h("div", { class: "section" }, h("h3", null, "Collection ", verified()),
-      facts([["Collection", link("#/collection", i.piece.collectionName ?? "collection")], ["Collection number", [pieceSeries, h("span", { class: "muted" }, " (collection piece, not the P2MR Inscription number)")]],
+      facts([["Collection", link("#/collection", i.piece.collectionName ?? "collection")], ["Item", link("#/collection", `${itemBase(i.piece.namePrefix, i.piece.collectionName)} #${fmt(i.piece.number)}`)],
         ["Confirmations", `${fmt(i.piece.confirmations)}${i.piece.final ? " (final)" : " (not final yet)"}`],
         ["Genesis", link(`#/inscription/${i.piece.genesisId}`, short(i.piece.genesisId, 12), "mono")]])) : null,
     h("div", { class: "section" }, h("h3", null, "Metadata ", verified("Field 5")),
@@ -1142,6 +1148,7 @@ async function refreshStatus(force = false) {
         ? "Mock indexer with synthetic data. Development only, nothing here is on-chain."
         : stale ? "Showing the last consistent indexer snapshot. A newer read was not applied." : "";
       paintStatus(document.getElementById("foot"), status);
+      void loadCollection();
       reserveFooter();
       if (document.querySelector(".home-gap-top")) fitHomeGaps();
     } catch (error) {

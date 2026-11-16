@@ -79,6 +79,15 @@ test("latest inscriptions follow block height then transaction index", async () 
   assert.equal(detail.chain, "mock");
 });
 
+test("the default list is newest first, and the next page continues it", async () => {
+  const asc = (await api("/api/inscriptions?limit=200&order=asc")).body.inscriptions;
+  const newest = [...asc].sort((a, b) => b.createdHeight - a.createdHeight || b.createdIndex - a.createdIndex || b.n - a.n || b.number - a.number);
+  const first = (await api("/api/inscriptions?limit=15")).body.inscriptions;
+  const second = (await api("/api/inscriptions?offset=15&limit=15")).body.inscriptions;
+  assert.deepEqual(first.map((item: { id: string }) => item.id), newest.slice(0, 15).map((item: { id: string }) => item.id));
+  assert.deepEqual(second.map((item: { id: string }) => item.id), newest.slice(15, 30).map((item: { id: string }) => item.id));
+});
+
 test("address holdings come from the snapshot owner", async () => {
   const { body } = await api("/api/address/qb1mockowneraaaaaaaaaaaaaaaaaaaaaa");
   assert.ok(body.total > 0);

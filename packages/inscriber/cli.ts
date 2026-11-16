@@ -107,7 +107,7 @@ function singleSummary(plan: MintPlan, showMarker: boolean): string {
   return [
     `network ${plan.network}`,
     `fee rate ${plan.feeRate} bit/vB`,
-    "single P2MR Inscription (no collection, no genesis, no number)",
+    "single P2MR Inscription (no collection, no genesis; the indexer gives it its global number)",
     `fan-out ${plan.fanout.txid} fee ${plan.fanout.fee} bits`,
     `${reveal.name} ${reveal.txid} weight ${reveal.weight} fee ${reveal.fee} bits`,
     `P2MR Inscription id ${reveal.txid}i0`,

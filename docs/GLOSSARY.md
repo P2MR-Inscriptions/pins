@@ -22,7 +22,7 @@ The words of PINS, in the sense the specifications use them. A name in `code typ
 | **Fan-out** | The one transaction of a launch that pays every commit, so that the reveals are independent of each other |
 | **Batch** | Several items revealed in one transaction. `batchSize` of the profile sets how many |
 | **ID** | `<txid>i<n>`: the txid of the reveal and the index of the envelope in it (PINS-1 §6.1) |
-| **Number** | The place of a P2MR Inscription in one sequence that starts at 0, ordered by block, transaction and envelope (PINS-2 §4.1) |
+| **Number** | The place of a P2MR Inscription in one sequence that starts at 0, ordered by block, transaction and envelope (PINS-2 §4.1). It is global: every P2MR Inscription has one, whether or not it belongs to a collection |
 | **Activation height** | The first block an indexer reads. Mainnet: 161,948 |
 | **Indexer** | A program that reads the chain with the rules of PINS and derives numbers, locations and owners |
 | **State hash (`stateHash`)** | The SHA-256 of the state of every P2MR Inscription at a tip. Two indexers on the same chain agree on it (PINS-2 §4.4) |
@@ -34,7 +34,7 @@ The words of PINS, in the sense the specifications use them. A name in `code typ
 | **Collection** | A genesis P2MR Inscription and the items whose Merkle leaves match its root (PINS-5) |
 | **Genesis** | The P2MR Inscription that carries the collection's name, supply, Merkle root, issuer key and, with a sale, the sale commitment |
 | **Leaf list** | A P2MR Inscription that lists the leaf hashes of the collection, so that anyone can rebuild the root |
-| **Item** | One P2MR Inscription of a collection, numbered from `first` (1 for Flatbits) for `supply` numbers |
+| **Item** | One P2MR Inscription of a collection, numbered from `first` (1 for Flatbits) for `supply` numbers. This is the collection's own series, not the P2MR Inscription number |
 | **Merkle leaf, root** | `SHA-256(uint32be n, SHA-256 body, SHA-256 field 5)` of an item, and the root of the tree over all leaves (PINS-5 §5.1) |
 | **Issuer key** | The key that signs the reveals of a collection. An item is authentic only under it |
 | **Authentic** | An item that meets the seven rules of PINS-5 §9: it comes after the genesis and before the closing, is signed by the issuer key, matches leaf `n` of the root, and is the first P2MR Inscription to do so for its number. A copy is never authentic |

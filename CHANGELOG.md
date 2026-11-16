@@ -4,7 +4,7 @@
 
 This file records the reference tools and the repository layout. Specification edits are in [docs/specs/CHANGELOG.md](docs/specs/CHANGELOG.md).
 
-## Unreleased
+## 1.0.1 - 2026-11-16
 
 - Indexer: lists, owner and output queries, and the collection records read from a SQLite index (number, owner, location, issuer, created height). The in-memory map holds only the working set of a reorganisation. Bodies stay in the database and are read on demand. The state hash is still the PINS-2 SHA-256 of the whole preimage at every block; unchanged line bytes are reused so the text is not re-encoded. That full digest is a known per-block cost and cannot be bounded without changing the digest. Answers for the existing routes are unchanged when the optional query keys (`sort=latest`, `txid`, `locTxid`, `createdHeight`, `number`) are omitted.
 - Explorer: a preview of the latest 1000 P2MR Inscriptions is kept, not a snapshot of the whole list. Detail, content, address, transaction and block views query the indexer as they are requested. `MAX_INSCRIPTIONS` still caps the collection piece list.

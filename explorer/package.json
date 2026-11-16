@@ -1,6 +1,6 @@
 {
   "name": "pins-explorer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "description": "Read-only loopback explorer for PINS.",

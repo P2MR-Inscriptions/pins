@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Local setup guide. Text only. No remote calls and no credentials.
-// Explorer package 1.0.0.
+// Explorer package 1.0.1.
 
 export const pinsSource = {
   href: "https://github.com/P2MR-Inscriptions/pins",
@@ -13,7 +13,7 @@ export const guideSections = [
     id: "prerequisites",
     title: "Prerequisites",
     blocks: [
-      { kind: "p", text: "This guide is for explorer 1.0.0.\nThat number is this package.\nIt is not a PINS protocol version." },
+      { kind: "p", text: "This guide is for explorer 1.0.1.\nThat number is this package.\nIt is not a PINS protocol version." },
       { kind: "p", text: "Open a terminal in the directory that contains package.json.\nRun every command below from that directory.\nThat directory is explorer/ inside the PINS repository.\nDo not install this explorer as a global npm package." },
       { kind: "p", text: "Use Node.js 22.13 up to 24 (older than 25).\nNode 22.12 and older do not have node:sqlite without a flag.\nCheck with node -v." },
       { kind: "p", text: "A real index needs a local Qbit node that has finished sync.\nThe indexer reads the block, including its witness scripts.\nIf those scripts are missing, it stops with “witness pruned” and refuses that transaction.\nStart the node the way you already run Qbit Core.\nThis explorer does not start the node." },

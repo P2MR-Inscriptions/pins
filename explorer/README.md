@@ -92,7 +92,7 @@ All of them are environment variables, read from the process or from `.env` (see
 
 ## Limits
 
-Explorer 1.0.0 is a viewer. It reads the indexer of this repository and changes nothing in it. It does not decide whether an item is authentic: the page shows what the indexer reports (`authentic` and `reason`). Node RPC is optional and read-only (`getblockcount`, `getblockhash`, `getblockheader`, `getrawtransaction`).
+Explorer 1.0.1 is a viewer. It reads the indexer of this repository and changes nothing in it. It does not decide whether an item is authentic: the page shows what the indexer reports (`authentic` and `reason`). Node RPC is optional and read-only (`getblockcount`, `getblockhash`, `getblockheader`, `getrawtransaction`).
 
 `npm test` checks the pages and the server against a mock indexer and against the indexer of `packages/` on a small synthetic database. The public example (10,002 P2MR Inscriptions) is checked at the indexer, by the mainnet replay of [docs/examples/flatbits.md](../docs/examples/flatbits.md). The explorer has no test against a synced mainnet node.
 

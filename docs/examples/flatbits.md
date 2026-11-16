@@ -86,7 +86,7 @@ npm run indexer:serve -- \
   --genesis 15d6f9c48865b579f7d1144e4d2d71d905c6fe04458bebc814052a3e39a07784i0
 ```
 
-The shell expands `~/.qbit`. A user-and-password login, or a cookie file at another path, is described in [Log in to your node](../guides/NODE-LOGIN.md). The first catch-up on mainnet can take several hours. The HTTP API does not listen until that catch-up has finished, so wait until the process has reached the tip before the checks below. Node may print an `ExperimentalWarning` about SQLite; it is harmless. Then:
+The shell expands `~/.qbit`. A user-and-password login, or a cookie file at another path, is described in [Log in to your node](../guides/NODE-LOGIN.md). The first catch-up on mainnet can take a while. The HTTP API does not listen until that catch-up has finished, so wait until the process has reached the tip before the checks below. A progress line on stderr reports the height, the percent of this catch-up, the rate, and an ETA. `--prefetch` (default 8) fetches later blocks ahead; they are applied in height order. Catch-up writes blocks in SQLite batches of 64; a crash drops only the open batch. Node may print an `ExperimentalWarning` about SQLite; it is harmless. Then:
 
 1. `/inscription/15d6f9c4…7784i0` and `/inscription/15d6f9c4…7784i1` are the genesis and the leaf list of the table above. Both are in the genesis reveal, block 161948.
 2. `/collection` has `status` `present`, `supply` 10000, and `root` equal to the Merkle root of the table, and `issuer` equal to the issuer key. Its `authentic` count is 10,000. Later blocks cannot change that count: every number is already taken, and the first valid P2MR Inscription of a number is the only one that counts.

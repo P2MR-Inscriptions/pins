@@ -6,6 +6,8 @@ This file records the reference tools and the repository layout. Specification e
 
 ## Unreleased
 
+- Indexer: first sync fetches `getblock` verbosity 0 (raw bytes) and reads prevouts from outputs already stored; a block that spends an unknown output is fetched again at verbosity 3 (exact 8-decimal amounts, no float, no `getrawtransaction` fallback). A bounded window of later blocks is prefetched (default 8, `--prefetch` / `PINS_PREFETCH`) and applied in height order. Catch-up writes blocks in bounded SQLite transactions (default 64, atomic per batch, resumes from the last committed tip after a crash). A throttled progress line on stderr reports the catch-up percent from the start height, not from height 0. The state hash of each committed block is still the PINS-2 digest and is still stored per block; unchanged P2MR Inscription lines are reused as bytes so catch-up does not re-encode the whole set. A pruned node may not have undo data.
+
 - Documents: a complete mainnet indexer example with a cookie login, a first-sync note (the HTTP API does not listen until catch-up finishes), the Node SQLite warning, how to copy a Qbit data directory, and a deploy guide (`docs/guides/DEPLOY.md`) with systemd units, a reverse-proxy example, LAN firewall advice, and an SSH tunnel.
 - Explorer: default `RATE_PER_MINUTE` is 2000 and `MAX_CONCURRENCY` is 128, so a 104-image gallery page stays under the limits. Failed content previews are retried with backoff and honour `Retry-After`.
 

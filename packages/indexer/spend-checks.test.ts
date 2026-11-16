@@ -7,7 +7,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { writeCompactSize } from "../inscriber/compact.ts";
 import { buildEnvelope, concatBytes, contentTypeField, revealLeaf } from "../inscriber/script.ts";
-import { toChainBlock, type RpcBlock } from "./chain.ts";
+import { fillBlockPrevouts, toChainBlock, type RpcBlock } from "./chain.ts";
 import { follow, type Rpc } from "./follow.ts";
 import { Indexer } from "./pins.ts";
 import { Store } from "./store.ts";
@@ -137,13 +137,25 @@ test("the witness guard names a hand-built transaction too", () => {
 });
 
 function rpcFor(blocks: RpcBlock[], parents: Record<string, string> = {}): Rpc {
+  const lookup = (txid: string): string | undefined => {
+    if (parents[txid]) return parents[txid];
+    for (const block of blocks) {
+      const tx = block.tx.find((item) => item.txid === txid);
+      if (tx) return tx.hex;
+    }
+    return undefined;
+  };
   return {
     call: async <T>(method: string, params: unknown[] = []): Promise<T> => {
       if (method === "getblockchaininfo") return { chain: "regtest", blocks: blocks.length - 1, bestblockhash: blocks.at(-1)?.hash } as T;
       if (method === "getblockcount") return (blocks.length - 1) as T;
       if (method === "getblockhash") return blocks[params[0] as number].hash as T;
-      if (method === "getblock") return blocks.find((entry) => entry.hash === params[0]) as T;
-      if (method === "getrawtransaction") return { hex: parents[params[0] as string] } as T;
+      if (method === "getblock") {
+        const found = blocks.find((entry) => entry.hash === params[0]);
+        if (!found) throw new Error(`missing block ${String(params[0])}`);
+        return fillBlockPrevouts(found, lookup) as T;
+      }
+      if (method === "getrawtransaction") throw new Error("prevout is required; no raw-transaction fallback");
       throw new Error(method);
     },
   };

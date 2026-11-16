@@ -4,6 +4,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { fillBlockPrevouts } from "./chain.ts";
 import { follow, type Rpc } from "./follow.ts";
 import { Store } from "./store.ts";
 
@@ -40,7 +41,7 @@ test("follow commits a same-block spend without fetching that parent", async () 
         throw new Error("same-block parent must not be fetched");
       }
       if (method === "getblock") {
-        return {
+        return fillBlockPrevouts({
           hash,
           height: 0,
           tx: [
@@ -48,7 +49,7 @@ test("follow commits a same-block spend without fetching that parent", async () 
             { txid: txidA, hex: rawTx({ coinbase: true }, 5), vin: [{ coinbase: "00" }], vout: [] },
             { txid: txidB, hex: rawTx({ txid: txidA, vout: 0 }, 5), vin: [{ txid: txidA, vout: 0 }], vout: [] },
           ],
-        } as T;
+        }) as T;
       }
       throw new Error(method);
     },

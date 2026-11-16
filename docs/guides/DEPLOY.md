@@ -50,7 +50,7 @@ If you copy a complete data directory from another machine, stop the node there 
 
 ## Indexer
 
-The first catch-up on mainnet can take several hours. The HTTP API does not listen until that catch-up has finished, so the explorer has nothing to read until the indexer has reached the tip. Node may print an `ExperimentalWarning` about SQLite; it is harmless.
+The first catch-up on mainnet can take a while. The HTTP API does not listen until that catch-up has finished, so the explorer has nothing to read until the indexer has reached the tip. The indexer writes a progress line to stderr during that catch-up (height, percent of this catch-up, rate, and ETA). `--prefetch` (default 8) fetches later blocks ahead; they are applied in height order. Catch-up writes blocks in SQLite batches of 64; a crash drops only the open batch. Node may print an `ExperimentalWarning` about SQLite; it is harmless.
 
 Do not set `MemoryDenyWriteExecute` on a Node service: the runtime needs to write executable memory.
 

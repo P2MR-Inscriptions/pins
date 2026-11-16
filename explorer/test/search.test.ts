@@ -9,31 +9,33 @@ import { ADDRESS, MAX_QUERY_LENGTH, classifyQuery } from "../server/search.ts";
  */
 function before(q: string): { type: string; path: string } | null {
   const s = q.trim();
-  if (!s) return null;
+  if (!s || s.length > MAX_QUERY_LENGTH) return null;
   const lower = s.toLowerCase();
   if (/^[0-9a-f]{64}i\d+$/.test(lower)) return { type: "inscription", path: `/inscription/${lower}` };
   if (/^[0-9a-f]{64}$/.test(lower)) return { type: "transaction", path: `/tx/${lower}` };
   if (/^(qb|tq|qbrt)1[0-9a-z]{6,120}$/.test(lower)) return { type: "address", path: `/address/${lower}` };
-  const words = "item|piece";
-  const piece = new RegExp(`^(?:${words})?\\s*#\\s*(\\d+)$`, "i").exec(s) ?? new RegExp(`^(?:${words})\\s+(\\d+)$`, "i").exec(s);
-  if (piece) return { type: "collection piece", path: `/item/${Number(piece[1])}` };
   const block = /^block\s*#?\s*(\d+)$/i.exec(s);
   if (block) return { type: "block", path: `/block/${Number(block[1])}` };
-  const numbered = /^(?:no\.?|n°|inscription)\s*#?\s*(\d+)$/i.exec(s);
-  if (numbered) return { type: "inscription number", path: `/number/${Number(numbered[1])}` };
-  if (/^\d+$/.test(s)) return { type: "inscription number", path: `/number/${Number(s)}` };
+  const numbered = /^(?:(?:no\.?|n°|inscription|pins|p2mr\s+inscription)\s*)?#?\s*(\d{1,3}(?:,\d{3})+|\d+)$/i.exec(s);
+  if (numbered && Number.isSafeInteger(Number(numbered[1].replaceAll(",", "")))) return { type: "inscription number", path: `/number/${Number(numbered[1].replaceAll(",", ""))}` };
   return null;
 }
 
 const ACCEPTED: [string, string, string][] = [
-  ["item #12", "collection piece", "/item/12"],
-  ["piece #12", "collection piece", "/item/12"],
-  ["item 12", "collection piece", "/item/12"],
-  ["piece 12", "collection piece", "/item/12"],
-  ["ITEM#12", "collection piece", "/item/12"],
-  ["#12", "collection piece", "/item/12"],
-  ["# 12", "collection piece", "/item/12"],
-  ["  #12  ", "collection piece", "/item/12"],
+  ["#12", "inscription number", "/number/12"],
+  ["# 12", "inscription number", "/number/12"],
+  ["  #12  ", "inscription number", "/number/12"],
+  ["10001", "inscription number", "/number/10001"],
+  ["10,001", "inscription number", "/number/10001"],
+  ["#10,001", "inscription number", "/number/10001"],
+  ["1,000,000", "inscription number", "/number/1000000"],
+  ["Pins #10,001", "inscription number", "/number/10001"],
+  ["pins #7", "inscription number", "/number/7"],
+  ["PINS7", "inscription number", "/number/7"],
+  ["P2MR Inscription #10,002", "inscription number", "/number/10002"],
+  ["p2mr inscription 10002", "inscription number", "/number/10002"],
+  ["P2MR   Inscription#7", "inscription number", "/number/7"],
+  ["0", "inscription number", "/number/0"],
   ["block 5", "block", "/block/5"],
   ["block #5", "block", "/block/5"],
   ["block5", "block", "/block/5"],
@@ -53,7 +55,8 @@ const ACCEPTED: [string, string, string][] = [
   ["qb1" + "q".repeat(40), "address", `/address/qb1${"q".repeat(40)}`],
 ];
 
-const REFUSED = ["", "   ", "hello", "item", "block", "block #", "item #", "#", "no.", "item #x", "12 item", "block 5 5", "block ## 5", "item ## 12", "# #12", "piece-12", "block-5", "no..7", "n° ° 7", "1.5", "-5", "5x", "x5", "item\n\n"];
+// A collection's own item numbers are not searched, so these words no longer name a page.
+const REFUSED = ["", "   ", "hello", "item", "block", "block #", "item #", "#", "no.", "pins", "pins #", "p2mr inscription", "p2mr", "item #x", "item #12", "piece #12", "item 12", "piece 12", "Flatbit #12", "12 item", "block 5 5", "block ## 5", "# #12", "pins ## 7", "piece-12", "block-5", "no..7", "n° ° 7", "1.5", "-5", "5x", "x5", "item\n\n", "1,00", "1,0000", ",100", "10,00,0", "1,000,", "10,001,5", "1 000", "p2mrinscription 7", "9".repeat(17)];
 
 test("the search box accepts these texts and sends each to the page it names", () => {
   for (const [text, type, path] of ACCEPTED) assert.deepEqual(classifyQuery(text), { type, path }, JSON.stringify(text));
@@ -64,7 +67,7 @@ test("the search box refuses these texts", () => {
 });
 
 test("the rewritten patterns accept and refuse exactly the texts the earlier patterns did", () => {
-  const tokens = ["", "item", "Piece", "block", "BLOCK", "no", "no.", "N°", "n°", "inscription", "#", " ", "  ", "\t", "\u00a0", "\n", "7", "12", "x"];
+  const tokens = ["", "item", "Pins", "p2mr", "block", "BLOCK", "no", "no.", "N°", "n°", "inscription", "#", ",", " ", "  ", "\t", "\u00a0", "\n", "7", "123", "x"];
   let count = 0;
   const walk = (prefix: string, depth: number) => {
     for (const token of tokens) {
@@ -84,7 +87,9 @@ test("a query over the limit is not a search, and the limit still holds the long
   assert.equal(longest.length, 125);
   assert.ok(ADDRESS.test(longest));
   assert.equal(classifyQuery(longest)?.type, "address");
-  assert.equal(classifyQuery("1".repeat(MAX_QUERY_LENGTH))?.type, "inscription number");
+  // A number the page cannot name exactly is not sent to a page.
+  assert.equal(classifyQuery("1".repeat(MAX_QUERY_LENGTH)), null);
+  assert.equal(classifyQuery("9".repeat(15))?.path, `/number/${"9".repeat(15)}`);
   assert.equal(classifyQuery("1".repeat(MAX_QUERY_LENGTH + 1)), null);
   assert.equal(classifyQuery("block " + "1".repeat(MAX_QUERY_LENGTH)), null);
   // The limit counts the trimmed text, so spaces around a short query do not matter.
@@ -99,7 +104,10 @@ test("text built to make a pattern backtrack is answered at once", () => {
     "no." + " ".repeat(200_000) + "x",
     "n°" + "\u00a0".repeat(200_000) + "x",
     "inscription" + " ".repeat(100_000) + "#" + " ".repeat(100_000) + "x",
-    "item" + " ".repeat(200_000) + "x",
+    "pins" + " ".repeat(200_000) + "x",
+    "p2mr" + " ".repeat(200_000) + "inscription" + " ".repeat(200_000) + "x",
+    "1" + ",111".repeat(50_000) + "x",
+    ",".repeat(200_000),
     "#" + " ".repeat(200_000) + "x",
     " ".repeat(200_000) + "block" + " ".repeat(200_000) + "x",
     "1".repeat(200_000) + "x",

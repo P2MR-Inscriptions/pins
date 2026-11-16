@@ -75,7 +75,7 @@ const itemBase = (prefix, name) => String(prefix || name || brand.pieceWord).rep
 let collectionRecord = null;
 const itemName = () => itemBase(collectionRecord?.namePrefix, collectionRecord?.name);
 const itemLabel = (n) => `${itemName()} #${fmt(n)}`;
-const collectionTitle = (record) => (record?.name ? `${record.name} Collection` : brand.collectionNav);
+const collectionTitle = (record) => (record?.name ? (/\bcollection$/i.test(record.name.trim()) ? record.name.trim() : `${record.name} Collection`) : brand.collectionNav);
 function setCollection(record) {
   if (!record || record.status !== "present") return;
   collectionRecord = record;
@@ -442,7 +442,7 @@ async function home() {
   const hero = items[0];
   const side = hero ? items.slice(1).filter((item) => item.id !== hero.id).slice(0, HOME_SIDE) : [];
   const intro = h("section", { class: "home-intro" },
-      h("h2", null, "READ FROM A QBIT NODE"),
+    h("h2", null, "READ FROM A QBIT NODE"),
     h("p", null, "This explorer shows P2MR Inscriptions that its indexer reads from a Qbit node.", h("br"), "It is read-only. It does not sign, broadcast, or keep a wallet."));
   const board = hero ? h("div", { class: "home-board" },
     h("div", { class: "home-stage" },
@@ -671,7 +671,7 @@ async function collectionPage(q) {
     : { pieces: [], total: 0 };
   if (!page.live()) return;
   if (col.onchain.status === "pending") {
-    page.show(h("h1", { class: "collection-title" }, brand.collectionNav), h("p", { class: "lede" }, "The collection record is still loading. Piece totals are not shown yet."));
+    page.show(h("h1", { class: "collection-title" }, brand.collectionNav), h("p", { class: "lede" }, "The collection record is still loading. Item totals are not shown yet."));
     return;
   }
   if (col.onchain.status !== "present") {
@@ -682,11 +682,11 @@ async function collectionPage(q) {
   const c = col.onchain;
   setCollection(c);
   const to = (o, v = only) => go(`/collection?offset=${o}${v ? "&verified=1" : ""}`);
-  const jump = h("input", { type: "number", min: c.first, max: c.first + c.supply - 1, placeholder: `${itemName()} #${c.first}–${c.first + c.supply - 1}`, "aria-label": "Piece number" });
+  const jump = h("input", { type: "number", min: c.first, max: c.first + c.supply - 1, placeholder: `${itemName()} #${c.first}–${c.first + c.supply - 1}`, "aria-label": "Item number" });
   const mismatch = col.checks.some((k) => k.match === false);
   const summary = col.piecesComplete
-    ? `${fmt(col.authenticPieces)} of ${fmt(c.supply)} pieces are authentic in this indexer snapshot.`
-    : "Piece totals stay hidden until the collection check finishes.";
+    ? `${fmt(col.authenticPieces)} of ${fmt(c.supply)} items are authentic in this indexer snapshot.`
+    : "Item totals stay hidden until the collection check finishes.";
   const genesis = h("div", { class: "section genesis" }, h("h3", null, "Collection genesis ", verified()),
     facts([["Genesis P2MR Inscription", link(`#/inscription/${c.genesisId}`, c.genesisId, "mono")], ["Merkle root", h("span", { class: "mono" }, c.root)], ["Issuer key", h("span", { class: "mono" }, c.issuer)], ["Item type", c.itemType]]));
   page.show(
@@ -699,8 +699,8 @@ async function collectionPage(q) {
       table(["Field", "Manifest", "On-chain", ""], col.checks.map((k) => [k.field, h("span", { class: "mono" }, String(k.manifest)), h("span", { class: "mono" }, k.onchain === null ? "not found" : String(k.onchain)),
         k.match === true ? h("span", { class: "badge ok" }, "match") : k.match === false ? h("span", { class: "badge bad" }, "differs") : h("span", { class: "badge warn" }, "unknown")]))),
     col.piecesComplete ? h("div", { class: "bar" },
-      h("form", { class: "bar", onsubmit: (e) => { e.preventDefault(); if (jump.value) go(`/${brand.piecePath}/${Number(jump.value)}`); } }, jump, h("button", { type: "submit" }, "Open piece")),
-      h("label", { class: "bar" }, h("input", { type: "checkbox", checked: only, onchange: (e) => to(0, e.target.checked) }), "Authentic pieces only")) : h("p", { class: "muted" }, "The piece list is still loading."),
+      h("form", { class: "bar", onsubmit: (e) => { e.preventDefault(); if (jump.value) go(`/${brand.piecePath}/${Number(jump.value)}`); } }, jump, h("button", { type: "submit" }, "Open item")),
+      h("label", { class: "bar" }, h("input", { type: "checkbox", checked: only, onchange: (e) => to(0, e.target.checked) }), "Authentic items only")) : h("p", { class: "muted" }, "The item list is still loading."),
     col.piecesComplete ? (() => {
       const sheet = h("div", { class: "sheet" },
         h("div", { class: "grid" }, list.pieces.map((p, index) => {
@@ -728,7 +728,7 @@ async function piecePage(n) {
   await loadCollection();
   if (!page.live()) return;
   page.show(h("h1", null, itemLabel(n)), h("div", { class: "err" }, h("strong", null, "No authentic P2MR Inscription for this number"),
-    h("p", null, "Nothing in this snapshot passes the collection check for this piece. It may not be inscribed yet.")), h("p", null, link("#/collection", "Back to the collection")));
+    h("p", null, "Nothing in this snapshot passes the collection check for this item. It may not be inscribed yet.")), h("p", null, link("#/collection", "Back to the collection")));
 }
 
 async function numberPage(n) {

@@ -301,10 +301,11 @@ Resident memory moved from 82 MB to 201 MB.
 
 ## Sync
 
-`follow` in `packages/indexer/follow.ts` reads `getblock` verbosity 3 and catches up to the
-current tip. A parent confirmed in an earlier block is loaded with `getrawtransaction`, which
-needs the node's transaction index. Qbit Core v1.0.1 documents that as `-txindex` (default off).
-Do not prune blocks or witnesses. An output created earlier in the same block is read from that
+`follow` in `packages/indexer/follow.ts` reads `getblock` and catches up to the current tip.
+It fetches a block as raw bytes (verbosity 0) and reads the outputs a block spends from the outputs it already stored.
+It asks again at verbosity 3 only when a block spends an output it does not know. There is no
+`getrawtransaction` call, so the indexer does not need `-txindex`. It does need undo data, which a pruned node may not
+have. Do not prune blocks or witnesses. An output created earlier in the same block is read from that
 block. The store keeps whether each output is P2MR. An input that spends an output known not to be
 P2MR carries no P2MR Inscription (PINS-1 §4.2), and a P2MR spend without witness items stops the indexer
 with `witness pruned` (PINS-2 §2). A database without that flag is upgraded in

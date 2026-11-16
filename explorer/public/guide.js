@@ -63,8 +63,8 @@ export const guideSections = [
     id: "snapshot",
     title: "Snapshot and preview",
     blocks: [
-      { kind: "p", text: "After the indexer API answers, this explorer reads the P2MR Inscription list first.\nThat preview shows the latest P2MR Inscriptions, ordered by block height, then the transaction's position in the block, then the envelope index.\nIt does not show collection piece totals." },
-      { kind: "p", text: "Collection pieces arrive 100 at a time.\nThe homepage does not wait for every page.\nCollection totals and the Authentic badge stay hidden until that piece check finishes and the snapshot is not stale.\nReload the page after the footer leaves syncing if the totals are still hidden." },
+      { kind: "p", text: "After the indexer API answers, this explorer reads the P2MR Inscription list first.\nThat preview shows the latest P2MR Inscriptions, ordered by block height, then the transaction's position in the block, then the envelope index.\nIt does not show collection item totals." },
+      { kind: "p", text: "Collection items arrive 100 at a time.\nThe homepage does not wait for every page.\nCollection totals and the Authentic badge stay hidden until that item check finishes and the snapshot is not stale.\nReload the page after the footer leaves syncing if the totals are still hidden." },
       { kind: "p", text: "A full snapshot is kept only when the indexer tip is the same at the start and the end of the read.\nIf the tip moves, that mix is not published.\nThe footer can say stale and keep the last consistent snapshot.\nWait, or reload later.\nDo not delete the database." },
     ],
   },
@@ -98,6 +98,7 @@ export const guideSections = [
     title: "Authenticity",
     blocks: [
       { kind: "p", text: "An Authentic badge is shown only when the indexer piece record for that exact P2MR Inscription has authentic set to true and the snapshot is not stale.\nAny other result does not show the badge.\nThis explorer does not recompute the collection check.\nManifest fields stay labeled apart from chain data." },
+      { kind: "p", text: "Every P2MR Inscription has one global number, counted from 0 in the order of block, transaction, and envelope.\nThe thumbnail captions write it as Pins #N.\nThe latest P2MR Inscription on the home page and each P2MR Inscription's own page write it as P2MR Inscription #N.\nA collection also numbers its items from its own first number.\nThat item number is shown only in the collection view and in the Collection facts of an item, and it is not the global number.\nThe search box takes the global number (7, #7, 10,001, Pins #7, P2MR Inscription #7), a P2MR Inscription id, a transaction id, an address, or a block (block 5).\nIt does not search by item number." },
     ],
   },
   {

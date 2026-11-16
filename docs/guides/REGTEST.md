@@ -4,7 +4,7 @@
 
 This guide takes you from nothing to a P2MR Inscription you inscribed, found, and traded, on a Qbit node that runs only on your machine. It uses only this repository and the node. You can follow it whether you want to inscribe a single P2MR Inscription, a collection without a sale commitment, or a collection with a sale commitment: the first sections are shared, then each path has its own section.
 
-Regtest is a private test chain on your computer. Blocks are made on demand, coins have no value, and nothing here touches mainnet or a public network. Every command below names `--network regtest` or runs against the regtest node you start in section 1. `broadcast` refuses any other network until you also type its name in `--confirm-network`, and this guide never does. `--mine`, which makes blocks, works on regtest only.
+Regtest is a local test chain on your computer. Blocks are made on demand, coins have no value, and nothing here touches mainnet or a public network. Every command below names `--network regtest` or runs against the regtest node you start in section 1. `broadcast` refuses any other network until you also type its name in `--confirm-network`, and this guide never does. `--mine`, which makes blocks, works on regtest only.
 
 Every command block below was run, in this order, on a fresh regtest node. This guide describes what the reference tools do.
 
@@ -76,7 +76,7 @@ qbitd -regtest -datadir="$W/node" -daemon
 
 The `rpcuser` and `rpcpassword` lines are what the commands below log in with. A node without them writes a cookie file instead, and every command takes `--rpc-datadir "$W/node"` in place of `--rpc-user` and `--rpc-password` ([Log in to your node](NODE-LOGIN.md)). This guide keeps the user and password.
 
-`txindex=1` is required: the indexer reads the parents of earlier blocks through it, and `utxo` below reads the funding transaction. `listen=0` keeps the node from accepting peers, `rpcuser` and `rpcpassword` are for this local test only, and `fallbackfee` lets the node's wallet pay a fee without a fee estimate (a regtest chain has none).
+`txindex=1` is for `utxo` below, which reads the funding transaction after it is confirmed. The indexer does not need it. `listen=0` keeps the node from accepting peers, `rpcuser` and `rpcpassword` are for this local test only, and `fallbackfee` lets the node's wallet pay a fee without a fee estimate (a regtest chain has none).
 
 Two helpers, one for the node and one for a wallet of the node, and the RPC options the inscriber and the indexer take:
 

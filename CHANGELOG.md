@@ -13,6 +13,9 @@ This file records the reference tools and the repository layout. Specification e
 
 - Documents: a complete mainnet indexer example with a cookie login, a first-sync note (the HTTP API does not listen until catch-up finishes), the Node SQLite warning, how to copy a Qbit data directory, and a deploy guide (`docs/guides/DEPLOY.md`) with systemd units, a reverse-proxy example, LAN firewall advice, and an SSH tunnel.
 - Explorer: default `RATE_PER_MINUTE` is 2000 and `MAX_CONCURRENCY` is 128, so a 104-image gallery page stays under the limits. Failed content previews are retried with backoff and honour `Retry-After`.
+- Indexer, inscriber and sale tools: an amount that Qbit Core returns (`value`, `amount`, `fee`) is read as exact bits. The 8-decimal text is kept as text, and a JSON number is accepted only when it names exactly one 8-decimal amount. Funding preflight and the regtest trade no longer round through a float.
+- Explorer: the search box takes the global P2MR Inscription number (`7`, `#7`, `10,001`, `Pins #7`, `P2MR Inscription #7`), an id, a transaction id, an address, or a block. It no longer searches by a collection's own item number.
+- Documents: the indexer does not need `-txindex`. It reads blocks with `getblock` and needs a node that is not pruned. The inscriber and the explorer's transaction page read a confirmed transaction with `getrawtransaction`, which needs `-txindex`. "Private test chain" is now "local test chain", and the Flatbits example, the explorer README and the explorer guide describe the two number series and the search.
 
 ## 1.0.0
 

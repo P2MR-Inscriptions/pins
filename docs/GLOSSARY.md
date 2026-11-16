@@ -50,5 +50,5 @@ The words of PINS, in the sense the specifications use them. A name in `code typ
 | **Funding address** | The single-key P2MR address of the issuer key that `address` prints. It receives the one payment that funds a launch |
 | **Plan** | The unsigned transactions of a launch, as `plan` writes them. `sign` rebuilds and checks them before it signs |
 | **Preflight** | The checks run before broadcast. Every row must say `PASS` |
-| **Regtest, testnet4, mainnet** | The private test chain on your computer, the public test network, and the real network |
+| **Regtest, testnet4, mainnet** | The local test chain on your computer, the public test network, and the real network |
 | **`CONFIRMATIONS_FINAL`** | 6. A marketplace treats a sale as final after that many confirmations |

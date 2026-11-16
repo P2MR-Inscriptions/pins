@@ -8,8 +8,8 @@ Logos and images used by the documents. None of them is read by the protocol, th
 |---|---|
 | `pins-social-preview.png` | The banner at the top of the repository README. |
 | `pins-avatar.svg` | The PINS mark. It is a raster PNG embedded in an SVG wrapper (about 690 KB), so it does not scale like a vector. The plate is `#0b120d`, so the green mark stays readable on a light page and on a dark page. |
-| `pins-avatar.png` | A raster file of the same mark. |
-| `qbit-favicon.png` | The Qbit favicon, copied unmodified from https://qbit.org/favicon.png. |
+| `pins-avatar.png` | A raster file of the same mark, kept for uploading as a profile picture. No page reads it. |
+| `qbit-favicon.png` | The Qbit favicon, copied unmodified from https://qbit.org/favicon.png. No page reads it. |
 
 The Qbit marks belong to the Qbit project. They are not covered by this repository's licence, and their use here does not mean that the Qbit project endorses PINS (see the README).
 

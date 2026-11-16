@@ -10,6 +10,7 @@ import { decodeCbor } from "../indexer/cbor.ts";
 import { readCompactSize } from "./compact.ts";
 import { parseEnvelopes } from "./script.ts";
 import { parseMarker } from "./marker.ts";
+import { bitsFromRpcAmount } from "../indexer/amount.ts";
 import { rpcChainName, type MintNetwork } from "./network.ts";
 import { groupLeaf, revealGroups, type MintPlan, type PlanContent, type SingleContent } from "./plan.ts";
 import { LAUNCH_PRICE_SCHEMA, priceBody, priceSchemaFor } from "./price.ts";
@@ -168,9 +169,15 @@ export function addressChecks(network: MintNetwork, creator: string, sale: strin
   return checks;
 }
 
-export function bitsFromQbt(value: number): bigint {
-  if (!Number.isFinite(value) || value < 0) throw new Error("node value is not a QBT amount");
-  return BigInt(Math.round(value * 100_000_000));
+export function bitsFromQbt(value: unknown): bigint {
+  let bits: bigint;
+  try {
+    bits = bitsFromRpcAmount(value);
+  } catch {
+    throw new Error("node value is not a QBT amount");
+  }
+  if (bits < 0n) throw new Error("node value is not a QBT amount");
+  return bits;
 }
 
 export function fundingChecks(input: {

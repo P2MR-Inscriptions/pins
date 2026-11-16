@@ -17,7 +17,7 @@ The node gets its own data folder and its own ports (P2P 18460, RPC 18452). It h
 
 ```bash
 cd pins            # the folder of your clone
-npm ci
+npm ci --ignore-scripts
 export PINS="$PWD" W="$HOME/pins-quickstart"
 export NODE_URL=http://127.0.0.1:18452/ INDEXER=http://127.0.0.1:8787
 mkdir -p "$W/node" "$W/work"
@@ -63,7 +63,7 @@ export PINS_KEY_PASSPHRASE=regtest-only-passphrase
 inscribe() { node --no-warnings --experimental-strip-types "$PINS/packages/inscriber/cli.ts" "$@"; }
 cd "$W/work"
 inscribe keygen --no-sale --out issuer.key
-FUNDING=$(inscribe address --pub issuer.key.pub.json --network regtest | awk 'NR==1 {print $4}')
+FUNDING=$(inscribe address --pub issuer.key.pub.json --network regtest | awk '/ funding address / {print $NF; exit}')
 qw funds sendtoaddress "$FUNDING" 1
 q generatetoaddress 6 "$(qw funds getnewaddress)" > /dev/null
 inscribe utxo --pub issuer.key.pub.json --network regtest --rpc "$NODE_URL" --rpc-datadir "$W/node" --out utxo.json

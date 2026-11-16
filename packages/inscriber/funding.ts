@@ -17,8 +17,8 @@ export type FundingFile = { txid: string; vout: number; value: string; script: s
 
 export type FoundFunding = { file: FundingFile; confirmations: number };
 
-type RawTx = { confirmations?: number; vout?: { value: number; n: number; scriptPubKey: { hex: string } }[] };
-type Scan = { success: boolean; unspents?: { txid: string; vout: number; scriptPubKey: string; amount: number; height: number }[] };
+type RawTx = { confirmations?: number; vout?: { value: number | string; n: number; scriptPubKey: { hex: string } }[] };
+type Scan = { success: boolean; unspents?: { txid: string; vout: number; scriptPubKey: string; amount: number | string; height: number }[] };
 
 /** The 6 confirmations that `preflight` asks of the funding output. */
 export const FUNDING_CONFIRMATIONS = 6;

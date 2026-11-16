@@ -27,6 +27,7 @@ import {
   type Psbt,
 } from "@qbit-oss/protocol";
 import { isP2mr } from "../indexer/address.ts";
+import { bitsFromRpcAmount } from "../indexer/amount.ts";
 
 /** Dust threshold of a P2MR output in bits (PINS-1 F14, PINS-3 section 5). */
 export const DUST_BITS = 2_855n;
@@ -44,9 +45,15 @@ const PAY_TO_ANCHOR = Uint8Array.of(0x51, 0x02, 0x4e, 0x73);
 export type ChainUtxo = { value: bigint; scriptPubKey: Uint8Array };
 
 /** Whole bits of a QBT amount a node printed with eight decimals (1 QBT is 100,000,000 bits). */
-export function bitsOf(amount: number): bigint {
-  if (!Number.isFinite(amount) || amount < 0) throw new RangeError("an amount must be a finite number of QBT, not negative");
-  return BigInt(Math.round(amount * 100_000_000));
+export function bitsOf(amount: number | string): bigint {
+  let bits: bigint;
+  try {
+    bits = bitsFromRpcAmount(amount);
+  } catch {
+    throw new RangeError("an amount must be a finite number of QBT, not negative");
+  }
+  if (bits < 0n) throw new RangeError("an amount must be a finite number of QBT, not negative");
+  return bits;
 }
 
 /**
@@ -59,10 +66,17 @@ export function utxoFromGetTxOut(answer: unknown): ChainUtxo | undefined {
   if (answer === null) return undefined;
   const { value, scriptPubKey } = (answer ?? {}) as { value?: unknown; scriptPubKey?: { hex?: unknown } | null };
   const hex = scriptPubKey?.hex;
-  if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || typeof hex !== "string" || !/^([0-9a-f]{2})+$/.test(hex)) {
-    throw new TypeError("not a gettxout answer: it has no numeric `value` and `scriptPubKey.hex`");
+  if (typeof hex !== "string" || !/^([0-9a-f]{2})+$/.test(hex)) {
+    throw new TypeError("not a gettxout answer: it has no QBT `value` and `scriptPubKey.hex`");
   }
-  return { value: bitsOf(value), scriptPubKey: hexToBytes(hex) };
+  let bits: bigint;
+  try {
+    bits = bitsFromRpcAmount(value);
+  } catch {
+    throw new TypeError("not a gettxout answer: it has no QBT `value` and `scriptPubKey.hex`");
+  }
+  if (bits < 0n) throw new TypeError("not a gettxout answer: it has no QBT `value` and `scriptPubKey.hex`");
+  return { value: bits, scriptPubKey: hexToBytes(hex) };
 }
 
 export type SaleProblem = {

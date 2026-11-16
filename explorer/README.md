@@ -63,7 +63,7 @@ npm run dev
 MOCK_PORT=8788 PORT=8081 npm run dev
 ```
 
-Ctrl+C stops the mock and the explorer that this command started. `npm test` uses loopback fixtures only. One test starts the indexer from `packages/` on loopback with a small synthetic database, which is why the repository root needs `npm ci` first. `npm run dev` does not need it.
+Ctrl+C stops the mock and the explorer that this command started. `npm test` uses loopback fixtures only. One test starts the indexer from `packages/` on loopback with a small synthetic database, which is why the repository root needs `npm ci --ignore-scripts` first. `npm run dev` does not need it.
 
 `indexer` starts that process on 127.0.0.1:8787. The explorer listens on 127.0.0.1:8080.
 

@@ -161,13 +161,17 @@ test("utxoAt: every input must be the unspent output the node holds, with the am
 test("utxoFromGetTxOut reads the answer of gettxout, null for a spent or unknown output, and refuses anything else", () => {
   const hex = `5220${"ab".repeat(32)}`;
   assert.deepEqual(utxoFromGetTxOut({ bestblock: "x", confirmations: 3, value: 0.0001, scriptPubKey: { hex, type: "witness_unknown" }, coinbase: false }), { value: 10_000n, scriptPubKey: hexToBytes(hex) });
+  assert.deepEqual(utxoFromGetTxOut({ bestblock: "x", confirmations: 3, value: "0.00010000", scriptPubKey: { hex, type: "witness_unknown" }, coinbase: false }), { value: 10_000n, scriptPubKey: hexToBytes(hex) });
   assert.equal(utxoFromGetTxOut(null), undefined);
   for (const bad of [undefined, {}, { error: "bad gateway" }, { value: "1", scriptPubKey: { hex } }, { value: 1 }, { value: 1, scriptPubKey: { hex: "zz" } }, { value: 1, scriptPubKey: { hex: "ABCD" } }, { value: -1, scriptPubKey: { hex } }, { value: 1, scriptPubKey: { hex: "" } }, { value: Number.NaN, scriptPubKey: { hex } }, "text"]) {
     assert.throws(() => utxoFromGetTxOut(bad), TypeError, JSON.stringify(bad));
   }
   assert.equal(bitsOf(0), 0n);
   assert.equal(bitsOf(21_000_000), 2_100_000_000_000_000n);
+  assert.equal(bitsOf("0.00010000"), 10_000n);
+  assert.equal(bitsOf("1.23456789"), 123_456_789n);
   assert.throws(() => bitsOf(-0.1), RangeError);
+  assert.throws(() => bitsOf("-0.10000000"), RangeError);
   assert.throws(() => bitsOf(Number.POSITIVE_INFINITY), RangeError);
 });
 

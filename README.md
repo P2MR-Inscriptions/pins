@@ -49,13 +49,13 @@ PINS is not a consensus change, and Qbit Core does not know about it. Indexers a
 You need Node.js 22.13 to 24 and the system `unzip`. From a clone of this repository:
 
 ```text
-npm ci
+npm ci --ignore-scripts
 npm test
 ```
 
 For the shortest path, follow **[Five minutes on regtest](docs/guides/QUICKSTART.md)**: it inscribes one P2MR Inscription on a private node and reads it back. The full tour is **[Try it on your own regtest node](docs/guides/REGTEST.md)**. It starts a private Qbit regtest node, inscribes a single P2MR Inscription, a collection without a sale commitment and a collection with one from a made-up sample, finds them in the indexer and the explorer, and trades one. Nothing leaves your machine.
 
-PINS runs TypeScript through Node's type stripping, which does not work from `node_modules`, so it is not published to npm. Run it from the checkout. Node.js 22.12 and older do not have `node:sqlite` without a flag, and the indexer needs it. Continuous integration runs the root and explorer tests on Node 22 and on Node 24.
+PINS runs TypeScript through Node's type stripping, which does not work from `node_modules`, so it is not published to npm. `npm run build` is the same type check as `npm run typecheck` (`tsc --noEmit`) and does not write a build folder. Run it from the checkout. Node.js 22.12 and older do not have `node:sqlite` without a flag, and the indexer needs it. Continuous integration runs the root and explorer tests on Node 22 and on Node 24.
 
 ## What you can build
 
@@ -148,7 +148,7 @@ npm run inscribe -- broadcast --plan plan.signed.json --rpc http://127.0.0.1:184
 
 ### Explorer
 
-A local read-only explorer is in [`explorer/`](explorer/README.md), version 1.0.0. It does not change this protocol. Run its commands from `explorer/`, not from the repository root. It indexes with the indexer of this repository (`npm run indexer` there starts `scripts/indexer-run.ts` from the repository root), so run `npm ci` in the repository root first. Root `npm run lint` covers `explorer/`. Check the explorer with its own `npm run typecheck` and `npm test`, which continuous integration runs in a separate job on Node 22 and 24. It features one collection only when a manifest names it (`config/examples/flatbits.json` is an example).
+A local read-only explorer is in [`explorer/`](explorer/README.md), version 1.0.0. It does not change this protocol. Run its commands from `explorer/`, not from the repository root. It indexes with the indexer of this repository (`npm run indexer` there starts `scripts/indexer-run.ts` from the repository root), so run `npm ci --ignore-scripts` in the repository root first. Root `npm run lint` covers `explorer/`. Check the explorer with its own `npm run typecheck` and `npm test`, which continuous integration runs in a separate job on Node 22 and 24. It features one collection only when a manifest names it (`config/examples/flatbits.json` is an example).
 
 ### Trade a P2MR Inscription
 

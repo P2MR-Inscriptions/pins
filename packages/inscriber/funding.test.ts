@@ -8,7 +8,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { addressToScriptPubKey, bytesToHex, p2mrAddressFromPubkey } from "@qbit-oss/protocol";
 import type { Rpc } from "../indexer/follow.ts";
+import { quoteRpcAmounts } from "../indexer/amount.ts";
 import { findFunding } from "./funding.ts";
+import { bitsFromQbt } from "./preflight.ts";
 
 const address = p2mrAddressFromPubkey(new Uint8Array(32).fill(7), "regtest");
 const other = p2mrAddressFromPubkey(new Uint8Array(32).fill(8), "regtest");
@@ -65,4 +67,35 @@ test("without a txid, no output, several outputs and an unfinished scan are refu
   const two = { success: true, unspents: [{ txid, vout: 0, scriptPubKey: script, amount: 1, height: 1 }, { txid, vout: 1, scriptPubKey: script, amount: 1, height: 1 }] };
   await assert.rejects(findFunding(scan(two), address, "regtest"), /2 unspent outputs.*--txid/);
   await assert.rejects(findFunding(scan({ success: false }), address, "regtest"), /could not finish/);
+});
+
+test("quoted 8-decimal value text from getrawtransaction is read as whole bits", async () => {
+  const raw = `{"confirmations":6,"vout":[{"n":0,"value":0.50000000,"scriptPubKey":{"hex":"${otherScript}"}},{"n":1,"value":1.23456789,"scriptPubKey":{"hex":"${script}"}}]}`;
+  const body = JSON.parse(quoteRpcAmounts(raw)) as { confirmations: number; vout: { n: number; value: unknown; scriptPubKey: { hex: string } }[] };
+  assert.equal(body.vout[1]?.value, "1.23456789");
+  const rpc = node({
+    getrawtransaction: () => body,
+    gettxout: () => ({ value: body.vout[1]!.value }),
+  });
+  const found = await findFunding(rpc, address, "regtest", txid);
+  assert.deepEqual(found.file, { txid, vout: 1, value: "123456789", script });
+  assert.equal(found.confirmations, 6);
+  assert.equal(bitsFromQbt("1.23456789"), 123_456_789n);
+  assert.equal(bitsFromQbt("1.00000000"), 100_000_000n);
+  assert.equal(bitsFromQbt(1.23456789), 123_456_789n);
+  assert.throws(() => bitsFromQbt("nope"), /not a QBT amount/);
+  assert.throws(() => bitsFromQbt(-1), /not a QBT amount/);
+});
+
+test("quoted 8-decimal amount text from scantxoutset is read as whole bits", async () => {
+  const raw = `{"success":true,"unspents":[{"txid":"${txid}","vout":0,"scriptPubKey":"${script}","amount":2.00000000,"height":100}]}`;
+  const body = JSON.parse(quoteRpcAmounts(raw));
+  assert.equal((body as { unspents: { amount: unknown }[] }).unspents[0]?.amount, "2.00000000");
+  const rpc = node({
+    scantxoutset: () => body,
+    getblockcount: () => 105,
+  });
+  const found = await findFunding(rpc, address, "regtest");
+  assert.deepEqual(found.file, { txid, vout: 0, value: "200000000", script });
+  assert.equal(found.confirmations, 6);
 });

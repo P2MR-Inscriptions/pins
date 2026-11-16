@@ -17,7 +17,7 @@ Security fixes go to the latest release and to `main`.
 | Version | Supported |
 |---|---|
 | `main` | Yes |
-| `1.0.x` (tag `v1.0.0`): reference tools and explorer | Yes |
+| `1.0.x` (tags `v1.0.0` and `v1.0.1`): reference tools and explorer | Yes |
 
 The specifications PINS-1 to PINS-6 have their own version (1.0.0, in the table at the top of each document). A report about them is handled like any other report.
 

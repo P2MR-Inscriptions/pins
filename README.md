@@ -148,7 +148,7 @@ npm run inscribe -- broadcast --plan plan.signed.json --rpc http://127.0.0.1:184
 
 ### Explorer
 
-A local read-only explorer is in [`explorer/`](explorer/README.md), version 1.0.0. It does not change this protocol. Run its commands from `explorer/`, not from the repository root. It indexes with the indexer of this repository (`npm run indexer` there starts `scripts/indexer-run.ts` from the repository root), so run `npm ci --ignore-scripts` in the repository root first. Root `npm run lint` covers `explorer/`. Check the explorer with its own `npm run typecheck` and `npm test`, which continuous integration runs in a separate job on Node 22 and 24. It features one collection only when a manifest names it (`config/examples/flatbits.json` is an example).
+A local read-only explorer is in [`explorer/`](explorer/README.md), version 1.0.1. It does not change this protocol. Run its commands from `explorer/`, not from the repository root. It indexes with the indexer of this repository (`npm run indexer` there starts `scripts/indexer-run.ts` from the repository root), so run `npm ci --ignore-scripts` in the repository root first. Root `npm run lint` covers `explorer/`. Check the explorer with its own `npm run typecheck` and `npm test`, which continuous integration runs in a separate job on Node 22 and 24. It features one collection only when a manifest names it (`config/examples/flatbits.json` is an example).
 
 ### Trade a P2MR Inscription
 

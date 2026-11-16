@@ -2,7 +2,7 @@
 
 # Changelog
 
-## Unreleased
+## 1.0.1 - 2026-11-16
 
 - Default `RATE_PER_MINUTE` is 2000 and `MAX_CONCURRENCY` is 128, so a gallery page of 104 images does not hit a 429 or a 503. The limits still cap a client that keeps asking far faster.
 - Image and text previews retry failed loads with backoff and honour `Retry-After`, then show "Preview unavailable".

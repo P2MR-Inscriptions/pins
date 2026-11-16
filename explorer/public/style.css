@@ -172,6 +172,7 @@ main:focus { outline: none; }
   .lede.intro { font-size: 1rem; line-height: 1.5; white-space: nowrap; overflow-wrap: normal; }
 }
 .px { image-rendering: pixelated; image-rendering: crisp-edges; display: block; background: var(--mat); width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; }
+.px.vec { image-rendering: auto; }
 .startup { display: flex; align-items: center; gap: .75rem; min-height: 8rem; color: var(--fg); }
 .startup p { margin: 0; }
 .spinner {

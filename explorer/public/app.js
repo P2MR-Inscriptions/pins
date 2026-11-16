@@ -65,6 +65,11 @@ function openPage() {
   };
 }
 
+// The global number counts every P2MR Inscription from 0. Collection piece numbers are a separate series.
+const inscriptionLabel = (n) => `P2MR Inscription #${fmt(n)}`;
+const captionLabel = (item) => item && item.collectionPiece != null && Number.isFinite(Number(item.collectionPiece))
+  ? `${brand.pieceWord} #${fmt(item.collectionPiece)}`
+  : inscriptionLabel(item?.number);
 const pieceTitle = (piece) => {
   if (!piece || typeof piece !== "object") return "P2MR Inscription";
   const base = String(piece.namePrefix || piece.collectionName || brand.pieceWord).replace(/[\s#]+$/, "");
@@ -188,7 +193,8 @@ function fallbackFrame(item, extra, message) {
 function imageFrame(item, index, extra) {
   if (item.bodyLength === 0) return fallbackFrame(item, extra, "No content bytes");
   const url = `/api/content/${item.id}`;
-  const img = picture(url, `P2MR Inscription ${fmt(item.number)}`, index, extra ? `px ${extra}` : "px");
+  const vector = mediaKind(item.contentType) === "svg";
+  const img = picture(url, inscriptionLabel(item.number), index, `px${vector ? " vec" : ""}${extra ? ` ${extra}` : ""}`);
   attachImageRetry(img, url, () => {
     if (img.isConnected) img.replaceWith(fallbackFrame(item, extra, "Preview unavailable"));
   });
@@ -284,9 +290,7 @@ function contentFrame(item, index, extra) {
 function cell(item, index) {
   try {
     const id = item && typeof item.id === "string" ? item.id : "";
-    const label = item && item.collectionPiece != null && Number.isFinite(Number(item.collectionPiece))
-      ? `#${fmt(item.collectionPiece)}`
-      : `No. ${fmt(item?.number)}`;
+    const label = captionLabel(item);
     const frame = contentFrame(item, index);
     if (!SAFE_ID.test(id)) return h("div", { class: "cell" }, frame, h("span", { class: "cap" }, label));
     return h("a", { class: "cell", href: `#/inscription/${id}`, title: id }, frame, h("span", { class: "cap" }, label));
@@ -408,7 +412,7 @@ function countedInscriptions(n) {
 }
 
 function homeHero(item) {
-  const label = item.collectionPiece != null ? `#${fmt(item.collectionPiece)}` : `No. ${fmt(item.number)}`;
+  const label = captionLabel(item);
   const href = item && SAFE_ID.test(item.id || "") ? `#/inscription/${item.id}` : "#/inscriptions";
   return h("article", { class: "home-hero" },
     h("h2", null, "LATEST P2MR INSCRIPTION"),
@@ -730,6 +734,9 @@ async function inscriptionPage(id) {
   const page = openPage();
   const i = await page.get(`/inscription/${id}`);
   if (!page.live()) return;
+  // The collection size is in the collection record, not in this record. Without it the line has no "of N".
+  const col = i.piece ? await page.get("/collection").catch(() => null) : null;
+  if (!page.live()) return;
   const viewer = detailViewer(i);
   const showBadge = i.authenticity === "confirmed" && i.snapshotStale !== true;
   const onChain = i.chain === "confirmed" && i.snapshotStale !== true;
@@ -780,8 +787,12 @@ async function inscriptionPage(id) {
   const fields = Array.isArray(i.fields) ? i.fields : [];
   const flags = Array.isArray(i.flags) ? i.flags.filter((flag) => typeof flag === "string") : [];
   const tx = typeof i.txid === "string" && /^[0-9a-f]{64}$/.test(i.txid) ? txLink(i.txid) : "none";
-  const heading = i.piece ? pieceTitle(i.piece) : (typeof name === "string" && name.trim() ? clip(name, 160) : `P2MR Inscription ${fmt(i.number)}`);
+  const heading = i.piece ? pieceTitle(i.piece) : (typeof name === "string" && name.trim() ? clip(name, 160) : inscriptionLabel(i.number));
   const ext = status?.externalExplorer;
+  const supply = Number(col?.onchain?.supply), first = Number(col?.onchain?.first);
+  const pieceName = i.piece ? String(i.piece.collectionName || brand.pieceWord) : "";
+  const pieceSeries = !i.piece ? "" : `${pieceName} #${fmt(i.piece.number)}${
+    Number.isInteger(supply) && supply > 0 && first === 1 ? ` of ${fmt(supply)}` : ""}`;
   page.show(
     h("div", { class: "detail" },
       h("div", { class: "detail-actions" },
@@ -792,13 +803,14 @@ async function inscriptionPage(id) {
       h("div", { class: "art-wrap" }, viewer, h("div", { class: "badge-row" }, chainBadge, showBadge ? authNote : null)),
       h("div", { class: "detail-copy" },
       h("h1", null, heading),
+      i.piece ? h("p", { class: "muted" }, inscriptionLabel(i.number)) : null,
       h("p", { class: "lede" }, lede),
       chainNote,
       showBadge ? null : authNote,
       h("div", { class: "legend" }, verified(), "Names and attributes below are field 5 from the indexer snapshot."))),
     h("div", { class: "section" }, h("h3", null, "P2MR Inscription ", verified()),
       facts([
-        ["P2MR Inscription ID", h("span", { class: "mono" }, i.id)], ["P2MR Inscription number", fmt(i.number)],
+        ["P2MR Inscription ID", h("span", { class: "mono" }, i.id)], ["Global number", [inscriptionLabel(i.number), h("span", { class: "muted" }, " (global, starts at 0)")]],
         ["Transaction", tx], ["Content type", clip(typeof i.contentType === "string" && i.contentType ? i.contentType : "none", 80)], ["Size", bytes(i.bodyLength)],
         ["Content SHA-256", h("span", { class: "mono" }, i.bodySha256)],
         ["Created in block", link(`#/block/${i.createdHeight}`, fmt(i.createdHeight))],
@@ -808,7 +820,7 @@ async function inscriptionPage(id) {
         ["Raw content", [link(`/api/content/${i.id}`, "view"), " · ", link(`/api/content/${i.id}?download=1`, "download bytes")]],
         ext ? ["Node explorer", link(`${ext}/tx/${i.txid}`, "open transaction")] : null])),
     i.piece ? h("div", { class: "section" }, h("h3", null, "Collection ", verified()),
-      facts([["Collection", link("#/collection", i.piece.collectionName ?? "collection")], ["Piece", `#${fmt(i.piece.number)}`],
+      facts([["Collection", link("#/collection", i.piece.collectionName ?? "collection")], ["Collection number", [pieceSeries, h("span", { class: "muted" }, " (collection piece, not the P2MR Inscription number)")]],
         ["Confirmations", `${fmt(i.piece.confirmations)}${i.piece.final ? " (final)" : " (not final yet)"}`],
         ["Genesis", link(`#/inscription/${i.piece.genesisId}`, short(i.piece.genesisId, 12), "mono")]])) : null,
     h("div", { class: "section" }, h("h3", null, "Metadata ", verified("Field 5")),
